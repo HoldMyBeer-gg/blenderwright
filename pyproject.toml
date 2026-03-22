@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "blend-ai"
+version = "0.1.0"
+description = "The most intuitive and efficient MCP Server for Blender"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "mcp>=1.26.0",
+    "pydantic>=2.0",
+]
+
+[project.scripts]
+blend-ai = "blend_ai.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/blend_ai"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+]
