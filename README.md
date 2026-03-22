@@ -16,10 +16,6 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 ### 1. Install the MCP server
 
 ```bash
-# Using uv (recommended)
-uv pip install blend-ai
-
-# Or from source
 git clone https://github.com/your-org/blend-ai.git
 cd blend-ai
 uv pip install -e .
@@ -58,10 +54,10 @@ This repo includes an [`mcp.json`](mcp.json) config file you can use directly or
 ## Claude Code Integration
 
 ```bash
-claude mcp add blend-ai -- uvx blend-ai
+claude mcp add blend-ai -- uv run --directory /path/to/blend-ai blend-ai
 ```
 
-That's it. Claude Code will now have access to all 108 Blender tools. Make sure Blender is running with the addon server started before using the tools.
+Replace `/path/to/blend-ai` with the actual path to your clone. Make sure Blender is running with the addon server started before using the tools.
 
 ### Usage
 
@@ -83,14 +79,14 @@ Add blend-ai to your Claude Desktop config (`~/Library/Application Support/Claud
 {
   "mcpServers": {
     "blend-ai": {
-      "command": "uvx",
-      "args": ["blend-ai"]
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/blend-ai", "blend-ai"]
     }
   }
 }
 ```
 
-Or copy the contents of the bundled [`mcp.json`](mcp.json) into your config file.
+Replace `/path/to/blend-ai` with the actual path to your clone. Or copy the contents of the bundled [`mcp.json`](mcp.json) into your config file.
 
 Restart Claude Desktop. The Blender tools will appear in the tool list.
 
@@ -99,7 +95,7 @@ Restart Claude Desktop. The Blender tools will appear in the tool list.
 blend-ai is a standard MCP server using stdio transport. Any MCP-compatible client can connect using the [`mcp.json`](mcp.json) config or by running the server directly:
 
 ```bash
-uvx blend-ai
+uv run --directory /path/to/blend-ai blend-ai
 # or: python -m blend_ai.server
 ```
 
