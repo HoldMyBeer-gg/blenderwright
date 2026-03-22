@@ -26,10 +26,17 @@ ALLOWED_BOOLEAN_OPS = {"UNION", "DIFFERENCE", "INTERSECT"}
 # Allowed separate types
 ALLOWED_SEPARATE_TYPES = {"SELECTED", "MATERIAL", "LOOSE"}
 
+# Allowed profile shapes for bridge
+ALLOWED_PROFILE_SHAPES = {"SMOOTH", "SPHERE", "ROOT", "INVERSE_SQUARE", "SHARP", "LINEAR"}
+
 
 @mcp.tool()
 def add_modifier(object_name: str, modifier_type: str, name: str = "") -> dict[str, Any]:
-    """Add a modifier to a mesh object.
+    """Add a modifier to a mesh object (non-destructive workflow).
+
+    TIP: For BOOLEAN type, consider using booltool_auto_union/difference/intersect/slice
+    instead — they apply the boolean immediately and handle cutter cleanup automatically.
+    Only use add_modifier with BOOLEAN when you want a non-destructive modifier stack.
 
     Args:
         object_name: Name of the object to add the modifier to.
@@ -144,7 +151,12 @@ def set_modifier_property(
 def boolean_operation(
     object_name: str, target_name: str, operation: str = "DIFFERENCE"
 ) -> dict[str, Any]:
-    """Perform a boolean operation between two objects.
+    """Perform a boolean operation between two objects using a modifier.
+
+    NOTE: For destructive booleans, prefer the booltool_auto_* tools instead
+    (booltool_auto_union, booltool_auto_difference, booltool_auto_intersect,
+    booltool_auto_slice). They handle selection and cutter cleanup automatically.
+    Use this tool only when you need a non-destructive boolean modifier workflow.
 
     Args:
         object_name: Name of the object to apply the boolean to.
@@ -271,6 +283,10 @@ def loop_cut(object_name: str, cuts: int = 1) -> dict[str, Any]:
 def set_smooth_shading(object_name: str, smooth: bool = True) -> dict[str, Any]:
     """Set smooth or flat shading on an object.
 
+    TIP: For production use, prefer shade_auto_smooth which provides angle-based
+    auto-smooth shading — it gives better results on hard-surface models by only
+    smoothing faces within the angle threshold.
+
     Args:
         object_name: Name of the mesh object.
         smooth: True for smooth shading, False for flat shading.
@@ -332,6 +348,42 @@ def separate_mesh(object_name: str, type: str = "SELECTED") -> dict[str, Any]:
     response = conn.send_command("separate_mesh", {
         "object_name": object_name,
         "type": type,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def bridge_edge_loops(
+    object_name: str, segments: int = 1, profile_shape_factor: float = 0.0
+) -> dict[str, Any]:
+    """Bridge two edge loops to create connecting geometry.
+
+    Select two edge loops on a mesh before calling this. The operation creates
+    faces connecting the two loops, useful for connecting separate mesh parts,
+    creating holes between surfaces, or building tube-like geometry.
+
+    Args:
+        object_name: Name of the mesh object with selected edge loops.
+        segments: Number of segments in the bridge. Range: 1-1000.
+        profile_shape_factor: Shape of the bridge profile. Range: -1.0 to 1.0.
+            0.0 is straight, positive values bulge outward, negative inward.
+
+    Returns:
+        Confirmation dict with bridge details.
+    """
+    object_name = validate_object_name(object_name)
+    validate_numeric_range(segments, min_val=1, max_val=1000, name="segments")
+    validate_numeric_range(
+        profile_shape_factor, min_val=-1.0, max_val=1.0, name="profile_shape_factor"
+    )
+
+    conn = get_connection()
+    response = conn.send_command("bridge_edge_loops", {
+        "object_name": object_name,
+        "segments": segments,
+        "profile_shape_factor": profile_shape_factor,
     })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")

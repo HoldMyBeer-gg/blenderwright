@@ -188,6 +188,146 @@ def handle_create_text(params: dict) -> dict:
         raise RuntimeError(f"Failed to create text: {e}")
 
 
+def _ensure_object_mode():
+    """Ensure Blender is in object mode."""
+    if bpy.context.active_object and bpy.context.active_object.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+
+def _get_curve_object(name):
+    """Get a curve object by name, raising if not found or not a curve."""
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        raise ValueError(f"Object '{name}' not found")
+    if obj.type != "CURVE":
+        raise ValueError(f"Object '{name}' is not a curve")
+    return obj
+
+
+def _enter_curve_edit_mode(obj):
+    """Select a curve object and enter edit mode with all points selected."""
+    _ensure_object_mode()
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.curve.select_all(action='SELECT')
+
+
+def _exit_edit_mode():
+    """Return to object mode."""
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+
+def handle_switch_curve_direction(params: dict) -> dict:
+    """Switch the direction of a curve's splines."""
+    curve_name = params.get("curve_name")
+
+    try:
+        obj = _get_curve_object(curve_name)
+        _enter_curve_edit_mode(obj)
+        bpy.ops.curve.switch_direction()
+        _exit_edit_mode()
+
+        return {
+            "curve_name": obj.name,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        _ensure_object_mode()
+        raise RuntimeError(f"Failed to switch curve direction: {e}")
+
+
+def handle_set_handle_type(params: dict) -> dict:
+    """Set the handle type for all control points of a curve."""
+    curve_name = params.get("curve_name")
+    handle_type = params.get("handle_type", "AUTO")
+
+    try:
+        obj = _get_curve_object(curve_name)
+        _enter_curve_edit_mode(obj)
+        bpy.ops.curve.handle_type_set(type=handle_type)
+        _exit_edit_mode()
+
+        return {
+            "curve_name": obj.name,
+            "handle_type": handle_type,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        _ensure_object_mode()
+        raise RuntimeError(f"Failed to set handle type: {e}")
+
+
+def handle_toggle_cyclic(params: dict) -> dict:
+    """Toggle the cyclic state of a curve."""
+    curve_name = params.get("curve_name")
+
+    try:
+        obj = _get_curve_object(curve_name)
+        _enter_curve_edit_mode(obj)
+        bpy.ops.curve.cyclic_toggle()
+        _exit_edit_mode()
+
+        return {
+            "curve_name": obj.name,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        _ensure_object_mode()
+        raise RuntimeError(f"Failed to toggle cyclic: {e}")
+
+
+def handle_subdivide_curve(params: dict) -> dict:
+    """Subdivide a curve."""
+    curve_name = params.get("curve_name")
+    number_cuts = params.get("number_cuts", 1)
+
+    try:
+        obj = _get_curve_object(curve_name)
+        _enter_curve_edit_mode(obj)
+        bpy.ops.curve.subdivide(number_cuts=number_cuts)
+        _exit_edit_mode()
+
+        return {
+            "curve_name": obj.name,
+            "number_cuts": number_cuts,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        _ensure_object_mode()
+        raise RuntimeError(f"Failed to subdivide curve: {e}")
+
+
+def handle_smooth_curve(params: dict) -> dict:
+    """Smooth the control points of a curve."""
+    curve_name = params.get("curve_name")
+
+    try:
+        obj = _get_curve_object(curve_name)
+        _enter_curve_edit_mode(obj)
+        bpy.ops.curve.smooth()
+        _exit_edit_mode()
+
+        return {
+            "curve_name": obj.name,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        _ensure_object_mode()
+        raise RuntimeError(f"Failed to smooth curve: {e}")
+
+
 def register():
     """Register curve handlers with the dispatcher."""
     dispatcher.register_handler("create_curve", handle_create_curve)
@@ -195,3 +335,8 @@ def register():
     dispatcher.register_handler("set_curve_property", handle_set_curve_property)
     dispatcher.register_handler("convert_curve_to_mesh", handle_convert_curve_to_mesh)
     dispatcher.register_handler("create_text", handle_create_text)
+    dispatcher.register_handler("switch_curve_direction", handle_switch_curve_direction)
+    dispatcher.register_handler("set_handle_type", handle_set_handle_type)
+    dispatcher.register_handler("toggle_cyclic", handle_toggle_cyclic)
+    dispatcher.register_handler("subdivide_curve", handle_subdivide_curve)
+    dispatcher.register_handler("smooth_curve", handle_smooth_curve)

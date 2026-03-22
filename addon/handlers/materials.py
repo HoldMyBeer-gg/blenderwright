@@ -253,6 +253,177 @@ def handle_duplicate_material(params: dict) -> dict:
         raise RuntimeError(f"Failed to duplicate material: {e}")
 
 
+def _get_node_tree(mat):
+    """Get the node tree from a material or raise."""
+    if not mat.use_nodes or mat.node_tree is None:
+        raise ValueError(f"Material '{mat.name}' does not use nodes")
+    return mat.node_tree
+
+
+def handle_add_shader_node(params: dict) -> dict:
+    """Add a shader node to a material's node tree."""
+    try:
+        mat_name = params["material_name"]
+        node_type = params["node_type"]
+        location = params.get("location", (0, 0))
+
+        mat = _get_material(mat_name)
+        tree = _get_node_tree(mat)
+
+        node = tree.nodes.new(type=node_type)
+        node.location = tuple(location)
+
+        return {
+            "material": mat.name,
+            "node_name": node.name,
+            "node_type": node_type,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to add shader node: {e}")
+
+
+def handle_connect_shader_nodes(params: dict) -> dict:
+    """Connect two shader nodes via their sockets."""
+    try:
+        mat_name = params["material_name"]
+        from_node_name = params["from_node"]
+        from_socket_name = params["from_socket"]
+        to_node_name = params["to_node"]
+        to_socket_name = params["to_socket"]
+
+        mat = _get_material(mat_name)
+        tree = _get_node_tree(mat)
+
+        from_node = tree.nodes.get(from_node_name)
+        if from_node is None:
+            raise ValueError(f"Node '{from_node_name}' not found")
+
+        to_node = tree.nodes.get(to_node_name)
+        if to_node is None:
+            raise ValueError(f"Node '{to_node_name}' not found")
+
+        from_socket = from_node.outputs.get(from_socket_name)
+        if from_socket is None:
+            raise ValueError(f"Output socket '{from_socket_name}' not found on node '{from_node_name}'")
+
+        to_socket = to_node.inputs.get(to_socket_name)
+        if to_socket is None:
+            raise ValueError(f"Input socket '{to_socket_name}' not found on node '{to_node_name}'")
+
+        tree.links.new(from_socket, to_socket)
+
+        return {
+            "material": mat.name,
+            "from_node": from_node_name,
+            "from_socket": from_socket_name,
+            "to_node": to_node_name,
+            "to_socket": to_socket_name,
+            "connected": True,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to connect shader nodes: {e}")
+
+
+def handle_disconnect_shader_nodes(params: dict) -> dict:
+    """Disconnect all links from a specific socket on a shader node."""
+    try:
+        mat_name = params["material_name"]
+        node_name = params["node_name"]
+        socket_name = params["socket_name"]
+        is_input = params.get("is_input", True)
+
+        mat = _get_material(mat_name)
+        tree = _get_node_tree(mat)
+
+        node = tree.nodes.get(node_name)
+        if node is None:
+            raise ValueError(f"Node '{node_name}' not found")
+
+        sockets = node.inputs if is_input else node.outputs
+        socket = sockets.get(socket_name)
+        if socket is None:
+            kind = "input" if is_input else "output"
+            raise ValueError(f"{kind.capitalize()} socket '{socket_name}' not found on node '{node_name}'")
+
+        removed = 0
+        for link in list(tree.links):
+            if is_input and link.to_socket == socket:
+                tree.links.remove(link)
+                removed += 1
+            elif not is_input and link.from_socket == socket:
+                tree.links.remove(link)
+                removed += 1
+
+        return {
+            "material": mat.name,
+            "node_name": node_name,
+            "socket_name": socket_name,
+            "is_input": is_input,
+            "links_removed": removed,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to disconnect shader nodes: {e}")
+
+
+def handle_remove_shader_node(params: dict) -> dict:
+    """Remove a shader node from a material's node tree."""
+    try:
+        mat_name = params["material_name"]
+        node_name = params["node_name"]
+
+        mat = _get_material(mat_name)
+        tree = _get_node_tree(mat)
+
+        node = tree.nodes.get(node_name)
+        if node is None:
+            raise ValueError(f"Node '{node_name}' not found")
+
+        tree.nodes.remove(node)
+
+        return {
+            "material": mat.name,
+            "removed": node_name,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to remove shader node: {e}")
+
+
+def handle_get_node_tree(params: dict) -> dict:
+    """Serialize the full node tree of a material."""
+    try:
+        mat_name = params["material_name"]
+
+        mat = _get_material(mat_name)
+        tree = _get_node_tree(mat)
+
+        nodes = []
+        for node in tree.nodes:
+            nodes.append({
+                "name": node.name,
+                "type": node.bl_idname,
+                "location": [node.location[0], node.location[1]],
+                "inputs": [inp.name for inp in node.inputs],
+                "outputs": [out.name for out in node.outputs],
+            })
+
+        links = []
+        for link in tree.links:
+            links.append({
+                "from_node": link.from_node.name,
+                "from_socket": link.from_socket.name,
+                "to_node": link.to_node.name,
+                "to_socket": link.to_socket.name,
+            })
+
+        return {
+            "material": mat.name,
+            "nodes": nodes,
+            "links": links,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to get node tree: {e}")
+
+
 def register():
     """Register all material handlers with the dispatcher."""
     dispatcher.register_handler("create_material", handle_create_material)
@@ -265,3 +436,8 @@ def register():
     dispatcher.register_handler("list_materials", handle_list_materials)
     dispatcher.register_handler("delete_material", handle_delete_material)
     dispatcher.register_handler("duplicate_material", handle_duplicate_material)
+    dispatcher.register_handler("add_shader_node", handle_add_shader_node)
+    dispatcher.register_handler("connect_shader_nodes", handle_connect_shader_nodes)
+    dispatcher.register_handler("disconnect_shader_nodes", handle_disconnect_shader_nodes)
+    dispatcher.register_handler("remove_shader_node", handle_remove_shader_node)
+    dispatcher.register_handler("get_node_tree", handle_get_node_tree)

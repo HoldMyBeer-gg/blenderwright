@@ -263,6 +263,32 @@ def handle_merge_vertices(params):
     }
 
 
+def handle_bridge_edge_loops(params):
+    """Bridge two edge loops on a mesh."""
+    _ensure_object_mode()
+    obj = _get_object(params["object_name"])
+
+    if obj.type != "MESH":
+        raise ValueError(f"Object '{obj.name}' is not a mesh")
+
+    _select_only(obj)
+    segments = params.get("segments", 1)
+    profile_shape_factor = params.get("profile_shape_factor", 0.0)
+
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.bridge_edge_loops(
+        number_cuts=segments - 1,
+        profile_shape_factor=profile_shape_factor,
+    )
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    return {
+        "object": obj.name,
+        "segments": segments,
+        "profile_shape_factor": profile_shape_factor,
+    }
+
+
 def handle_separate_mesh(params):
     """Separate a mesh into parts."""
     _ensure_object_mode()
@@ -296,4 +322,5 @@ def register():
     dispatcher.register_handler("loop_cut", handle_loop_cut)
     dispatcher.register_handler("set_smooth_shading", handle_set_smooth_shading)
     dispatcher.register_handler("merge_vertices", handle_merge_vertices)
+    dispatcher.register_handler("bridge_edge_loops", handle_bridge_edge_loops)
     dispatcher.register_handler("separate_mesh", handle_separate_mesh)

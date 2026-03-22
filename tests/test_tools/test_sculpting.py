@@ -205,6 +205,85 @@ class TestAddMultiresModifier:
             add_multires_modifier("")
 
 
+class TestSetSculptSymmetry:
+    def test_valid_defaults(self, mock_conn):
+        from blend_ai.tools.sculpting import set_sculpt_symmetry
+
+        set_sculpt_symmetry()
+        mock_conn.send_command.assert_called_once_with("set_sculpt_symmetry", {
+            "use_x": True,
+            "use_y": False,
+            "use_z": False,
+        })
+
+    def test_custom_axes(self, mock_conn):
+        from blend_ai.tools.sculpting import set_sculpt_symmetry
+
+        set_sculpt_symmetry(use_x=False, use_y=True, use_z=True)
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["use_x"] is False
+        assert args["use_y"] is True
+        assert args["use_z"] is True
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.sculpting import set_sculpt_symmetry
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            set_sculpt_symmetry()
+
+
+class TestEnableDyntopo:
+    def test_valid_defaults(self, mock_conn):
+        from blend_ai.tools.sculpting import enable_dyntopo
+
+        enable_dyntopo("Cube")
+        mock_conn.send_command.assert_called_once_with("enable_dyntopo", {
+            "object_name": "Cube",
+            "detail_size": 12.0,
+            "detail_mode": "RELATIVE",
+        })
+
+    def test_custom_params(self, mock_conn):
+        from blend_ai.tools.sculpting import enable_dyntopo
+
+        enable_dyntopo("Cube", detail_size=5.0, detail_mode="CONSTANT")
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["detail_size"] == 5.0
+        assert args["detail_mode"] == "CONSTANT"
+
+    def test_invalid_detail_mode_raises(self, mock_conn):
+        from blend_ai.tools.sculpting import enable_dyntopo
+
+        with pytest.raises(ValidationError):
+            enable_dyntopo("Cube", detail_mode="ADAPTIVE")
+
+    def test_detail_size_too_low_raises(self, mock_conn):
+        from blend_ai.tools.sculpting import enable_dyntopo
+
+        with pytest.raises(ValidationError):
+            enable_dyntopo("Cube", detail_size=0.0)
+
+    def test_detail_size_too_high_raises(self, mock_conn):
+        from blend_ai.tools.sculpting import enable_dyntopo
+
+        with pytest.raises(ValidationError):
+            enable_dyntopo("Cube", detail_size=501.0)
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.sculpting import enable_dyntopo
+
+        with pytest.raises(ValidationError):
+            enable_dyntopo("")
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.sculpting import enable_dyntopo
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            enable_dyntopo("Cube")
+
+
 class TestBlenderErrorHandling:
     def test_blender_error_raises_runtime(self, mock_conn):
         from blend_ai.tools.sculpting import enter_sculpt_mode

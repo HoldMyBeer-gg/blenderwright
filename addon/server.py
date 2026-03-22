@@ -12,6 +12,7 @@ from typing import Any
 
 from . import dispatcher
 from . import thread_safety
+from .render_guard import render_guard
 
 
 class BlenderServer:
@@ -103,10 +104,19 @@ class BlenderServer:
                     command = message.get("command", "")
                     params = message.get("params", {})
 
-                    # Execute on main thread via thread_safety
-                    response = thread_safety.execute_on_main_thread(
-                        dispatcher.dispatch, command, params
-                    )
+                    # Check if Blender is rendering — main thread is blocked
+                    if render_guard.is_rendering:
+                        response = {
+                            "status": "busy",
+                            "result": "Blender is currently rendering. "
+                                      "Command will not be processed until "
+                                      "the render completes.",
+                        }
+                    else:
+                        # Execute on main thread via thread_safety
+                        response = thread_safety.execute_on_main_thread(
+                            dispatcher.dispatch, command, params
+                        )
 
                     response_data = json.dumps(response).encode("utf-8")
                     self._send_message(client, response_data)

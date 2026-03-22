@@ -13,6 +13,7 @@ from blend_ai.validators import (
 
 ALLOWED_CURVE_TYPES = {"BEZIER", "NURBS", "PATH"}
 ALLOWED_HANDLE_TYPES = {"AUTO", "VECTOR", "ALIGNED", "FREE"}
+ALLOWED_CURVE_HANDLE_TYPES = {"AUTO", "VECTOR", "ALIGNED", "FREE_ALIGN"}
 ALLOWED_FILL_MODES = {"FULL", "BACK", "FRONT", "HALF", "NONE"}
 ALLOWED_TWIST_MODES = {"Z_UP", "MINIMUM", "TANGENT"}
 ALLOWED_CURVE_PROPERTIES = {
@@ -194,6 +195,123 @@ def create_text(
         "location": list(location),
         "size": size,
         "font": font,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def switch_curve_direction(curve_name: str) -> dict[str, Any]:
+    """Switch the direction of a curve's splines.
+
+    Args:
+        curve_name: Name of the curve object.
+
+    Returns:
+        Dict with confirmation of direction switch.
+    """
+    curve_name = validate_object_name(curve_name)
+
+    conn = get_connection()
+    response = conn.send_command("switch_curve_direction", {
+        "curve_name": curve_name,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def set_handle_type(
+    curve_name: str,
+    handle_type: str = "AUTO",
+) -> dict[str, Any]:
+    """Set the handle type for all control points of a curve.
+
+    Args:
+        curve_name: Name of the curve object.
+        handle_type: Handle type - AUTO, VECTOR, ALIGNED, or FREE_ALIGN.
+
+    Returns:
+        Dict with confirmation of handle type change.
+    """
+    curve_name = validate_object_name(curve_name)
+    validate_enum(handle_type, ALLOWED_CURVE_HANDLE_TYPES, name="handle_type")
+
+    conn = get_connection()
+    response = conn.send_command("set_handle_type", {
+        "curve_name": curve_name,
+        "handle_type": handle_type,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def toggle_cyclic(curve_name: str) -> dict[str, Any]:
+    """Toggle the cyclic (closed loop) state of a curve.
+
+    Args:
+        curve_name: Name of the curve object.
+
+    Returns:
+        Dict with confirmation of cyclic toggle.
+    """
+    curve_name = validate_object_name(curve_name)
+
+    conn = get_connection()
+    response = conn.send_command("toggle_cyclic", {
+        "curve_name": curve_name,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def subdivide_curve(
+    curve_name: str,
+    number_cuts: int = 1,
+) -> dict[str, Any]:
+    """Subdivide a curve by adding control points between existing ones.
+
+    Args:
+        curve_name: Name of the curve object.
+        number_cuts: Number of cuts to make (1-100).
+
+    Returns:
+        Dict with confirmation of subdivision.
+    """
+    curve_name = validate_object_name(curve_name)
+    validate_numeric_range(number_cuts, min_val=1, max_val=100, name="number_cuts")
+
+    conn = get_connection()
+    response = conn.send_command("subdivide_curve", {
+        "curve_name": curve_name,
+        "number_cuts": number_cuts,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def smooth_curve(curve_name: str) -> dict[str, Any]:
+    """Smooth the control points of a curve.
+
+    Args:
+        curve_name: Name of the curve object.
+
+    Returns:
+        Dict with confirmation of smoothing.
+    """
+    curve_name = validate_object_name(curve_name)
+
+    conn = get_connection()
+    response = conn.send_command("smooth_curve", {
+        "curve_name": curve_name,
     })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")

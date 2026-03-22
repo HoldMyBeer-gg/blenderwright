@@ -6,6 +6,7 @@ from blend_ai.server import mcp, get_connection
 from blend_ai.validators import (
     validate_object_name,
     validate_enum,
+    validate_numeric_range,
     validate_vector,
     ValidationError,
 )
@@ -42,6 +43,15 @@ ALLOWED_TYPE_FILTERS = {
     "SPEAKER",
     "LIGHT_PROBE",
     "VOLUME",
+}
+
+ALLOWED_ORIGIN_TYPES = {
+    "ORIGIN_GEOMETRY", "ORIGIN_CURSOR", "ORIGIN_CENTER_OF_MASS",
+    "ORIGIN_CENTER_OF_VOLUME", "GEOMETRY_ORIGIN",
+}
+
+ALLOWED_CONVERT_TARGETS = {
+    "MESH", "CURVE", "SURFACE", "META", "FONT", "CURVES", "POINTCLOUD", "GPENCIL",
 }
 
 
@@ -257,7 +267,14 @@ def parent_objects(child: str, parent: str) -> dict[str, Any]:
 
 @mcp.tool()
 def join_objects(names: list[str]) -> dict[str, Any]:
-    """Join multiple mesh objects into one.
+    """Join multiple mesh objects into one (keeps all geometry as-is).
+
+    This merges objects into a single datablock without modifying geometry.
+    The meshes remain separate inside the object (no boolean merge).
+
+    TIP: If you want to truly fuse overlapping meshes into one solid shape,
+    use booltool_auto_union instead — it performs a boolean union that merges
+    the geometry and removes internal faces.
 
     Args:
         names: List of object names to join. The first name becomes the active object.
@@ -270,6 +287,109 @@ def join_objects(names: list[str]) -> dict[str, Any]:
     validated_names = [validate_object_name(n) for n in names]
     conn = get_connection()
     response = conn.send_command("join_objects", {"names": validated_names})
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def set_origin(object_name: str, type: str = "ORIGIN_GEOMETRY") -> dict[str, Any]:
+    """Set the origin point of an object.
+
+    Args:
+        object_name: Name of the object.
+        type: Origin type. One of: ORIGIN_GEOMETRY, ORIGIN_CURSOR,
+              ORIGIN_CENTER_OF_MASS, ORIGIN_CENTER_OF_VOLUME, GEOMETRY_ORIGIN.
+
+    Returns:
+        Confirmation dict.
+    """
+    object_name = validate_object_name(object_name)
+    validate_enum(type, ALLOWED_ORIGIN_TYPES, name="type")
+
+    conn = get_connection()
+    response = conn.send_command("set_origin", {
+        "object_name": object_name,
+        "type": type,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def convert_object(object_name: str, target: str = "MESH") -> dict[str, Any]:
+    """Convert an object to a different type.
+
+    Args:
+        object_name: Name of the object to convert.
+        target: Target type. One of: MESH, CURVE, SURFACE, META, FONT,
+                CURVES, POINTCLOUD, GPENCIL.
+
+    Returns:
+        Confirmation dict.
+    """
+    object_name = validate_object_name(object_name)
+    validate_enum(target, ALLOWED_CONVERT_TARGETS, name="target")
+
+    conn = get_connection()
+    response = conn.send_command("convert_object", {
+        "object_name": object_name,
+        "target": target,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def shade_auto_smooth(object_name: str, angle: float = 0.523599) -> dict[str, Any]:
+    """Apply angle-based auto-smooth shading to an object.
+
+    Smooths faces only where the angle between adjacent face normals is
+    below the given threshold, giving clean results on hard-surface models.
+
+    Args:
+        object_name: Name of the mesh object.
+        angle: Auto-smooth angle threshold in radians (0.0 to pi). Defaults
+               to ~30 degrees (0.523599 rad).
+
+    Returns:
+        Confirmation dict.
+    """
+    object_name = validate_object_name(object_name)
+    validate_numeric_range(angle, min_val=0.0, max_val=3.14159, name="angle")
+
+    conn = get_connection()
+    response = conn.send_command("shade_auto_smooth", {
+        "object_name": object_name,
+        "angle": angle,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def make_single_user(object_name: str, object: bool = True, data: bool = True) -> dict[str, Any]:
+    """Make an object's data single-user (unlink shared datablocks).
+
+    Args:
+        object_name: Name of the object.
+        object: Make the object single-user. Defaults to True.
+        data: Make the object data (e.g., mesh) single-user. Defaults to True.
+
+    Returns:
+        Confirmation dict.
+    """
+    object_name = validate_object_name(object_name)
+
+    conn = get_connection()
+    response = conn.send_command("make_single_user", {
+        "object_name": object_name,
+        "object": object,
+        "data": data,
+    })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")

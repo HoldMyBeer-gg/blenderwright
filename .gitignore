@@ -1,4 +1,6 @@
-blend_ai_addon.zip
+blend-ai-v*.zip
+blend_ai_addon*.zip
+.DS_Store
 __pycache__/
 *.py[cod]
 *$py.class

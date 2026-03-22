@@ -2,17 +2,20 @@
 
 The most intuitive and efficient MCP Server for Blender. Control Blender entirely through AI assistants like Claude — create 3D models, set up scenes, animate, render, and more, all through natural language.
 
-<small>This was created via Claude Code using the Haiki model and 20 random reference images. It took 5 minutes:</small>
-![blend-ai screenshot](screenshot.png)
+<small>This was created via Claude Code using the Haiku model and 20 random reference images. It took 5 minutes:</small>
+
+![blend-ai screenshot](./screenshot.png)
 
 ## Key Features
 
-- **108 tools** covering every major Blender domain: modeling, materials, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, collections, file I/O, and viewport control
-- **No arbitrary code execution** — every operation is an explicit, validated, parameterized tool. No `exec()`, no `eval()`, no script injection vectors.
+- **161 tools** covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, grease pencil, collections, file I/O, Bool Tool, and viewport control
+- **Render-aware** — automatically detects when Blender is rendering and queues commands instead of hanging
+- **Zero telemetry** — no usage tracking, no analytics, no data collection. Everything runs locally.
 - **Zero-dependency Blender addon** — the addon uses only Python stdlib + `bpy`. Nothing to pip install inside Blender's bundled Python.
-- **Thread-safe architecture** — background TCP server with queue-based main-thread execution, respecting Blender's single-threaded API constraint.
-- **MCP resources** — browse scene objects, materials, and scene info as structured context.
-- **Workflow prompts** — pre-built prompt templates for common tasks (product shots, character base meshes, scene cleanup, turntable animations).
+- **Thread-safe architecture** — background TCP server with queue-based main-thread execution, respecting Blender's single-threaded API constraint
+- **MCP resources** — browse scene objects, materials, and scene info as structured context
+- **Workflow prompts** — pre-built prompt templates for common tasks (product shots, character base meshes, scene cleanup, turntable animations)
+- **Best practices prompt** — guides AI clients toward preferred tools (e.g., Bool Tool auto ops over manual boolean modifiers)
 
 ## Quickstart
 
@@ -26,12 +29,16 @@ uv pip install -e .
 
 ### 2. Install the Blender addon
 
-1. Open Blender (5.0+)
-2. Go to **Edit > Preferences > Add-ons > Install...**
-3. Select the `addon/` folder from this repo (or zip it first)
-4. Enable **"blend-ai"** in the addon list
+1. Download the latest addon zip from [GitHub Releases](https://github.com/jabberwock/blend-ai/releases)
+2. Open Blender (4.0+)
+3. Go to **Edit > Preferences > Add-ons > Install from Disk...**
+4. Select the downloaded `.zip` file
+5. Enable **"blend-ai"** in the addon list
 
-Alternatively, symlink for development:
+<details>
+<summary><strong>Developer install (symlink)</strong></summary>
+
+If you're developing on blend-ai, symlink the addon folder instead:
 
 ```bash
 # macOS
@@ -46,15 +53,16 @@ mklink /D "%APPDATA%\Blender Foundation\Blender\5.0\scripts\addons\blend_ai" "%c
 
 Then enable the addon in Blender preferences.
 
+</details>
+
 ### 3. Start the server in Blender
 
 In Blender's 3D Viewport, open the **N-panel** (press `N`), find the **blend-ai** tab, and click **Start Server**. The addon listens on `127.0.0.1:9876`.
 
 ### 4. Connect your AI assistant
 
-This repo includes an [`mcp.json`](mcp.json) config file you can use directly or copy into your client's configuration.
-
-## Claude Code Integration
+<details>
+<summary><strong>Claude Code</strong></summary>
 
 ```bash
 claude mcp add blend-ai -- uv run --directory /path/to/blend-ai blend-ai
@@ -62,7 +70,7 @@ claude mcp add blend-ai -- uv run --directory /path/to/blend-ai blend-ai
 
 Replace `/path/to/blend-ai` with the actual path to your clone. Make sure Blender is running with the addon server started before using the tools.
 
-### Usage
+**Usage:**
 
 ```
 $ claude
@@ -74,7 +82,10 @@ $ claude
 > Set up a turntable animation and render it to /tmp/turntable/
 ```
 
-## Claude Desktop Integration
+</details>
+
+<details>
+<summary><strong>Claude Desktop</strong></summary>
 
 Add blend-ai to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
@@ -93,7 +104,10 @@ Replace `/path/to/blend-ai` with the actual path to your clone. Or copy the cont
 
 Restart Claude Desktop. The Blender tools will appear in the tool list.
 
-## Other MCP Clients
+</details>
+
+<details>
+<summary><strong>Other MCP Clients</strong></summary>
 
 blend-ai is a standard MCP server using stdio transport. Any MCP-compatible client can connect using the [`mcp.json`](mcp.json) config or by running the server directly:
 
@@ -104,57 +118,94 @@ uv run --directory /path/to/blend-ai blend-ai
 
 The server communicates over stdin/stdout using the MCP protocol. It connects to Blender's addon over TCP on `127.0.0.1:9876`.
 
+</details>
+
+## Tool Domains
+
+<details>
+<summary><strong>All 161 tools across 24 modules</strong></summary>
+
+| Domain | Tools | Highlights |
+|--------|-------|-----------|
+| Scene | 5 | Get scene info, set frame range, manage scenes |
+| Objects | 14 | Create primitives, duplicate, parent, join, visibility, origin, convert, auto-smooth |
+| Transforms | 6 | Position, rotation (euler/quat), scale, apply, snap |
+| Modeling | 13 | Modifiers, booleans, subdivide, extrude, bevel, loop cut, bridge edge loops |
+| Mesh Editing | 16 | Inset, fill, grid fill, mark seam/sharp, normals, dissolve, knife project, spin, crease |
+| Bool Tool | 4 | Auto union, difference, intersect, slice (via Blender's Bool Tool addon) |
+| Materials | 15 | Principled BSDF, textures, blend modes, shader node graph (add/connect/remove nodes) |
+| Lighting | 7 | Point/sun/spot/area lights, HDRIs, light rigs, shadows |
+| Camera | 6 | Create, aim, DOF, viewport capture, active camera |
+| Animation | 8 | Keyframes, interpolation, frame range, follow path |
+| Rendering | 6 | Engine, resolution, samples, output format, render |
+| Curves | 10 | Bezier/NURBS/path, 3D text, convert, reverse, handle types, cyclic, subdivide |
+| Sculpting | 8 | Brushes, remesh, multires, symmetry, dynamic topology |
+| UV Mapping | 4 | Smart project, unwrap, projection, pack islands |
+| Physics | 9 | Rigid body, cloth, fluid, particles (velocity, rendering, delete), bake |
+| Geometry Nodes | 5 | Create node trees, add/connect nodes, set inputs |
+| Armature | 6 | Bones, constraints, auto weights, pose |
+| Grease Pencil | 5 | Create GP objects, layers, strokes with pressure/strength |
+| Collections | 4 | Create, move objects, visibility, delete |
+| File I/O | 5 | Import/export (FBX, OBJ, glTF, USD, STL...), save/open |
+| Viewport | 3 | Shading mode, overlays, focus on object |
+| Screenshot | 1 | Render viewport to file |
+| Code Exec | 1 | Execute Python code in Blender |
+
+</details>
+
 ## Architecture
 
 ```
 AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--bpy--> Blender
 ```
 
+<details>
+<summary><strong>How it works</strong></summary>
+
 - **MCP Server** (`src/blend_ai/`): Python process using the `mcp` SDK. Exposes tools, resources, and prompts over stdio. Validates all inputs before forwarding to Blender.
 - **Blender Addon** (`addon/`): Runs a TCP socket server inside Blender on a background thread. Commands are queued and executed on the main thread via `bpy.app.timers` to respect Blender's threading model.
+- **Render Guard**: Tracks render state via `bpy.app.handlers`. During renders, the server immediately returns a "busy" status instead of queueing commands that would time out. The MCP client auto-retries with backoff until the render completes.
 - **Protocol**: Length-prefixed JSON messages over TCP. Each message is a 4-byte big-endian length header followed by a UTF-8 JSON payload.
 
-## Tool Domains
+</details>
 
-| Domain | Tools | Examples |
-|--------|-------|---------|
-| Scene | 5 | Get scene info, set frame range, manage scenes |
-| Objects | 10 | Create primitives, duplicate, parent, join, visibility |
-| Transforms | 6 | Position, rotation (euler/quat), scale, apply, snap |
-| Modeling | 12 | Modifiers, booleans, subdivide, extrude, bevel, loop cut |
-| Materials | 10 | Principled BSDF, textures, blend modes, color, properties |
-| Lighting | 7 | Point/sun/spot/area lights, HDRIs, light rigs, shadows |
-| Camera | 6 | Create, aim, DOF, viewport capture, active camera |
-| Animation | 8 | Keyframes, interpolation, frame range, follow path |
-| Rendering | 6 | Engine, resolution, samples, output format, render |
-| Curves | 5 | Bezier/NURBS/path, 3D text, convert to mesh |
-| Sculpting | 6 | Brushes, remesh, multires, mode switching |
-| UV Mapping | 4 | Smart project, unwrap, projection, pack islands |
-| Physics | 6 | Rigid body, cloth, fluid, particles, bake |
-| Geometry Nodes | 5 | Create node trees, add/connect nodes, set inputs |
-| Armature | 6 | Bones, constraints, auto weights, pose |
-| Collections | 4 | Create, move objects, visibility, delete |
-| File I/O | 5 | Import/export (FBX, OBJ, glTF, USD, STL...), save/open |
-| Viewport | 3 | Shading mode, overlays, focus on object |
+## Privacy & Security
 
-## Security
+<details>
+<summary><strong>Privacy</strong></summary>
+
+- **Zero telemetry** — blend-ai collects no usage data, sends no analytics, and makes no network requests beyond the local TCP connection to Blender on `127.0.0.1:9876`.
+- **Fully local** — all communication stays on your machine. No cloud services, no external APIs, no phone-home behavior.
+- **Open source** — the entire codebase is auditable. What you see is what runs.
+
+</details>
+
+<details>
+<summary><strong>Security</strong></summary>
 
 - **Localhost only**: The TCP socket binds to `127.0.0.1` — never exposed to the network.
-- **No arbitrary code execution**: Every tool is a parameterized operation. There is no "run Python code" tool.
 - **Input validation**: All inputs pass through validators before reaching Blender — name sanitization, path traversal prevention, numeric range checks, enum allowlists.
 - **File safety**: Import operations disable `use_scripts_auto_execute` to prevent script injection from imported files. File extensions are checked against allowlists.
 - **Command allowlist**: The addon dispatcher only processes explicitly registered commands. Unknown commands are rejected.
+- **Shader node allowlist**: Only ~65 known shader node types can be created — prevents arbitrary type injection.
+
+</details>
 
 ## Limitations
 
+<details>
+<summary><strong>Known limitations</strong></summary>
+
 - **Blender must be running**: The MCP server communicates with Blender over TCP. Blender must be open with the addon enabled and server started.
 - **Single connection**: The addon accepts one client connection at a time. Multiple AI assistants cannot control the same Blender instance simultaneously.
-- **Edit mode operations are coarse**: Tools like extrude, bevel, and loop cut operate on all geometry (all faces/edges). Fine-grained vertex/face selection is not yet exposed.
+- **Edit mode operations are coarse**: Most mesh editing tools operate on all geometry (all faces/edges). Fine-grained vertex/face selection is not yet exposed.
 - **No undo integration**: Operations are executed directly via `bpy`. They appear in Blender's undo history individually but there's no MCP-level undo/redo.
 - **Geometry Nodes**: Creating complex node trees requires multiple sequential tool calls. There's no "create full node tree from description" tool.
-- **Sculpting**: Sculpt brush strokes cannot be simulated programmatically. Sculpt tools are limited to mode switching, brush settings, and remeshing.
+- **Sculpting**: Sculpt brush strokes cannot be simulated programmatically. Sculpt tools are limited to mode switching, brush settings, symmetry, dyntopo, and remeshing.
 - **Viewport capture**: Requires a 3D viewport to be visible. Headless Blender may not support viewport screenshots.
 - **No real-time feedback**: The MCP protocol is request/response. There's no streaming of viewport updates or progress bars.
+
+</details>
 
 ## Development
 
@@ -162,11 +213,11 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 # Install with dev dependencies
 uv pip install -e ".[dev]"
 
-# Run tests (654 tests)
-pytest
+# Run tests (882 tests)
+uv run --extra dev pytest
 
 # Run tests with coverage
-pytest --cov=blend_ai
+uv run --extra dev pytest --cov=blend_ai
 
 # Lint
 ruff check src/ tests/
@@ -175,15 +226,16 @@ ruff check src/ tests/
 ruff format src/ tests/
 ```
 
-### Project Structure
+<details>
+<summary><strong>Project structure</strong></summary>
 
 ```
 blend-ai/
 ├── src/blend_ai/          # MCP server
 │   ├── server.py           # FastMCP entry point
-│   ├── connection.py       # TCP client to Blender
+│   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
-│   ├── tools/              # 18 tool modules (~108 tools)
+│   ├── tools/              # 24 tool modules (161 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # Workflow prompt templates
 ├── addon/                  # Blender addon (zero external deps)
@@ -191,10 +243,13 @@ blend-ai/
 │   ├── server.py           # TCP socket server
 │   ├── dispatcher.py       # Command routing + allowlist
 │   ├── thread_safety.py    # Main-thread execution queue
+│   ├── render_guard.py     # Render state tracking
 │   ├── ui_panel.py         # N-panel UI (start/stop)
-│   └── handlers/           # 18 handler modules
-└── tests/                  # 654 unit tests
+│   └── handlers/           # 24 handler modules
+└── tests/                  # 882 unit tests
 ```
+
+</details>
 
 ## License
 

@@ -1,10 +1,14 @@
 """TCP socket client for communicating with the Blender addon."""
 
 import json
+import logging
 import socket
 import struct
 import threading
+import time
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 class BlenderConnectionError(Exception):
@@ -22,6 +26,8 @@ class BlenderConnection:
     DEFAULT_HOST = "127.0.0.1"
     DEFAULT_PORT = 9876
     DEFAULT_TIMEOUT = 30.0
+    BUSY_RETRY_DELAY = 2.0  # seconds between retries when Blender is rendering
+    BUSY_MAX_RETRIES = 150  # ~5 minutes of waiting at 2s intervals
 
     def __init__(self, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, timeout: float = DEFAULT_TIMEOUT):
         self._host = host
@@ -131,6 +137,37 @@ class BlenderConnection:
 
             if not isinstance(response, dict):
                 raise BlenderConnectionError("Invalid response format from Blender")
+
+            # If Blender is rendering, wait and retry automatically
+            if response.get("status") == "busy":
+                for retry in range(self.BUSY_MAX_RETRIES):
+                    logger.info(
+                        "Blender is rendering, waiting %.1fs before retry %d/%d for '%s'",
+                        self.BUSY_RETRY_DELAY, retry + 1, self.BUSY_MAX_RETRIES, command,
+                    )
+                    time.sleep(self.BUSY_RETRY_DELAY)
+
+                    try:
+                        payload = json.dumps(message).encode("utf-8")
+                        self._send_raw(payload)
+                        response_data = self._recv_raw()
+                        response = json.loads(response_data.decode("utf-8"))
+                    except (OSError, json.JSONDecodeError, BlenderConnectionError):
+                        self.disconnect()
+                        self.connect()
+                        continue
+
+                    if not isinstance(response, dict):
+                        raise BlenderConnectionError("Invalid response format from Blender")
+
+                    if response.get("status") != "busy":
+                        return response
+
+                raise BlenderConnectionError(
+                    f"Blender was busy rendering for too long. "
+                    f"Command '{command}' was not processed after "
+                    f"{self.BUSY_MAX_RETRIES * self.BUSY_RETRY_DELAY:.0f}s of waiting."
+                )
 
             return response
 

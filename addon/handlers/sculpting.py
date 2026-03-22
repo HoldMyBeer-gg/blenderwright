@@ -220,6 +220,71 @@ def handle_add_multires_modifier(params: dict) -> dict:
         raise RuntimeError(f"Failed to add multires modifier: {e}")
 
 
+def handle_set_sculpt_symmetry(params: dict) -> dict:
+    """Set sculpt symmetry axes."""
+    try:
+        sculpt = bpy.context.tool_settings.sculpt
+        if sculpt is None:
+            raise ValueError("Sculpt settings not available. Enter sculpt mode first.")
+
+        sculpt.use_symmetry_x = params.get("use_x", True)
+        sculpt.use_symmetry_y = params.get("use_y", False)
+        sculpt.use_symmetry_z = params.get("use_z", False)
+
+        return {
+            "use_x": sculpt.use_symmetry_x,
+            "use_y": sculpt.use_symmetry_y,
+            "use_z": sculpt.use_symmetry_z,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to set sculpt symmetry: {e}")
+
+
+def handle_enable_dyntopo(params: dict) -> dict:
+    """Enable dynamic topology for sculpting."""
+    object_name = params.get("object_name")
+    detail_size = params.get("detail_size", 12.0)
+    detail_mode = params.get("detail_mode", "RELATIVE")
+
+    try:
+        obj = bpy.data.objects.get(object_name)
+        if obj is None:
+            raise ValueError(f"Object '{object_name}' not found")
+        if obj.type != "MESH":
+            raise ValueError(f"Object '{object_name}' is not a mesh")
+
+        # Select and make active
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+
+        # Enter sculpt mode if not already in it
+        if obj.mode != "SCULPT":
+            bpy.ops.object.mode_set(mode="SCULPT")
+
+        # Enable dyntopo if not already active
+        if not bpy.context.sculpt_object.use_dynamic_topology_sculpting:
+            bpy.ops.sculpt.dynamic_topology_toggle()
+
+        bpy.context.tool_settings.sculpt.detail_size = float(detail_size)
+        bpy.context.tool_settings.sculpt.detail_type_method = detail_mode
+
+        return {
+            "object_name": obj.name,
+            "dyntopo": True,
+            "detail_size": detail_size,
+            "detail_mode": detail_mode,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to enable dyntopo: {e}")
+
+
 def register():
     """Register sculpting handlers with the dispatcher."""
     dispatcher.register_handler("enter_sculpt_mode", handle_enter_sculpt_mode)
@@ -228,3 +293,5 @@ def register():
     dispatcher.register_handler("set_brush_property", handle_set_brush_property)
     dispatcher.register_handler("remesh", handle_remesh)
     dispatcher.register_handler("add_multires_modifier", handle_add_multires_modifier)
+    dispatcher.register_handler("set_sculpt_symmetry", handle_set_sculpt_symmetry)
+    dispatcher.register_handler("enable_dyntopo", handle_enable_dyntopo)

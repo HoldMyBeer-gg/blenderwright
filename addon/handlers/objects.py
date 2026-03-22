@@ -325,6 +325,112 @@ def handle_join_objects(params: dict) -> dict:
         raise RuntimeError(f"Failed to join objects: {e}")
 
 
+def _select_only(obj):
+    """Deselect all and select only the given object, making it active."""
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+
+def _get_object(name):
+    """Get a Blender object by name, raising if not found."""
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        raise ValueError(f"Object '{name}' not found")
+    return obj
+
+
+def handle_set_origin(params: dict) -> dict:
+    """Set the origin point of an object."""
+    object_name = params.get("object_name")
+    origin_type = params.get("type", "ORIGIN_GEOMETRY")
+
+    try:
+        obj = _get_object(object_name)
+        _select_only(obj)
+        bpy.ops.object.origin_set(type=origin_type)
+
+        return {
+            "name": obj.name,
+            "type": origin_type,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to set origin for '{object_name}': {e}")
+
+
+def handle_convert_object(params: dict) -> dict:
+    """Convert an object to a different type."""
+    object_name = params.get("object_name")
+    target = params.get("target", "MESH")
+
+    try:
+        obj = _get_object(object_name)
+        _select_only(obj)
+        bpy.ops.object.convert(target=target)
+
+        result_obj = bpy.context.active_object
+        return {
+            "name": result_obj.name,
+            "type": result_obj.type,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to convert object '{object_name}': {e}")
+
+
+def handle_shade_auto_smooth(params: dict) -> dict:
+    """Apply angle-based auto-smooth shading to an object."""
+    object_name = params.get("object_name")
+    angle = params.get("angle", 0.523599)
+
+    try:
+        obj = _get_object(object_name)
+        _select_only(obj)
+
+        if bpy.app.version >= (4, 1, 0):
+            bpy.ops.object.shade_smooth_by_angle(angle=angle)
+        else:
+            bpy.ops.object.shade_smooth()
+            obj.data.use_auto_smooth = True
+            obj.data.auto_smooth_angle = angle
+
+        return {
+            "name": obj.name,
+            "angle": angle,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to shade auto smooth '{object_name}': {e}")
+
+
+def handle_make_single_user(params: dict) -> dict:
+    """Make an object's data single-user."""
+    object_name = params.get("object_name")
+    obj_flag = params.get("object", True)
+    data_flag = params.get("data", True)
+
+    try:
+        obj = _get_object(object_name)
+        _select_only(obj)
+        bpy.ops.object.make_single_user(object=obj_flag, obdata=data_flag)
+
+        return {
+            "name": obj.name,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to make single user for '{object_name}': {e}")
+
+
 def register():
     """Register object handlers with the dispatcher."""
     dispatcher.register_handler("create_object", handle_create_object)
@@ -337,3 +443,7 @@ def register():
     dispatcher.register_handler("set_object_visibility", handle_set_object_visibility)
     dispatcher.register_handler("parent_objects", handle_parent_objects)
     dispatcher.register_handler("join_objects", handle_join_objects)
+    dispatcher.register_handler("set_origin", handle_set_origin)
+    dispatcher.register_handler("convert_object", handle_convert_object)
+    dispatcher.register_handler("shade_auto_smooth", handle_shade_auto_smooth)
+    dispatcher.register_handler("make_single_user", handle_make_single_user)

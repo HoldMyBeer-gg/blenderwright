@@ -15,6 +15,11 @@ from blend_ai.tools.materials import (
     list_materials,
     delete_material,
     duplicate_material,
+    add_shader_node,
+    connect_shader_nodes,
+    disconnect_shader_nodes,
+    remove_shader_node,
+    get_node_tree,
 )
 
 
@@ -392,3 +397,187 @@ class TestDuplicateMaterial:
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
             duplicate_material("Mat", "Mat.001")
+
+
+# ---------------------------------------------------------------------------
+# add_shader_node
+# ---------------------------------------------------------------------------
+
+
+class TestAddShaderNode:
+    def test_valid(self, mock_conn):
+        add_shader_node("Mat", "ShaderNodeBsdfPrincipled", [100, 200])
+        mock_conn.send_command.assert_called_once_with(
+            "add_shader_node",
+            {
+                "material_name": "Mat",
+                "node_type": "ShaderNodeBsdfPrincipled",
+                "location": (100.0, 200.0),
+            },
+        )
+
+    def test_default_location(self, mock_conn):
+        add_shader_node("Mat", "ShaderNodeMath")
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["location"] == (0.0, 0.0)
+
+    def test_invalid_node_type_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            add_shader_node("Mat", "FakeNodeType")
+
+    def test_invalid_location_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            add_shader_node("Mat", "ShaderNodeMath", [1, 2, 3])
+
+    def test_empty_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            add_shader_node("", "ShaderNodeMath")
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            add_shader_node("Mat", "ShaderNodeMath")
+
+
+# ---------------------------------------------------------------------------
+# connect_shader_nodes
+# ---------------------------------------------------------------------------
+
+
+class TestConnectShaderNodes:
+    def test_valid(self, mock_conn):
+        connect_shader_nodes("Mat", "NodeA", "Color", "NodeB", "Base Color")
+        mock_conn.send_command.assert_called_once_with(
+            "connect_shader_nodes",
+            {
+                "material_name": "Mat",
+                "from_node": "NodeA",
+                "from_socket": "Color",
+                "to_node": "NodeB",
+                "to_socket": "Base Color",
+            },
+        )
+
+    def test_empty_material_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            connect_shader_nodes("", "NodeA", "Color", "NodeB", "Base Color")
+
+    def test_empty_from_node_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            connect_shader_nodes("Mat", "", "Color", "NodeB", "Base Color")
+
+    def test_empty_from_socket_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            connect_shader_nodes("Mat", "NodeA", "", "NodeB", "Base Color")
+
+    def test_empty_to_socket_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            connect_shader_nodes("Mat", "NodeA", "Color", "NodeB", "")
+
+    def test_non_string_socket_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            connect_shader_nodes("Mat", "NodeA", 123, "NodeB", "Base Color")
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            connect_shader_nodes("Mat", "NodeA", "Color", "NodeB", "Base Color")
+
+
+# ---------------------------------------------------------------------------
+# disconnect_shader_nodes
+# ---------------------------------------------------------------------------
+
+
+class TestDisconnectShaderNodes:
+    def test_valid_input(self, mock_conn):
+        disconnect_shader_nodes("Mat", "NodeA", "Base Color", True)
+        mock_conn.send_command.assert_called_once_with(
+            "disconnect_shader_nodes",
+            {
+                "material_name": "Mat",
+                "node_name": "NodeA",
+                "socket_name": "Base Color",
+                "is_input": True,
+            },
+        )
+
+    def test_valid_output(self, mock_conn):
+        disconnect_shader_nodes("Mat", "NodeA", "Color", False)
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["is_input"] is False
+
+    def test_empty_material_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            disconnect_shader_nodes("", "NodeA", "Base Color")
+
+    def test_empty_node_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            disconnect_shader_nodes("Mat", "", "Base Color")
+
+    def test_empty_socket_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            disconnect_shader_nodes("Mat", "NodeA", "")
+
+    def test_non_string_socket_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            disconnect_shader_nodes("Mat", "NodeA", 42)
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            disconnect_shader_nodes("Mat", "NodeA", "Base Color")
+
+
+# ---------------------------------------------------------------------------
+# remove_shader_node
+# ---------------------------------------------------------------------------
+
+
+class TestRemoveShaderNode:
+    def test_valid(self, mock_conn):
+        remove_shader_node("Mat", "OldNode")
+        mock_conn.send_command.assert_called_once_with(
+            "remove_shader_node",
+            {"material_name": "Mat", "node_name": "OldNode"},
+        )
+
+    def test_empty_material_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            remove_shader_node("", "OldNode")
+
+    def test_empty_node_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            remove_shader_node("Mat", "")
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            remove_shader_node("Mat", "OldNode")
+
+
+# ---------------------------------------------------------------------------
+# get_node_tree
+# ---------------------------------------------------------------------------
+
+
+class TestGetNodeTree:
+    def test_valid(self, mock_conn):
+        mock_conn.send_command.return_value = {
+            "status": "ok",
+            "result": {"nodes": [], "links": []},
+        }
+        result = get_node_tree("Mat")
+        mock_conn.send_command.assert_called_once_with(
+            "get_node_tree", {"material_name": "Mat"}
+        )
+        assert result == {"nodes": [], "links": []}
+
+    def test_empty_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            get_node_tree("")
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            get_node_tree("Mat")

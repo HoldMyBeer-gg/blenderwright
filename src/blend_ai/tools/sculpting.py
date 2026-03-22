@@ -17,6 +17,7 @@ ALLOWED_BRUSH_TYPES = {
 }
 ALLOWED_BRUSH_PROPERTIES = {"size", "strength", "auto_smooth_factor", "use_frontface"}
 ALLOWED_REMESH_MODES = {"VOXEL", "SHARP", "SMOOTH", "BLOCKS"}
+ALLOWED_DYNTOPO_DETAIL_MODES = {"RELATIVE", "CONSTANT", "BRUSH", "MANUAL"}
 
 
 @mcp.tool()
@@ -159,6 +160,68 @@ def add_multires_modifier(
     response = conn.send_command("add_multires_modifier", {
         "object_name": object_name,
         "levels": int(levels),
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def set_sculpt_symmetry(
+    use_x: bool = True, use_y: bool = False, use_z: bool = False
+) -> dict[str, Any]:
+    """Set sculpt symmetry axes.
+
+    Enables symmetrical sculpting across the specified axes. X-axis symmetry
+    is the most common for character modeling.
+
+    Args:
+        use_x: Enable X-axis symmetry. Defaults to True.
+        use_y: Enable Y-axis symmetry. Defaults to False.
+        use_z: Enable Z-axis symmetry. Defaults to False.
+
+    Returns:
+        Confirmation dict with symmetry settings.
+    """
+    conn = get_connection()
+    response = conn.send_command("set_sculpt_symmetry", {
+        "use_x": use_x,
+        "use_y": use_y,
+        "use_z": use_z,
+    })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def enable_dyntopo(
+    object_name: str,
+    detail_size: float = 12.0,
+    detail_mode: str = "RELATIVE",
+) -> dict[str, Any]:
+    """Enable dynamic topology (dyntopo) for adaptive sculpting resolution.
+
+    Dyntopo adds and removes mesh detail dynamically as you sculpt,
+    allowing unlimited detail where needed without uniform subdivision.
+
+    Args:
+        object_name: Name of the mesh object (must be in sculpt mode or will enter it).
+        detail_size: Detail level (smaller = more detail). Range: 0.1-500.0.
+        detail_mode: Detail mode. One of: RELATIVE, CONSTANT, BRUSH, MANUAL.
+
+    Returns:
+        Confirmation dict with dyntopo settings.
+    """
+    object_name = validate_object_name(object_name)
+    validate_numeric_range(detail_size, min_val=0.1, max_val=500.0, name="detail_size")
+    validate_enum(detail_mode, ALLOWED_DYNTOPO_DETAIL_MODES, name="detail_mode")
+
+    conn = get_connection()
+    response = conn.send_command("enable_dyntopo", {
+        "object_name": object_name,
+        "detail_size": detail_size,
+        "detail_mode": detail_mode,
     })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")

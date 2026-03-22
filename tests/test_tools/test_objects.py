@@ -15,6 +15,10 @@ from blend_ai.tools.objects import (
     set_object_visibility,
     parent_objects,
     join_objects,
+    set_origin,
+    convert_object,
+    shade_auto_smooth,
+    make_single_user,
 )
 
 
@@ -308,3 +312,139 @@ class TestJoinObjects:
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
             join_objects(["Cube", "Sphere"])
+
+
+# ---------------------------------------------------------------------------
+# set_origin
+# ---------------------------------------------------------------------------
+
+
+class TestSetOrigin:
+    def test_valid(self, mock_conn):
+        set_origin("Cube")
+        mock_conn.send_command.assert_called_once_with(
+            "set_origin",
+            {"object_name": "Cube", "type": "ORIGIN_GEOMETRY"},
+        )
+
+    def test_valid_with_type(self, mock_conn):
+        set_origin("Cube", type="ORIGIN_CURSOR")
+        mock_conn.send_command.assert_called_once_with(
+            "set_origin",
+            {"object_name": "Cube", "type": "ORIGIN_CURSOR"},
+        )
+
+    def test_empty_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            set_origin("")
+
+    def test_invalid_type_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            set_origin("Cube", type="INVALID")
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            set_origin("Cube")
+
+
+# ---------------------------------------------------------------------------
+# convert_object
+# ---------------------------------------------------------------------------
+
+
+class TestConvertObject:
+    def test_valid(self, mock_conn):
+        convert_object("Cube")
+        mock_conn.send_command.assert_called_once_with(
+            "convert_object",
+            {"object_name": "Cube", "target": "MESH"},
+        )
+
+    def test_valid_with_target(self, mock_conn):
+        convert_object("Cube", target="CURVE")
+        mock_conn.send_command.assert_called_once_with(
+            "convert_object",
+            {"object_name": "Cube", "target": "CURVE"},
+        )
+
+    def test_empty_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            convert_object("")
+
+    def test_invalid_target_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            convert_object("Cube", target="INVALID")
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            convert_object("Cube")
+
+
+# ---------------------------------------------------------------------------
+# shade_auto_smooth
+# ---------------------------------------------------------------------------
+
+
+class TestShadeAutoSmooth:
+    def test_valid(self, mock_conn):
+        shade_auto_smooth("Cube")
+        mock_conn.send_command.assert_called_once_with(
+            "shade_auto_smooth",
+            {"object_name": "Cube", "angle": 0.523599},
+        )
+
+    def test_valid_with_angle(self, mock_conn):
+        shade_auto_smooth("Cube", angle=1.0)
+        mock_conn.send_command.assert_called_once_with(
+            "shade_auto_smooth",
+            {"object_name": "Cube", "angle": 1.0},
+        )
+
+    def test_empty_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            shade_auto_smooth("")
+
+    def test_angle_too_low_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            shade_auto_smooth("Cube", angle=-0.1)
+
+    def test_angle_too_high_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            shade_auto_smooth("Cube", angle=3.15)
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            shade_auto_smooth("Cube")
+
+
+# ---------------------------------------------------------------------------
+# make_single_user
+# ---------------------------------------------------------------------------
+
+
+class TestMakeSingleUser:
+    def test_valid(self, mock_conn):
+        make_single_user("Cube")
+        mock_conn.send_command.assert_called_once_with(
+            "make_single_user",
+            {"object_name": "Cube", "object": True, "data": True},
+        )
+
+    def test_valid_with_params(self, mock_conn):
+        make_single_user("Cube", object=False, data=True)
+        mock_conn.send_command.assert_called_once_with(
+            "make_single_user",
+            {"object_name": "Cube", "object": False, "data": True},
+        )
+
+    def test_empty_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            make_single_user("")
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            make_single_user("Cube")

@@ -321,6 +321,120 @@ def handle_bake_physics(params: dict) -> dict:
         raise RuntimeError(f"Failed to bake physics: {e}")
 
 
+def handle_delete_particle_system(params: dict) -> dict:
+    """Remove a particle system from an object."""
+    object_name = params.get("object_name")
+    ps_name = params.get("particle_system_name", "")
+
+    try:
+        obj = bpy.data.objects.get(object_name)
+        if obj is None:
+            raise ValueError(f"Object '{object_name}' not found")
+
+        if len(obj.particle_systems) == 0:
+            raise ValueError(f"Object '{object_name}' has no particle systems")
+
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+
+        if ps_name:
+            idx = None
+            for i, ps in enumerate(obj.particle_systems):
+                if ps.name == ps_name:
+                    idx = i
+                    break
+            if idx is None:
+                raise ValueError(f"Particle system '{ps_name}' not found on '{object_name}'")
+            obj.particle_systems.active_index = idx
+
+        bpy.ops.object.particle_system_remove()
+
+        return {
+            "object_name": obj.name,
+            "removed": ps_name or "active",
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to delete particle system: {e}")
+
+
+def handle_set_particle_velocity(params: dict) -> dict:
+    """Set velocity settings for a particle system."""
+    object_name = params.get("object_name")
+    normal = params.get("normal", 1.0)
+    tangent = params.get("tangent", 0.0)
+    factor = params.get("object_align_factor", (0, 0, 0))
+
+    try:
+        obj = bpy.data.objects.get(object_name)
+        if obj is None:
+            raise ValueError(f"Object '{object_name}' not found")
+
+        if len(obj.particle_systems) == 0:
+            raise ValueError(f"Object '{object_name}' has no particle systems")
+
+        settings = obj.particle_systems[0].settings
+        settings.normal_factor = float(normal)
+        settings.tangent_factor = float(tangent)
+        settings.object_align_factor = tuple(factor)
+
+        return {
+            "object_name": obj.name,
+            "normal": settings.normal_factor,
+            "tangent": settings.tangent_factor,
+            "object_align_factor": list(settings.object_align_factor),
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to set particle velocity: {e}")
+
+
+def handle_set_particle_rendering(params: dict) -> dict:
+    """Set rendering mode for a particle system."""
+    object_name = params.get("object_name")
+    render_type = params.get("render_type", "PATH")
+    instance_object = params.get("instance_object", "")
+    instance_collection = params.get("instance_collection", "")
+
+    try:
+        obj = bpy.data.objects.get(object_name)
+        if obj is None:
+            raise ValueError(f"Object '{object_name}' not found")
+
+        if len(obj.particle_systems) == 0:
+            raise ValueError(f"Object '{object_name}' has no particle systems")
+
+        settings = obj.particle_systems[0].settings
+        settings.render_type = render_type
+
+        if render_type == "OBJECT" and instance_object:
+            inst_obj = bpy.data.objects.get(instance_object)
+            if inst_obj is None:
+                raise ValueError(f"Instance object '{instance_object}' not found")
+            settings.instance_object = inst_obj
+
+        if render_type == "COLLECTION" and instance_collection:
+            coll = bpy.data.collections.get(instance_collection)
+            if coll is None:
+                raise ValueError(f"Collection '{instance_collection}' not found")
+            settings.instance_collection = coll
+
+        return {
+            "object_name": obj.name,
+            "render_type": settings.render_type,
+            "success": True,
+        }
+    except ValueError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to set particle rendering: {e}")
+
+
 def register():
     """Register physics handlers with the dispatcher."""
     dispatcher.register_handler("add_rigid_body", handle_add_rigid_body)
@@ -329,3 +443,6 @@ def register():
     dispatcher.register_handler("add_particle_system", handle_add_particle_system)
     dispatcher.register_handler("set_physics_property", handle_set_physics_property)
     dispatcher.register_handler("bake_physics", handle_bake_physics)
+    dispatcher.register_handler("delete_particle_system", handle_delete_particle_system)
+    dispatcher.register_handler("set_particle_velocity", handle_set_particle_velocity)
+    dispatcher.register_handler("set_particle_rendering", handle_set_particle_rendering)

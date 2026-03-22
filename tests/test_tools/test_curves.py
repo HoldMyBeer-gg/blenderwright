@@ -211,6 +211,172 @@ class TestCreateText:
             create_text("Hello", size=1001.0)
 
 
+class TestSwitchCurveDirection:
+    def test_valid(self, mock_conn):
+        from blend_ai.tools.curves import switch_curve_direction
+
+        result = switch_curve_direction("BezierCurve")
+        mock_conn.send_command.assert_called_once_with("switch_curve_direction", {
+            "curve_name": "BezierCurve",
+        })
+        assert result == {"name": "BezierCurve"}
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.curves import switch_curve_direction
+
+        with pytest.raises(ValidationError):
+            switch_curve_direction("")
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.curves import switch_curve_direction
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError, match="Blender error"):
+            switch_curve_direction("BezierCurve")
+
+
+class TestSetHandleType:
+    def test_valid(self, mock_conn):
+        from blend_ai.tools.curves import set_handle_type
+
+        result = set_handle_type("BezierCurve", handle_type="VECTOR")
+        mock_conn.send_command.assert_called_once_with("set_handle_type", {
+            "curve_name": "BezierCurve",
+            "handle_type": "VECTOR",
+        })
+        assert result == {"name": "BezierCurve"}
+
+    def test_default_handle_type(self, mock_conn):
+        from blend_ai.tools.curves import set_handle_type
+
+        set_handle_type("BezierCurve")
+        mock_conn.send_command.assert_called_once_with("set_handle_type", {
+            "curve_name": "BezierCurve",
+            "handle_type": "AUTO",
+        })
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.curves import set_handle_type
+
+        with pytest.raises(ValidationError):
+            set_handle_type("")
+
+    def test_invalid_handle_type_raises(self, mock_conn):
+        from blend_ai.tools.curves import set_handle_type
+
+        with pytest.raises(ValidationError):
+            set_handle_type("BezierCurve", handle_type="SMOOTH")
+
+    def test_all_valid_handle_types(self, mock_conn):
+        from blend_ai.tools.curves import set_handle_type
+
+        for ht in ("AUTO", "VECTOR", "ALIGNED", "FREE_ALIGN"):
+            mock_conn.send_command.reset_mock()
+            set_handle_type("BezierCurve", handle_type=ht)
+            mock_conn.send_command.assert_called_once()
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.curves import set_handle_type
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError, match="Blender error"):
+            set_handle_type("BezierCurve")
+
+
+class TestToggleCyclic:
+    def test_valid(self, mock_conn):
+        from blend_ai.tools.curves import toggle_cyclic
+
+        result = toggle_cyclic("BezierCurve")
+        mock_conn.send_command.assert_called_once_with("toggle_cyclic", {
+            "curve_name": "BezierCurve",
+        })
+        assert result == {"name": "BezierCurve"}
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.curves import toggle_cyclic
+
+        with pytest.raises(ValidationError):
+            toggle_cyclic("")
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.curves import toggle_cyclic
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError, match="Blender error"):
+            toggle_cyclic("BezierCurve")
+
+
+class TestSubdivideCurve:
+    def test_valid(self, mock_conn):
+        from blend_ai.tools.curves import subdivide_curve
+
+        result = subdivide_curve("BezierCurve", number_cuts=3)
+        mock_conn.send_command.assert_called_once_with("subdivide_curve", {
+            "curve_name": "BezierCurve",
+            "number_cuts": 3,
+        })
+        assert result == {"name": "BezierCurve"}
+
+    def test_default_number_cuts(self, mock_conn):
+        from blend_ai.tools.curves import subdivide_curve
+
+        subdivide_curve("BezierCurve")
+        mock_conn.send_command.assert_called_once_with("subdivide_curve", {
+            "curve_name": "BezierCurve",
+            "number_cuts": 1,
+        })
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.curves import subdivide_curve
+
+        with pytest.raises(ValidationError):
+            subdivide_curve("")
+
+    def test_number_cuts_too_low(self, mock_conn):
+        from blend_ai.tools.curves import subdivide_curve
+
+        with pytest.raises(ValidationError):
+            subdivide_curve("BezierCurve", number_cuts=0)
+
+    def test_number_cuts_too_high(self, mock_conn):
+        from blend_ai.tools.curves import subdivide_curve
+
+        with pytest.raises(ValidationError):
+            subdivide_curve("BezierCurve", number_cuts=101)
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.curves import subdivide_curve
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError, match="Blender error"):
+            subdivide_curve("BezierCurve")
+
+
+class TestSmoothCurve:
+    def test_valid(self, mock_conn):
+        from blend_ai.tools.curves import smooth_curve
+
+        result = smooth_curve("BezierCurve")
+        mock_conn.send_command.assert_called_once_with("smooth_curve", {
+            "curve_name": "BezierCurve",
+        })
+        assert result == {"name": "BezierCurve"}
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.curves import smooth_curve
+
+        with pytest.raises(ValidationError):
+            smooth_curve("")
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.curves import smooth_curve
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError, match="Blender error"):
+            smooth_curve("BezierCurve")
+
+
 class TestBlenderErrorHandling:
     def test_blender_error_raises_runtime(self, mock_conn):
         from blend_ai.tools.curves import create_curve

@@ -250,6 +250,118 @@ class TestBakePhysics:
             bake_physics("")
 
 
+class TestDeleteParticleSystem:
+    def test_valid_default(self, mock_conn):
+        from blend_ai.tools.physics import delete_particle_system
+
+        delete_particle_system("Cube")
+        mock_conn.send_command.assert_called_once_with("delete_particle_system", {
+            "object_name": "Cube",
+            "particle_system_name": "",
+        })
+
+    def test_valid_named(self, mock_conn):
+        from blend_ai.tools.physics import delete_particle_system
+
+        delete_particle_system("Cube", particle_system_name="ParticleSystem.001")
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["particle_system_name"] == "ParticleSystem.001"
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.physics import delete_particle_system
+
+        with pytest.raises(ValidationError):
+            delete_particle_system("")
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.physics import delete_particle_system
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            delete_particle_system("Cube")
+
+
+class TestSetParticleVelocity:
+    def test_valid_defaults(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_velocity
+
+        set_particle_velocity("Cube")
+        mock_conn.send_command.assert_called_once_with("set_particle_velocity", {
+            "object_name": "Cube",
+            "normal": 1.0,
+            "tangent": 0.0,
+            "object_align_factor": [0, 0, 0],
+        })
+
+    def test_custom_values(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_velocity
+
+        set_particle_velocity("Cube", normal=5.0, tangent=2.0, object_align_factor=(1, 0, 0))
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["normal"] == 5.0
+        assert args["tangent"] == 2.0
+        assert args["object_align_factor"] == [1, 0, 0]
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_velocity
+
+        with pytest.raises(ValidationError):
+            set_particle_velocity("")
+
+    def test_invalid_factor_raises(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_velocity
+
+        with pytest.raises(ValidationError):
+            set_particle_velocity("Cube", object_align_factor=(1, 2))
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_velocity
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            set_particle_velocity("Cube")
+
+
+class TestSetParticleRendering:
+    def test_valid_default(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_rendering
+
+        set_particle_rendering("Cube")
+        mock_conn.send_command.assert_called_once_with("set_particle_rendering", {
+            "object_name": "Cube",
+            "render_type": "PATH",
+            "instance_object": "",
+            "instance_collection": "",
+        })
+
+    def test_custom_values(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_rendering
+
+        set_particle_rendering("Cube", render_type="OBJECT", instance_object="Sphere")
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["render_type"] == "OBJECT"
+        assert args["instance_object"] == "Sphere"
+
+    def test_invalid_render_type_raises(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_rendering
+
+        with pytest.raises(ValidationError):
+            set_particle_rendering("Cube", render_type="BILLBOARD")
+
+    def test_empty_name_raises(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_rendering
+
+        with pytest.raises(ValidationError):
+            set_particle_rendering("")
+
+    def test_error_response_raises(self, mock_conn):
+        from blend_ai.tools.physics import set_particle_rendering
+
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            set_particle_rendering("Cube")
+
+
 class TestBlenderErrorHandling:
     def test_blender_error_raises_runtime(self, mock_conn):
         from blend_ai.tools.physics import add_rigid_body

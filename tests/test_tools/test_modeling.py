@@ -17,6 +17,7 @@ from blend_ai.tools.modeling import (
     set_smooth_shading,
     merge_vertices,
     separate_mesh,
+    bridge_edge_loops,
 )
 
 
@@ -393,3 +394,52 @@ class TestSeparateMesh:
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
             separate_mesh("Cube")
+
+
+# ---------------------------------------------------------------------------
+# bridge_edge_loops
+# ---------------------------------------------------------------------------
+
+
+class TestBridgeEdgeLoops:
+    def test_valid_defaults(self, mock_conn):
+        bridge_edge_loops("Cube")
+        mock_conn.send_command.assert_called_once_with(
+            "bridge_edge_loops",
+            {"object_name": "Cube", "segments": 1, "profile_shape_factor": 0.0},
+        )
+
+    def test_custom_segments(self, mock_conn):
+        bridge_edge_loops("Cube", segments=4)
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["segments"] == 4
+
+    def test_custom_profile(self, mock_conn):
+        bridge_edge_loops("Cube", profile_shape_factor=0.5)
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["profile_shape_factor"] == 0.5
+
+    def test_segments_too_low_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            bridge_edge_loops("Cube", segments=0)
+
+    def test_segments_too_high_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            bridge_edge_loops("Cube", segments=1001)
+
+    def test_profile_too_low_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            bridge_edge_loops("Cube", profile_shape_factor=-1.1)
+
+    def test_profile_too_high_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            bridge_edge_loops("Cube", profile_shape_factor=1.1)
+
+    def test_empty_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            bridge_edge_loops("")
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            bridge_edge_loops("Cube")

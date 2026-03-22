@@ -4,6 +4,41 @@ from blend_ai.server import mcp
 
 
 @mcp.prompt()
+def blender_best_practices() -> str:
+    """Best practices for using Blender MCP tools effectively."""
+    return (
+        "When working with Blender through these MCP tools, follow these best practices:\n\n"
+        "## Boolean Operations\n"
+        "- PREFER `booltool_auto_union` over manually adding a BOOLEAN modifier + apply. "
+        "The Bool Tool auto operations handle selection, cleanup, and cutter removal automatically.\n"
+        "- Use `booltool_auto_union` to permanently merge meshes (e.g., joining a head to a body "
+        "so parts don't float apart).\n"
+        "- Use `booltool_auto_difference` for cutting holes or subtracting shapes.\n"
+        "- Use `booltool_auto_intersect` to keep only overlapping geometry.\n"
+        "- Use `booltool_auto_slice` to split an object along another shape.\n"
+        "- Only use the lower-level `boolean_operation` or `add_modifier(type='BOOLEAN')` when "
+        "you need non-destructive (unapplied) boolean modifiers.\n\n"
+        "## Mesh Editing\n"
+        "- Use `bridge_edge_loops` to connect two edge loops with faces — great for "
+        "connecting limbs, creating tubes, or joining mesh islands.\n"
+        "- Use `merge_vertices` to clean up overlapping vertices after boolean or join operations.\n"
+        "- Use `set_smooth_shading` after modeling to improve visual quality.\n"
+        "- Apply `subdivide_mesh` before detailed sculpting for more geometry.\n\n"
+        "## Modifiers\n"
+        "- Add modifiers with `add_modifier`, configure with `set_modifier_property`, "
+        "and finalize with `apply_modifier`.\n"
+        "- Common workflow: MIRROR modifier for symmetric modeling, then SUBSURF for smoothing.\n"
+        "- Use `remove_modifier` to discard unwanted modifiers without applying.\n\n"
+        "## General Workflow\n"
+        "- Always check the scene state with the blender://scene resource before making assumptions.\n"
+        "- Use `apply_transform` before boolean operations to avoid unexpected results from "
+        "unapplied scale/rotation.\n"
+        "- Organize objects into collections for complex scenes.\n"
+        "- Name objects descriptively — many tools reference objects by name.\n"
+    )
+
+
+@mcp.prompt()
 def product_shot_setup() -> str:
     """Set up a professional product shot with studio lighting and camera."""
     return (

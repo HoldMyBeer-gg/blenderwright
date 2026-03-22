@@ -20,6 +20,9 @@ from . import (
     file_ops,
     viewport,
     code_exec,
+    booltool,
+    mesh_editing,
+    gpencil,
 )
 
 _modules = [
@@ -27,6 +30,7 @@ _modules = [
     objects,
     transforms,
     modeling,
+    mesh_editing,
     materials,
     lighting,
     camera,
@@ -42,6 +46,8 @@ _modules = [
     file_ops,
     viewport,
     code_exec,
+    booltool,
+    gpencil,
 ]
 
 

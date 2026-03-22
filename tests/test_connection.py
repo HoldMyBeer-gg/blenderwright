@@ -121,10 +121,11 @@ class TestSendCommand:
             conn.send_command("bad_command")
 
     def test_send_command_communication_error(self, mock_socket):
+        # recv raises OSError persistently (send_command retries once)
         mock_socket.recv.side_effect = OSError("broken pipe")
         conn = BlenderConnection()
         conn.connect()
-        with pytest.raises(BlenderConnectionError, match="Communication error"):
+        with pytest.raises(BlenderConnectionError, match="Connection to Blender lost"):
             conn.send_command("test")
         # Should have disconnected after error
         assert not conn.is_connected
@@ -136,12 +137,64 @@ class TestRecvTooLarge:
         # Create a header claiming a payload of 200MB
         huge_length = 200 * 1024 * 1024
         header = struct.pack(">I", huge_length)
-        mock_socket.recv.side_effect = [header]
+        # Provide header for both attempts (send_command retries once)
+        mock_socket.recv.side_effect = [header, header]
 
         conn = BlenderConnection()
         conn.connect()
-        with pytest.raises(BlenderConnectionError, match="Response too large"):
+        with pytest.raises(BlenderConnectionError, match="Connection to Blender lost"):
             conn.send_command("huge")
+
+
+class TestBusyRetry:
+    def _make_response_bytes(self, response_dict: dict) -> bytes:
+        payload = json.dumps(response_dict).encode("utf-8")
+        return struct.pack(">I", len(payload)) + payload
+
+    def test_busy_then_ok_retries(self, mock_socket):
+        """Client retries when server returns busy, succeeds when render finishes."""
+        busy = self._make_response_bytes({"status": "busy", "result": "rendering"})
+        ok = self._make_response_bytes({"status": "ok", "result": {"done": True}})
+
+        mock_socket.recv.side_effect = [
+            busy[:4], busy[4:],   # initial: busy
+            busy[:4], busy[4:],   # retry 1: still busy
+            ok[:4], ok[4:],       # retry 2: ok
+        ]
+
+        conn = BlenderConnection()
+        conn.BUSY_RETRY_DELAY = 0.01  # speed up test
+        conn.connect()
+        result = conn.send_command("test")
+
+        assert result["status"] == "ok"
+        assert result["result"]["done"] is True
+
+    def test_busy_timeout_raises(self, mock_socket):
+        """Client raises after max retries exhausted."""
+        busy = self._make_response_bytes({"status": "busy", "result": "rendering"})
+
+        # Return busy for initial + all retries
+        mock_socket.recv.side_effect = [busy[:4], busy[4:]] * 5
+
+        conn = BlenderConnection()
+        conn.BUSY_RETRY_DELAY = 0.01
+        conn.BUSY_MAX_RETRIES = 3
+        conn.connect()
+
+        with pytest.raises(BlenderConnectionError, match="busy rendering for too long"):
+            conn.send_command("test")
+
+    def test_busy_immediate_ok(self, mock_socket):
+        """Non-busy response is returned immediately without retrying."""
+        ok = self._make_response_bytes({"status": "ok", "result": "fast"})
+        mock_socket.recv.side_effect = [ok[:4], ok[4:]]
+
+        conn = BlenderConnection()
+        conn.connect()
+        result = conn.send_command("test")
+
+        assert result["status"] == "ok"
 
 
 class TestIsConnected:
