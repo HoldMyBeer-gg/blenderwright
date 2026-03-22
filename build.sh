@@ -4,6 +4,8 @@
 # Example: ./build.sh 0.2.0
 #
 # If no version is provided, reads it from addon/__init__.py bl_info.
+# The zip contains a blend_ai/ folder so Blender installs it as the
+# "blend_ai" addon module.
 
 set -euo pipefail
 
@@ -36,13 +38,21 @@ OUTPUT="$SCRIPT_DIR/blend-ai-v${VERSION}.zip"
 
 echo "Building blend-ai addon v${VERSION}..."
 
-# Create zip with addon/ contents nested under blend_ai/ (Blender expects a folder)
-cd "$SCRIPT_DIR"
+# Create temp dir with addon contents under blend_ai/ name
+TMPDIR=$(mktemp -d)
+DEST="$TMPDIR/blend_ai"
+cp -r "$ADDON_DIR" "$DEST"
+
+# Remove __pycache__ and .pyc
+find "$DEST" -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+find "$DEST" -name "*.pyc" -delete 2>/dev/null || true
+
+# Create zip from temp dir
+cd "$TMPDIR"
 rm -f "$OUTPUT"
-zip -r "$OUTPUT" addon/ \
-    -x "addon/__pycache__/*" \
-    -x "addon/handlers/__pycache__/*" \
-    -x "addon/**/__pycache__/*" \
-    -x "*.pyc"
+zip -r "$OUTPUT" blend_ai/
+
+# Cleanup
+rm -rf "$TMPDIR"
 
 echo "Built: $OUTPUT"

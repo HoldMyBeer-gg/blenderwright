@@ -3,6 +3,8 @@
 # Example: .\build.ps1 0.2.0
 #
 # If no version is provided, reads it from addon\__init__.py bl_info.
+# The zip contains a blend_ai\ folder so Blender installs it as the
+# "blend_ai" addon module.
 
 param(
     [string]$Version
@@ -38,10 +40,10 @@ if (Test-Path $Output) {
     Remove-Item $Output
 }
 
-# Create zip excluding __pycache__ and .pyc files
+# Create temp dir with addon contents under blend_ai\ name
 $tempDir = Join-Path $env:TEMP "blend-ai-build-$(Get-Random)"
-$tempAddon = Join-Path $tempDir "addon"
-New-Item -ItemType Directory -Path $tempAddon -Force | Out-Null
+$destDir = Join-Path $tempDir "blend_ai"
+New-Item -ItemType Directory -Path $destDir -Force | Out-Null
 
 # Copy addon files, excluding __pycache__ and .pyc
 Get-ChildItem -Path $AddonDir -Recurse |
@@ -51,19 +53,19 @@ Get-ChildItem -Path $AddonDir -Recurse |
     } |
     ForEach-Object {
         $relativePath = $_.FullName.Substring($AddonDir.Length)
-        $destPath = Join-Path $tempAddon $relativePath
+        $destPath = Join-Path $destDir $relativePath
         if ($_.PSIsContainer) {
             New-Item -ItemType Directory -Path $destPath -Force | Out-Null
         } else {
-            $destDir = Split-Path -Parent $destPath
-            if (-not (Test-Path $destDir)) {
-                New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+            $parentDir = Split-Path -Parent $destPath
+            if (-not (Test-Path $parentDir)) {
+                New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
             }
             Copy-Item $_.FullName $destPath
         }
     }
 
-Compress-Archive -Path $tempAddon -DestinationPath $Output -Force
+Compress-Archive -Path $destDir -DestinationPath $Output -Force
 
 # Cleanup
 Remove-Item -Recurse -Force $tempDir
