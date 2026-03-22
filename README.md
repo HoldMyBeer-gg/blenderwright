@@ -2,6 +2,8 @@
 
 The most intuitive and efficient MCP Server for Blender. Control Blender entirely through AI assistants like Claude — create 3D models, set up scenes, animate, render, and more, all through natural language.
 
+![blend-ai screenshot](screenshot.png)
+
 ## Key Features
 
 - **108 tools** covering every major Blender domain: modeling, materials, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, collections, file I/O, and viewport control
