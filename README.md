@@ -16,7 +16,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 ### 1. Install the MCP server
 
 ```bash
-git clone https://github.com/your-org/blend-ai.git
+git clone https://github.com/jabberwock/blend-ai.git
 cd blend-ai
 uv pip install -e .
 ```
