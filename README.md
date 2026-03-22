@@ -27,7 +27,7 @@ uv pip install -e .
 
 ### 2. Install the Blender addon
 
-1. Open Blender (4.0+)
+1. Open Blender (5.0+)
 2. Go to **Edit > Preferences > Add-ons > Install...**
 3. Select the `addon/` folder from this repo (or zip it first)
 4. Enable **"blend-ai"** in the addon list
@@ -36,13 +36,13 @@ Alternatively, symlink for development:
 
 ```bash
 # macOS
-ln -s "$(pwd)/addon" ~/Library/Application\ Support/Blender/4.0/scripts/addons/blend_ai
+ln -s "$(pwd)/addon" ~/Library/Application\ Support/Blender/5.0/scripts/addons/blend_ai
 
 # Linux
-ln -s "$(pwd)/addon" ~/.config/blender/4.0/scripts/addons/blend_ai
+ln -s "$(pwd)/addon" ~/.config/blender/5.0/scripts/addons/blend_ai
 
 # Windows (run as admin)
-mklink /D "%APPDATA%\Blender Foundation\Blender\4.0\scripts\addons\blend_ai" "%cd%\addon"
+mklink /D "%APPDATA%\Blender Foundation\Blender\5.0\scripts\addons\blend_ai" "%cd%\addon"
 ```
 
 Then enable the addon in Blender preferences.
