@@ -2,6 +2,7 @@
 
 The most intuitive and efficient MCP Server for Blender. Control Blender entirely through AI assistants like Claude — create 3D models, set up scenes, animate, render, and more, all through natural language.
 
+<small>This was created via Claude Code using the Haiki model and 20 random reference images. It took 5 minutes:</small>
 ![blend-ai screenshot](screenshot.png)
 
 ## Key Features
