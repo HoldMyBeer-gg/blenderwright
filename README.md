@@ -198,12 +198,12 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 
 - **Blender must be running**: The MCP server communicates with Blender over TCP. Blender must be open with the addon enabled and server started.
 - **Single connection**: The addon accepts one client connection at a time. Multiple AI assistants cannot control the same Blender instance simultaneously.
-- **Edit mode operations are coarse**: Most mesh editing tools operate on all geometry (all faces/edges). Fine-grained vertex/face selection is not yet exposed.
-- **No undo integration**: Operations are executed directly via `bpy`. They appear in Blender's undo history individually but there's no MCP-level undo/redo.
-- **Geometry Nodes**: Creating complex node trees requires multiple sequential tool calls. There's no "create full node tree from description" tool.
-- **Sculpting**: Sculpt brush strokes cannot be simulated programmatically. Sculpt tools are limited to mode switching, brush settings, symmetry, dyntopo, and remeshing.
-- **Viewport capture**: Requires a 3D viewport to be visible. Headless Blender may not support viewport screenshots.
-- **No real-time feedback**: The MCP protocol is request/response. There's no streaming of viewport updates or progress bars.
+- **Selection is all-or-nothing**: Most mesh editing tools operate on all geometry. Fine-grained vertex/edge/face selection by index is not yet exposed, though `select_linked` is available.
+- **Sculpt strokes cannot be simulated**: You can configure brushes, symmetry, dyntopo, and remeshing, but actual brush strokes (`bpy.ops.sculpt.brush_stroke`) are not yet exposed — sculpting still requires manual interaction.
+- **Node graphs require sequential calls**: Both shader node trees and geometry node trees must be built one node/connection at a time. There's no "create full graph from description" tool.
+- **No undo integration**: Operations appear in Blender's undo history individually but there's no MCP-level undo/redo or transaction grouping.
+- **Viewport capture**: Requires a visible 3D viewport. Headless Blender may not support viewport screenshots.
+- **No real-time feedback**: The MCP protocol is request/response. There's no streaming of viewport updates or render progress.
 
 </details>
 
