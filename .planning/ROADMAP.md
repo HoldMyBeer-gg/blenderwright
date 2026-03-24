@@ -74,7 +74,10 @@ Plans:
   2. User can create Raycast shader nodes, Bone Info geometry nodes, Grid Dilate/Erode nodes, and Mask to SDF compositor nodes via MCP tools
   3. User can unwrap UVs using the SLIM method and configure EEVEE Light Path Intensity controls via MCP tools
   4. The N-panel includes an "unsafe mode" toggle for `code_exec` that defaults to OFF and persists across sessions
-**Plans**: TBD
+**Plans**: 0/2 plans complete
+Plans:
+- [ ] 04-01-PLAN.md — Code exec sandboxing with import blocking (STAB-03, NEW51-07)
+- [ ] 04-02-PLAN.md — SLIM UV unwrap, new 5.1 shader nodes, EEVEE light path intensity (NEW51-01, NEW51-05, NEW51-06)
 
 ## Progress
 
@@ -86,4 +89,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Blender 5.1 Compatibility | 3/3 | Complete   | 2026-03-24 |
 | 2. Expert Guidance & Stability | 4/4 | Complete   | 2026-03-24 |
 | 3. Visual Feedback Loop | 2/2 | Complete | 2026-03-24 |
-| 4. Extension Suggestions, Security & New 5.1 Tools | 0/? | Not started | - |
+| 4. Extension Suggestions, Security & New 5.1 Tools | 0/2 | In Progress | - |
