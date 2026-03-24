@@ -34,7 +34,7 @@ An LLM using this MCP should produce professional-quality 3D output without the 
 - [ ] Missing tool coverage — boolean operations, edge loops, snapping, and other gaps that force workarounds
 - [ ] Smarter workflow tools — high-level operations that chain multiple low-level tools into expert patterns
 - [x] Fix known bugs — render guard stuck state, stale connections, screenshot blocking during renders (Validated in Phase 2 + 3)
-- [ ] Harden security — address code_exec vulnerability, add command auditing, improve path validation
+- [x] Harden security — address code_exec vulnerability, add command auditing, improve path validation (Validated in Phase 4)
 - [ ] Improve test coverage — code_exec sandbox unvalidated, socket error paths uncovered (handler tests added in Phase 1)
 
 ### Out of Scope
