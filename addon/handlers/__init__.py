@@ -22,6 +22,7 @@ from . import (
     code_exec,
     booltool,
     mesh_editing,
+    mesh_quality,
     gpencil,
 )
 
@@ -31,6 +32,7 @@ _modules = [
     transforms,
     modeling,
     mesh_editing,
+    mesh_quality,
     materials,
     lighting,
     camera,
