@@ -31,7 +31,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **FEED-01**: Viewport screenshot uses fast capture (not full render) and does not trigger the render guard
 - [ ] **FEED-02**: After building or modifying objects, the LLM automatically captures a viewport screenshot and critiques the result
 - [ ] **FEED-03**: Auto-feedback prompt includes frequency guidance to prevent token runaway (not after every single tool call)
-- [ ] **FEED-04**: User can run `analyze_mesh_quality()` on any object to get structured JSON report of non-manifold edges, inverted normals, loose vertices, disconnected islands, zero-area faces, and duplicate vertices
+- [x] **FEED-04**: User can run `analyze_mesh_quality()` on any object to get structured JSON report of non-manifold edges, inverted normals, loose vertices, disconnected islands, zero-area faces, and duplicate vertices
 
 ### Expert Guidance
 
@@ -98,7 +98,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | FEED-01 | Phase 3 | Pending |
 | FEED-02 | Phase 3 | Pending |
 | FEED-03 | Phase 3 | Pending |
-| FEED-04 | Phase 2 | Pending |
+| FEED-04 | Phase 2 | Complete |
 | GUIDE-01 | Phase 2 | Complete |
 | GUIDE-02 | Phase 2 | Complete |
 | GUIDE-03 | Phase 2 | Complete |
