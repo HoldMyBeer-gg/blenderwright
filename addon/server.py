@@ -78,6 +78,7 @@ class BlenderServer:
         while self._running and self._server_socket:
             try:
                 client, addr = self._server_socket.accept()
+                client.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 client.settimeout(30.0)
                 with self._lock:
                     self._clients.append(client)
