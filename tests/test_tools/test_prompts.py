@@ -83,7 +83,7 @@ class TestLightingPrompt:
 
     def test_contains_hdri(self):
         result = lighting_principles()
-        assert "hdri" in result.upper()
+        assert "HDRI" in result.upper()
 
     def test_contains_eevee_and_cycles(self):
         result = lighting_principles()
