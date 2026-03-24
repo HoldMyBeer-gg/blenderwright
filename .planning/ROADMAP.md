@@ -45,13 +45,12 @@ Plans:
   3. When a task would benefit from Bool Tool, LoopTools, Node Wrangler, or similar free extensions, the MCP suggests them before starting (and skips suggestions for already-installed extensions)
   4. A render that crashes mid-way no longer leaves the render guard permanently stuck — the server recovers on `load_post` or via a reset tool
   5. Stale TCP connections are cleaned up automatically without requiring a Blender restart
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
 Plans:
-- [ ] 02-01-PLAN.md — Render guard recovery and TCP stale connection cleanup (STAB-01, STAB-02)
+- [x] 02-01-PLAN.md — Render guard recovery and TCP stale connection cleanup (STAB-01, STAB-02)
 - [x] 02-02-PLAN.md — Expert MCP prompts for topology, scale, lighting, and workflows (GUIDE-01, GUIDE-02, GUIDE-03, GUIDE-06)
 - [x] 02-03-PLAN.md — Mesh quality analysis tool and handler (FEED-04)
-- [ ] 02-04-PLAN.md — Extension suggestion system with installed detection (GUIDE-04, GUIDE-05)
-**UI hint**: yes
+- [x] 02-04-PLAN.md — Extension suggestion system with installed detection (GUIDE-04, GUIDE-05)
 
 ### Phase 3: Visual Feedback Loop
 **Goal**: The LLM can capture the current viewport state in under 500ms without triggering render cycles, and automatically critiques what it builds
@@ -61,7 +60,10 @@ Plans:
   1. Calling `get_viewport_screenshot(mode="fast")` returns a viewport image in under 500ms and does not trigger the render guard
   2. After building or modifying an object, the LLM automatically captures a screenshot and reports what it sees (good topology, issues, next steps)
   3. The auto-screenshot prompt prevents token runaway by specifying that screenshots fire only after structural changes (add/delete/boolean/apply), not after metadata-only changes
-**Plans**: TBD
+**Plans**: 0/2 plans complete
+Plans:
+- [ ] 03-01-PLAN.md — Fast viewport capture using render.opengl + mode parameter (FEED-01)
+- [ ] 03-02-PLAN.md — Auto-critique prompt with token-safety guidelines (FEED-02, FEED-03)
 
 ### Phase 4: Extension Suggestions, Security & New 5.1 Tools
 **Goal**: `code_exec` is sandboxed against RCE, the extension suggestion system detects installed extensions before recommending, and all Blender 5.1-exclusive nodes and tools are accessible via MCP
@@ -82,6 +84,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Blender 5.1 Compatibility | 3/3 | Complete   | 2026-03-24 |
-| 2. Expert Guidance & Stability | 2/4 | In Progress|  |
-| 3. Visual Feedback Loop | 0/? | Not started | - |
+| 2. Expert Guidance & Stability | 4/4 | Complete   | 2026-03-24 |
+| 3. Visual Feedback Loop | 0/2 | In Progress | - |
 | 4. Extension Suggestions, Security & New 5.1 Tools | 0/? | Not started | - |
