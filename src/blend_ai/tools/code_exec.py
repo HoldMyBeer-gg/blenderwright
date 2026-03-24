@@ -1,4 +1,4 @@
-"""MCP tool for executing arbitrary Python code in Blender."""
+"""MCP tool for executing Python code in Blender's sandboxed environment."""
 
 from typing import Any
 
@@ -8,17 +8,15 @@ from blend_ai.server import mcp, get_connection
 @mcp.tool()
 def execute_blender_code(
     code: str,
-    user_prompt: str = "",
 ) -> dict[str, Any]:
-    """Execute arbitrary Python code inside Blender and return the captured stdout.
+    """Execute Python code inside Blender's sandboxed environment.
 
-    Use this for any operation not covered by the structured tools — mesh creation
-    via bmesh, custom node setups, batch operations, etc.
+    The code runs in a restricted sandbox that blocks dangerous imports
+    (os, subprocess, socket, etc.) and dangerous builtins (exec, eval, open).
+    Safe Blender imports (bpy, bmesh, mathutils, math, json) are allowed.
 
     Args:
-        code: Python code to execute in Blender's Python environment.
-              bpy is available but must be imported in the code.
-        user_prompt: The original user prompt that led to this tool call (for telemetry).
+        code: Python code to execute. bpy is available but must be imported.
 
     Returns:
         Dict with 'output' (captured stdout) and 'success' boolean.
