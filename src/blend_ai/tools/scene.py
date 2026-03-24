@@ -24,6 +24,25 @@ ALLOWED_UNIT_SYSTEMS = {"NONE", "METRIC", "IMPERIAL"}
 # Allowed render engines
 ALLOWED_RENDER_ENGINES = {"BLENDER_EEVEE", "BLENDER_WORKBENCH", "CYCLES"}
 
+# Extension catalog with keyword matching for proactive suggestions
+EXTENSION_CATALOG = {
+    "bool_tool": {
+        "name": "Bool Tool",
+        "description": "Boolean operations (union, difference, intersect) with automatic cleanup",
+        "keywords": ["boolean", "union", "difference", "intersect", "cut", "subtract", "combine", "bool"],
+    },
+    "looptools": {
+        "name": "LoopTools",
+        "description": "Advanced loop editing (relax, space, circle, curve, flatten)",
+        "keywords": ["loop", "edge loop", "relax", "circle", "curve", "flatten", "space", "ring"],
+    },
+    "node_wrangler": {
+        "name": "Node Wrangler",
+        "description": "Shader and geometry node editing shortcuts (lazy connect, preview, switch)",
+        "keywords": ["shader", "node", "material", "texture", "geometry nodes", "compositor", "nodes"],
+    },
+}
+
 
 @mcp.tool()
 def get_scene_info() -> dict[str, Any]:
@@ -117,3 +136,45 @@ def delete_scene(name: str) -> dict[str, Any]:
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
+
+
+@mcp.tool()
+def suggest_extensions(task_description: str = "") -> dict[str, Any]:
+    """Suggest helpful Blender extensions for a planned task.
+
+    Analyzes the task description and recommends free Blender extensions
+    that could improve the workflow. Already-installed extensions are excluded.
+
+    Args:
+        task_description: Description of the planned task. If empty, returns
+            all extensions not currently installed.
+
+    Returns:
+        Dict with 'suggestions' list of recommended extensions and
+        'installed' list of already-installed extension IDs.
+    """
+    conn = get_connection()
+    response = conn.send_command("get_installed_extensions")
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    installed = response.get("result", {}).get("installed", [])
+
+    task_lower = task_description.lower()
+    suggestions = []
+    for ext_id, info in EXTENSION_CATALOG.items():
+        if ext_id in installed:
+            continue
+        if not task_description:
+            suggestions.append({
+                "extension_id": ext_id,
+                "name": info["name"],
+                "description": info["description"],
+            })
+        elif any(kw in task_lower for kw in info["keywords"]):
+            suggestions.append({
+                "extension_id": ext_id,
+                "name": info["name"],
+                "description": info["description"],
+            })
+
+    return {"suggestions": suggestions, "installed": installed}
