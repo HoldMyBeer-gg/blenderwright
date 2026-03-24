@@ -27,7 +27,7 @@ An LLM using this MCP should produce professional-quality 3D output without the 
 
 - [ ] Auto-screenshot feedback loop — after building/modifying, LLM captures viewport and critiques result
 - [ ] Context-aware Blender extension suggestions — when a task would benefit from a free plugin, suggest it before starting
-- [ ] Full Blender 5.1 compatibility — fix any breaking changes from 4.x API
+- [x] Full Blender 5.1 compatibility — fix any breaking changes from 4.x API (Validated in Phase 1)
 - [ ] New Blender 5.1 tools — expose new operators, nodes, and features added in 5.1
 - [ ] Expert-quality MCP prompts — guide the LLM on best practices, proven modeling patterns, and optimal parameter choices
 - [ ] Improved mesh quality — better defaults, proper topology, connected geometry, realistic proportions
@@ -35,7 +35,7 @@ An LLM using this MCP should produce professional-quality 3D output without the 
 - [ ] Smarter workflow tools — high-level operations that chain multiple low-level tools into expert patterns
 - [ ] Fix known bugs — render guard stuck state, stale connections, screenshot blocking during renders
 - [ ] Harden security — address code_exec vulnerability, add command auditing, improve path validation
-- [ ] Improve test coverage — addon handlers are untested, code_exec sandbox unvalidated, socket error paths uncovered
+- [ ] Improve test coverage — code_exec sandbox unvalidated, socket error paths uncovered (handler tests added in Phase 1)
 
 ### Out of Scope
 
@@ -51,7 +51,7 @@ An LLM using this MCP should produce professional-quality 3D output without the 
 - Known issues: code_exec security vulnerability, render guard can get stuck, timeout mismatches between layers, parameter validation inconsistencies in addon handlers
 - Competition: Other Blender MCPs exist but produce rough results and lack workflow intelligence
 - User pain: Models look toy-like, meshes don't connect properly, LLM doesn't know best Blender practices
-- Blender target: Full 5.1 support (currently 4.0+)
+- Blender target: Full 5.1 support (Phase 1 complete — EEVEE renamed, GPencil→Annotation, sculpt stroke_method, CI on Python 3.13)
 
 ## Constraints
 
@@ -67,7 +67,7 @@ An LLM using this MCP should produce professional-quality 3D output without the 
 |----------|-----------|---------|
 | Auto-screenshot for feedback (not iterative loop) | Simpler to implement, less token-heavy, user can trigger more cycles manually | — Pending |
 | Context-aware plugin suggestions (not searchable tool) | Proactive suggestions fit the "smart assistant" vision better than a search tool | — Pending |
-| Full 5.1 compat + new features | Users expect both backward compat and access to new capabilities | — Pending |
+| Full 5.1 compat + new features | Users expect both backward compat and access to new capabilities | Phase 1 complete |
 | Expert prompts over more tools | The LLM needs guidance on HOW to use tools well, not just more tools | — Pending |
 
 ## Evolution
@@ -88,4 +88,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-23 after initialization*
+*Last updated: 2026-03-24 after Phase 1 completion*
