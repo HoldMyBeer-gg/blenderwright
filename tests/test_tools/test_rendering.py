@@ -1,5 +1,6 @@
 """Unit tests for rendering tools."""
 
+import pathlib
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -24,8 +25,10 @@ class TestSetRenderEngine:
     def test_set_eevee(self, mock_conn):
         from blend_ai.tools.rendering import set_render_engine
 
-        set_render_engine("BLENDER_EEVEE_NEXT")
-        mock_conn.send_command.assert_called_once()
+        set_render_engine("BLENDER_EEVEE")
+        mock_conn.send_command.assert_called_once_with(
+            "set_render_engine", {"engine": "BLENDER_EEVEE"}
+        )
 
     def test_set_workbench(self, mock_conn):
         from blend_ai.tools.rendering import set_render_engine
@@ -37,13 +40,42 @@ class TestSetRenderEngine:
         from blend_ai.tools.rendering import set_render_engine
 
         with pytest.raises(ValidationError):
-            set_render_engine("BLENDER_EEVEE")  # old name, not allowed
+            set_render_engine("BLENDER_EEVEE_NEXT")  # removed in 5.0, not allowed
 
     def test_invalid_engine_arbitrary(self, mock_conn):
         from blend_ai.tools.rendering import set_render_engine
 
         with pytest.raises(ValidationError):
             set_render_engine("LUXCORE")
+
+
+class TestCompatAudit:
+    def test_no_vse_deprecated_properties(self):
+        """Assert no VSE deprecated time properties exist in addon/ or src/ directories."""
+        repo_root = pathlib.Path(__file__).parents[2]
+        deprecated_props = [
+            "frame_final_duration",
+            "frame_final_start",
+            "frame_offset_start",
+        ]
+        for search_dir in ("addon", "src"):
+            base = repo_root / search_dir
+            for py_file in base.rglob("*.py"):
+                content = py_file.read_text(encoding="utf-8")
+                for prop in deprecated_props:
+                    assert prop not in content, (
+                        f"Deprecated VSE property '{prop}' found in {py_file}"
+                    )
+
+    def test_no_scene_node_tree_compositor(self):
+        """Assert addon/handlers/scene.py does not use scene.node_tree (compositor access pattern)."""
+        repo_root = pathlib.Path(__file__).parents[2]
+        scene_handler = repo_root / "addon" / "handlers" / "scene.py"
+        if scene_handler.exists():
+            content = scene_handler.read_text(encoding="utf-8")
+            assert "scene.node_tree" not in content, (
+                "Compositor access pattern 'scene.node_tree' found in addon/handlers/scene.py"
+            )
 
 
 class TestSetRenderResolution:

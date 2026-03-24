@@ -125,6 +125,14 @@ class TestSetBrushProperty:
         with pytest.raises(ValidationError):
             set_brush_property("auto_smooth_factor", 1.1)
 
+    def test_set_brush_property_stroke_method(self, mock_conn):
+        from blend_ai.tools.sculpting import set_brush_property
+
+        set_brush_property("stroke_method", "DOTS")
+        mock_conn.send_command.assert_called_once_with(
+            "set_brush_property", {"property": "stroke_method", "value": "DOTS"}
+        )
+
 
 class TestRemesh:
     def test_remesh_default(self, mock_conn):
