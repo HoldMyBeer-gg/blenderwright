@@ -18,10 +18,12 @@ class BLENDAI_PT_MainPanel(bpy.types.Panel):
         srv = addon_server.get_server()
 
         if srv.is_running:
-            layout.label(text="Server: Running", icon="CHECKMARK")
+            port = srv._port
+            layout.label(text=f"Server: Running (port {port})", icon="CHECKMARK")
             layout.operator("blendai.stop_server", text="Stop Server", icon="CANCEL")
         else:
             layout.label(text="Server: Stopped", icon="X")
+            layout.prop(context.scene, "blendai_port", text="Port")
             layout.operator("blendai.start_server", text="Start Server", icon="PLAY")
 
 
@@ -31,8 +33,9 @@ class BLENDAI_OT_StartServer(bpy.types.Operator):
     bl_label = "Start blend-ai Server"
 
     def execute(self, context):
-        addon_server.start_server()
-        self.report({"INFO"}, "blend-ai server started on 127.0.0.1:9876")
+        port = context.scene.blendai_port
+        addon_server.start_server(port=port)
+        self.report({"INFO"}, f"blend-ai server started on 127.0.0.1:{port}")
         return {"FINISHED"}
 
 
@@ -58,7 +61,18 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    bpy.types.Scene.blendai_port = bpy.props.IntProperty(
+        name="Port",
+        description="TCP port for the blend-ai server",
+        default=9876,
+        min=1024,
+        max=65535,
+    )
+
 
 def unregister():
+    if hasattr(bpy.types.Scene, "blendai_port"):
+        del bpy.types.Scene.blendai_port
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
