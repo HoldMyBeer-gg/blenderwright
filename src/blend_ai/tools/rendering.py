@@ -13,7 +13,7 @@ from blend_ai.validators import (
 )
 
 # Allowed render engines
-ALLOWED_RENDER_ENGINES = {"BLENDER_EEVEE_NEXT", "CYCLES", "BLENDER_WORKBENCH"}
+ALLOWED_RENDER_ENGINES = {"BLENDER_EEVEE", "CYCLES", "BLENDER_WORKBENCH"}
 
 # Allowed output formats
 ALLOWED_OUTPUT_FORMATS = {"PNG", "JPEG", "OPEN_EXR", "TIFF", "BMP"}
@@ -27,7 +27,7 @@ def set_render_engine(engine: str) -> dict[str, Any]:
     """Set the render engine.
 
     Args:
-        engine: Render engine to use. One of: BLENDER_EEVEE_NEXT, CYCLES, BLENDER_WORKBENCH.
+        engine: Render engine to use. One of: BLENDER_EEVEE, CYCLES, BLENDER_WORKBENCH.
 
     Returns:
         Confirmation dict with the active render engine.

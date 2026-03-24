@@ -15,7 +15,7 @@ ALLOWED_BRUSH_TYPES = {
     "FLATTEN", "FILL", "SCRAPE", "PINCH", "CREASE", "BLOB", "MASK",
     "MULTIRES_DISPLACEMENT_SMEAR",
 }
-ALLOWED_BRUSH_PROPERTIES = {"size", "strength", "auto_smooth_factor", "use_frontface"}
+ALLOWED_BRUSH_PROPERTIES = {"size", "strength", "auto_smooth_factor", "use_frontface", "stroke_method"}
 ALLOWED_REMESH_MODES = {"VOXEL", "SHARP", "SMOOTH", "BLOCKS"}
 ALLOWED_DYNTOPO_DETAIL_MODES = {"RELATIVE", "CONSTANT", "BRUSH", "MANUAL"}
 
@@ -97,6 +97,12 @@ def set_brush_property(property: str, value: Any) -> dict[str, Any]:
     elif property == "use_frontface":
         if not isinstance(value, bool):
             raise ValidationError("use_frontface must be a boolean")
+    elif property == "stroke_method":
+        ALLOWED_STROKE_METHODS = {
+            "DOTS", "DRAG_DOT", "SPACE", "AIRBRUSH",
+            "ANCHORED", "LINE", "CURVE",
+        }
+        validate_enum(value, ALLOWED_STROKE_METHODS, name="stroke_method")
 
     conn = get_connection()
     response = conn.send_command("set_brush_property", {

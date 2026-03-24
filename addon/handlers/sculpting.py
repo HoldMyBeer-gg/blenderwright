@@ -104,6 +104,17 @@ def handle_set_brush_property(params: dict) -> dict:
             brush.auto_smooth_factor = float(value)
         elif prop == "use_frontface":
             brush.use_frontface = bool(value)
+        elif prop == "stroke_method":
+            ALLOWED_STROKE_METHODS = {
+                "DOTS", "DRAG_DOT", "SPACE", "AIRBRUSH",
+                "ANCHORED", "LINE", "CURVE",
+            }
+            if value not in ALLOWED_STROKE_METHODS:
+                raise ValueError(
+                    f"stroke_method '{value}' not in "
+                    f"{sorted(ALLOWED_STROKE_METHODS)}"
+                )
+            brush.stroke_method = value
         else:
             raise ValueError(f"Unknown brush property: {prop}")
 
