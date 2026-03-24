@@ -7,7 +7,6 @@ from blend_ai.validators import (
     validate_object_name,
     validate_enum,
     validate_numeric_range,
-    ValidationError,
 )
 
 ALLOWED_UNWRAP_METHODS = {"ANGLE_BASED", "CONFORMAL", "SLIM"}

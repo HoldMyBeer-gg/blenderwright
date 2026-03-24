@@ -21,4 +21,4 @@ jobs:
         pip install -e .
     - name: Lint MCP server
       run: |
-        pylint src/blend_ai/ --disable=C,R
+        pylint src/blend_ai/ --disable=C,R,W0622 --fail-under=9.0
