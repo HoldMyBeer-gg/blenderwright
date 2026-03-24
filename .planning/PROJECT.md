@@ -25,15 +25,15 @@ An LLM using this MCP should produce professional-quality 3D output without the 
 
 ### Active
 
-- [ ] Auto-screenshot feedback loop — after building/modifying, LLM captures viewport and critiques result
-- [ ] Context-aware Blender extension suggestions — when a task would benefit from a free plugin, suggest it before starting
+- [x] Auto-screenshot feedback loop — after building/modifying, LLM captures viewport and critiques result (Validated in Phase 3)
+- [x] Context-aware Blender extension suggestions — when a task would benefit from a free plugin, suggest it before starting (Validated in Phase 2)
 - [x] Full Blender 5.1 compatibility — fix any breaking changes from 4.x API (Validated in Phase 1)
 - [ ] New Blender 5.1 tools — expose new operators, nodes, and features added in 5.1
-- [ ] Expert-quality MCP prompts — guide the LLM on best practices, proven modeling patterns, and optimal parameter choices
-- [ ] Improved mesh quality — better defaults, proper topology, connected geometry, realistic proportions
+- [x] Expert-quality MCP prompts — guide the LLM on best practices, proven modeling patterns, and optimal parameter choices (Validated in Phase 2)
+- [x] Improved mesh quality — better defaults, proper topology, connected geometry, realistic proportions (Validated in Phase 2)
 - [ ] Missing tool coverage — boolean operations, edge loops, snapping, and other gaps that force workarounds
 - [ ] Smarter workflow tools — high-level operations that chain multiple low-level tools into expert patterns
-- [ ] Fix known bugs — render guard stuck state, stale connections, screenshot blocking during renders
+- [x] Fix known bugs — render guard stuck state, stale connections, screenshot blocking during renders (Validated in Phase 2 + 3)
 - [ ] Harden security — address code_exec vulnerability, add command auditing, improve path validation
 - [ ] Improve test coverage — code_exec sandbox unvalidated, socket error paths uncovered (handler tests added in Phase 1)
 

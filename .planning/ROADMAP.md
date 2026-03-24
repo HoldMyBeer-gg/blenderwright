@@ -60,10 +60,10 @@ Plans:
   1. Calling `get_viewport_screenshot(mode="fast")` returns a viewport image in under 500ms and does not trigger the render guard
   2. After building or modifying an object, the LLM automatically captures a screenshot and reports what it sees (good topology, issues, next steps)
   3. The auto-screenshot prompt prevents token runaway by specifying that screenshots fire only after structural changes (add/delete/boolean/apply), not after metadata-only changes
-**Plans**: 0/2 plans complete
+**Plans**: 2/2 plans complete
 Plans:
-- [ ] 03-01-PLAN.md — Fast viewport capture using render.opengl + mode parameter (FEED-01)
-- [ ] 03-02-PLAN.md — Auto-critique prompt with token-safety guidelines (FEED-02, FEED-03)
+- [x] 03-01-PLAN.md — Fast viewport capture using render.opengl + mode parameter (FEED-01)
+- [x] 03-02-PLAN.md — Auto-critique prompt with token-safety guidelines (FEED-02, FEED-03)
 
 ### Phase 4: Extension Suggestions, Security & New 5.1 Tools
 **Goal**: `code_exec` is sandboxed against RCE, the extension suggestion system detects installed extensions before recommending, and all Blender 5.1-exclusive nodes and tools are accessible via MCP
@@ -85,5 +85,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Blender 5.1 Compatibility | 3/3 | Complete   | 2026-03-24 |
 | 2. Expert Guidance & Stability | 4/4 | Complete   | 2026-03-24 |
-| 3. Visual Feedback Loop | 0/2 | In Progress | - |
+| 3. Visual Feedback Loop | 2/2 | Complete | 2026-03-24 |
 | 4. Extension Suggestions, Security & New 5.1 Tools | 0/? | Not started | - |
