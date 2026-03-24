@@ -12,7 +12,11 @@ import pytest
 def _load_camera_handler():
     """Load addon.handlers.camera directly without triggering addon/handlers/__init__.py."""
     mock_dispatcher = MagicMock()
-    sys.modules.setdefault("addon", MagicMock())
+
+    # Create an addon mock with dispatcher set so `from .. import dispatcher` resolves
+    mock_addon = MagicMock()
+    mock_addon.dispatcher = mock_dispatcher
+    sys.modules["addon"] = mock_addon
     sys.modules["addon.dispatcher"] = mock_dispatcher
 
     handler_path = os.path.join(
@@ -23,13 +27,28 @@ def _load_camera_handler():
     mod = importlib.util.module_from_spec(spec)
     sys.modules["addon.handlers.camera"] = mod
     spec.loader.exec_module(mod)
-    return mod
+    return mod, mock_dispatcher
 
 
 @pytest.fixture(scope="module")
 def camera_handler():
     """Provide loaded camera handler module."""
-    return _load_camera_handler()
+    mod, _dispatcher = _load_camera_handler()
+    return mod
+
+
+@pytest.fixture(scope="module")
+def camera_handler_with_dispatcher():
+    """Provide loaded camera handler module and mock dispatcher.
+    
+    Note: Returns the same module as camera_handler since they share sys.modules.
+    """
+    # The dispatcher mock is already in sys.modules from camera_handler fixture
+    mod = sys.modules.get("addon.handlers.camera")
+    disp = sys.modules.get("addon.dispatcher")
+    if mod is None:
+        mod, disp = _load_camera_handler()
+    return mod, disp
 
 
 def _setup_mock_bpy_for_fast_capture():
@@ -203,13 +222,15 @@ class TestFastViewportCapture:
         assert result["width"] == 800
         assert result["height"] == 600
 
-    def test_registered_in_dispatcher(self, camera_handler):
+    def test_registered_in_dispatcher(self, camera_handler_with_dispatcher):
         """fast_viewport_capture command is registered in dispatcher."""
-        dispatcher = sys.modules["addon.dispatcher"]
-        dispatcher.register_handler.assert_any_call(
-            "fast_viewport_capture",
-            camera_handler.handle_fast_viewport_capture,
-        )
+        mod, mock_dispatcher = camera_handler_with_dispatcher
+        mock_dispatcher.reset_mock()
+        mod.register()
+        registered_commands = [
+            call.args[0] for call in mock_dispatcher.register_handler.call_args_list
+        ]
+        assert "fast_viewport_capture" in registered_commands
 
     def test_raises_when_no_view3d(self, camera_handler):
         """Raises RuntimeError when no 3D viewport is found."""

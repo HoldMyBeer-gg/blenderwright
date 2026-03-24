@@ -221,6 +221,72 @@ def handle_capture_viewport(params: dict) -> dict:
         raise RuntimeError(f"Failed to capture viewport: {e}")
 
 
+def handle_fast_viewport_capture(params: dict) -> dict:
+    """Capture viewport using OpenGL render (fast, no render cycle)."""
+    width = params.get("width", 1920)
+    height = params.get("height", 1080)
+
+    scene = bpy.context.scene
+
+    # Store original settings
+    orig_x = scene.render.resolution_x
+    orig_y = scene.render.resolution_y
+    orig_pct = scene.render.resolution_percentage
+
+    scene.render.resolution_x = width
+    scene.render.resolution_y = height
+    scene.render.resolution_percentage = 100
+
+    try:
+        # Find a 3D viewport for context
+        found = False
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == 'VIEW_3D':
+                    with bpy.context.temp_override(window=window, area=area):
+                        bpy.ops.render.opengl(write_still=True)
+                    found = True
+                    break
+            if found:
+                break
+
+        if not found:
+            raise RuntimeError("No 3D viewport found for fast capture")
+
+        # Save render result to temp file
+        img = bpy.data.images.get("Render Result")
+        if img is None:
+            raise RuntimeError("No render result after viewport capture")
+
+        temp_dir = tempfile.mkdtemp()
+        filepath = os.path.join(temp_dir, "viewport_fast.png")
+
+        img.save_render(filepath)
+
+        with open(filepath, "rb") as f:
+            image_data = f.read()
+
+        result = {
+            "base64": base64.b64encode(image_data).decode("ascii"),
+            "format": "png",
+            "width": width,
+            "height": height,
+            "mode": "fast",
+        }
+
+        try:
+            os.remove(filepath)
+            os.rmdir(temp_dir)
+        except OSError:
+            pass
+
+        return result
+    finally:
+        scene.render.resolution_x = orig_x
+        scene.render.resolution_y = orig_y
+        scene.render.resolution_percentage = orig_pct
+
+
 def handle_set_camera_from_view(params: dict) -> dict:
     """Match camera to current 3D viewport."""
     try:
@@ -268,4 +334,5 @@ def register():
     dispatcher.register_handler("set_active_camera", handle_set_active_camera)
     dispatcher.register_handler("point_camera_at", handle_point_camera_at)
     dispatcher.register_handler("capture_viewport", handle_capture_viewport)
+    dispatcher.register_handler("fast_viewport_capture", handle_fast_viewport_capture)
     dispatcher.register_handler("set_camera_from_view", handle_set_camera_from_view)

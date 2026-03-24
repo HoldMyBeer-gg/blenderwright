@@ -288,3 +288,43 @@ def material_workflow_guide() -> str:
         "- Enable the Node Wrangler extension (Edit → Preferences → Add-ons → Node Wrangler). "
         "Use Ctrl+Shift+T to import a full PBR texture set automatically from a folder.\n"
     )
+
+
+@mcp.prompt()
+def auto_critique_workflow() -> str:
+    """Guide the LLM to automatically capture and critique its work after structural changes."""
+    return (
+        "## Auto-Critique Visual Feedback Workflow\n\n"
+        "After performing any of these structural operations, ALWAYS capture a viewport "
+        "screenshot using `get_viewport_screenshot(mode='fast')` and critique what you see "
+        "before continuing with the next step.\n\n"
+        "### Operations that REQUIRE auto-critique:\n"
+        "- Adding objects (mesh, light, camera, curve, empty)\n"
+        "- Deleting objects or geometry\n"
+        "- Boolean operations (union, difference, intersect, slice)\n"
+        "- Applying or adding a modifier (Subdivision Surface, Mirror, Bevel, etc.)\n"
+        "- Sculpting operations that change shape\n"
+        "- Material and shader changes (new materials, texture assignments)\n"
+        "- Lighting changes (add/move/change lights, HDRI setup)\n"
+        "- Camera positioning or framing changes\n"
+        "- Mesh editing (extrude, inset, bridge, loop cut, merge)\n\n"
+        "### Operations that do NOT need auto-critique:\n"
+        "- Renaming objects or collections\n"
+        "- Querying scene info or object properties\n"
+        "- Collection organization (moving objects between collections)\n"
+        "- File save or export operations\n"
+        "- Keyframe insertion (unless previewing the result)\n"
+        "- Setting non-visual properties (physics settings, constraints)\n\n"
+        "### When critiquing, check:\n"
+        "1. Does the object look correct from this angle? Any obvious geometry errors?\n"
+        "2. Are proportions realistic? (Refer to scale_reference_guide for reference)\n"
+        "3. Is the topology clean? No floating vertices, holes, or inverted normals visible?\n"
+        "4. Is lighting adequate to evaluate the result?\n"
+        "5. What should be improved or done next?\n\n"
+        "### Token Budget Rules\n"
+        "- Limit your critique to 2-3 sentences. Be specific and actionable.\n"
+        "- Capture only ONE screenshot per structural operation or batch.\n"
+        "- During multi-step sequences (e.g., building a character), capture once at the "
+        "end of the sequence — not after every individual step.\n"
+        "- If the user asks you to skip screenshots, respect that preference.\n"
+    )

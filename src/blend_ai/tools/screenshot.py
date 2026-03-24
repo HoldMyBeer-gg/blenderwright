@@ -1,29 +1,32 @@
 """MCP tool for capturing Blender viewport screenshots."""
 
-import base64
-import tempfile
-import os
 from typing import Any
 
 from blend_ai.server import mcp, get_connection
-from blend_ai.validators import validate_numeric_range
+from blend_ai.validators import validate_numeric_range, validate_enum
+
+# Allowed screenshot capture modes
+ALLOWED_SCREENSHOT_MODES = {"fast", "full"}
 
 
 @mcp.tool()
 def get_viewport_screenshot(
     max_size: int = 1000,
-    user_prompt: str = "",
+    mode: str = "fast",
 ) -> dict[str, Any]:
     """Capture a screenshot of the current Blender 3D viewport.
 
     Args:
         max_size: Maximum size in pixels for the largest dimension (default: 1000).
-        user_prompt: The original user prompt that led to this tool call (for telemetry).
+        mode: Capture mode - 'fast' for instant viewport capture using OpenGL
+            (default), 'full' for a complete render through the active render
+            engine.
 
     Returns:
-        Dict with base64-encoded PNG image data, width, and height.
+        Dict with base64-encoded PNG image data, width, height, format, and mode.
     """
     validate_numeric_range(max_size, min_val=64, max_val=4096, name="max_size")
+    validate_enum(mode, ALLOWED_SCREENSHOT_MODES, name="mode")
 
     # Calculate dimensions maintaining roughly 16:9 aspect
     width = max_size
@@ -33,8 +36,13 @@ def get_viewport_screenshot(
         width = int(max_size * 16 / 9)
 
     conn = get_connection()
-    response = conn.send_command("capture_viewport", {
-        "filepath": "",
+
+    if mode == "fast":
+        command = "fast_viewport_capture"
+    else:
+        command = "capture_viewport"
+
+    response = conn.send_command(command, {
         "width": width,
         "height": height,
     })
