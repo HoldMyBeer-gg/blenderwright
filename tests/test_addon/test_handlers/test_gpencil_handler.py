@@ -140,7 +140,7 @@ class TestHandleAddAnnotationStroke:
         def getitem(i):
             return [mock_point_0, mock_point_1][i]
 
-        mock_stroke.points.__getitem__ = getitem
+        mock_stroke.points.__getitem__.side_effect = getitem
 
         mock_frame = MagicMock()
         mock_frame.strokes.new.return_value = mock_stroke

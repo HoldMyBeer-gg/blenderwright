@@ -1,4 +1,4 @@
-"""MCP tools for Grease Pencil operations."""
+"""MCP tools for Blender Annotation operations (Blender 5.x)."""
 
 from typing import Any
 
@@ -17,27 +17,26 @@ ALLOWED_GP_STROKE_PROPERTIES = {"line_width", "material_index", "display_mode"}
 
 
 @mcp.tool()
-def create_gpencil_object(
+def create_annotation(
     name: str = "",
-    location: list[float] | tuple[float, ...] = (0, 0, 0),
 ) -> dict[str, Any]:
-    """Create a new Grease Pencil object.
+    """Create a new annotation data block.
+
+    Annotations are viewport overlays used for drawing marks, notes, and guides.
+    Unlike Grease Pencil objects, annotations are not positioned in 3D space.
 
     Args:
-        name: Optional name for the GP object. Auto-generated if empty.
-        location: XYZ position as a 3-element list/tuple. Defaults to origin.
+        name: Optional name for the annotation. Auto-generated if empty.
 
     Returns:
-        Dict with the created object's name and location.
+        Dict with the created annotation's name.
     """
     if name:
         name = validate_object_name(name)
-    location = validate_vector(location, size=3, name="location")
 
     conn = get_connection()
-    response = conn.send_command("create_gpencil_object", {
+    response = conn.send_command("create_annotation", {
         "name": name,
-        "location": list(location),
     })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
@@ -45,25 +44,25 @@ def create_gpencil_object(
 
 
 @mcp.tool()
-def add_gpencil_layer(object_name: str, layer_name: str) -> dict[str, Any]:
-    """Add a layer to a Grease Pencil object.
+def add_annotation_layer(annotation_name: str, layer_name: str) -> dict[str, Any]:
+    """Add a layer to an annotation.
 
-    Layers organize GP strokes. Each layer can have its own blend mode,
+    Layers organize annotation strokes. Each layer can have its own blend mode,
     opacity, and color.
 
     Args:
-        object_name: Name of the Grease Pencil object.
+        annotation_name: Name of the annotation data block.
         layer_name: Name for the new layer.
 
     Returns:
-        Confirmation dict.
+        Confirmation dict with annotation and layer names.
     """
-    object_name = validate_object_name(object_name)
+    annotation_name = validate_object_name(annotation_name)
     layer_name = validate_object_name(layer_name)
 
     conn = get_connection()
-    response = conn.send_command("add_gpencil_layer", {
-        "object_name": object_name,
+    response = conn.send_command("add_annotation_layer", {
+        "annotation_name": annotation_name,
         "layer_name": layer_name,
     })
     if response.get("status") == "error":
@@ -72,22 +71,22 @@ def add_gpencil_layer(object_name: str, layer_name: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def remove_gpencil_layer(object_name: str, layer_name: str) -> dict[str, Any]:
-    """Remove a layer from a Grease Pencil object.
+def remove_annotation_layer(annotation_name: str, layer_name: str) -> dict[str, Any]:
+    """Remove a layer from an annotation.
 
     Args:
-        object_name: Name of the Grease Pencil object.
+        annotation_name: Name of the annotation data block.
         layer_name: Name of the layer to remove.
 
     Returns:
         Confirmation dict.
     """
-    object_name = validate_object_name(object_name)
+    annotation_name = validate_object_name(annotation_name)
     layer_name = validate_object_name(layer_name)
 
     conn = get_connection()
-    response = conn.send_command("remove_gpencil_layer", {
-        "object_name": object_name,
+    response = conn.send_command("remove_annotation_layer", {
+        "annotation_name": annotation_name,
         "layer_name": layer_name,
     })
     if response.get("status") == "error":
@@ -96,29 +95,28 @@ def remove_gpencil_layer(object_name: str, layer_name: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def add_gpencil_stroke(
-    object_name: str,
+def add_annotation_stroke(
+    annotation_name: str,
     layer_name: str,
     points: list[list[float]],
     pressure: float = 1.0,
-    strength: float = 1.0,
 ) -> dict[str, Any]:
-    """Add a stroke to a Grease Pencil layer.
+    """Add a stroke to an annotation layer.
 
     Creates a new stroke with the given points on the specified layer.
+    Note: AnnotationStroke does not support per-point strength/opacity.
 
     Args:
-        object_name: Name of the Grease Pencil object.
+        annotation_name: Name of the annotation data block.
         layer_name: Name of the layer to add the stroke to.
         points: List of XYZ coordinates, e.g. [[0,0,0], [1,1,0], [2,0,0]].
             Maximum 10000 points.
         pressure: Pen pressure for all points. Range: 0.0-1.0.
-        strength: Stroke strength/opacity for all points. Range: 0.0-1.0.
 
     Returns:
         Confirmation dict with point count.
     """
-    object_name = validate_object_name(object_name)
+    annotation_name = validate_object_name(annotation_name)
     layer_name = validate_object_name(layer_name)
 
     if not points or not isinstance(points, list):
@@ -131,15 +129,13 @@ def add_gpencil_stroke(
         validated_points.append(list(validate_vector(pt, size=3, name=f"points[{i}]")))
 
     validate_numeric_range(pressure, min_val=0.0, max_val=1.0, name="pressure")
-    validate_numeric_range(strength, min_val=0.0, max_val=1.0, name="strength")
 
     conn = get_connection()
-    response = conn.send_command("add_gpencil_stroke", {
-        "object_name": object_name,
+    response = conn.send_command("add_annotation_stroke", {
+        "annotation_name": annotation_name,
         "layer_name": layer_name,
         "points": validated_points,
         "pressure": pressure,
-        "strength": strength,
     })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
@@ -147,17 +143,17 @@ def add_gpencil_stroke(
 
 
 @mcp.tool()
-def set_gpencil_stroke_property(
-    object_name: str,
+def set_annotation_stroke_property(
+    annotation_name: str,
     layer_name: str,
     stroke_index: int,
     property: str,
     value: Any,
 ) -> dict[str, Any]:
-    """Set a property on a Grease Pencil stroke.
+    """Set a property on an annotation stroke.
 
     Args:
-        object_name: Name of the Grease Pencil object.
+        annotation_name: Name of the annotation data block.
         layer_name: Name of the layer containing the stroke.
         stroke_index: Index of the stroke in the layer (0-based).
         property: Property to set. One of: line_width, material_index, display_mode.
@@ -166,14 +162,14 @@ def set_gpencil_stroke_property(
     Returns:
         Confirmation dict.
     """
-    object_name = validate_object_name(object_name)
+    annotation_name = validate_object_name(annotation_name)
     layer_name = validate_object_name(layer_name)
     validate_numeric_range(stroke_index, min_val=0, name="stroke_index")
     validate_enum(property, ALLOWED_GP_STROKE_PROPERTIES, name="property")
 
     conn = get_connection()
-    response = conn.send_command("set_gpencil_stroke_property", {
-        "object_name": object_name,
+    response = conn.send_command("set_annotation_stroke_property", {
+        "annotation_name": annotation_name,
         "layer_name": layer_name,
         "stroke_index": stroke_index,
         "property": property,
