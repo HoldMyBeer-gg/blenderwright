@@ -47,6 +47,7 @@ from blend_ai.tools import (  # noqa: E402, F401
     screenshot,
     booltool,
     mesh_editing,
+    mesh_quality,
     gpencil,
 )
 
