@@ -34,6 +34,16 @@ class RenderGuard:
         """Called by bpy.app.handlers.render_cancel."""
         self._rendering.clear()
 
+    def reset(self) -> bool:
+        """Force-clear the render guard.
+
+        Returns:
+            True if the guard was stuck (is_rendering was True), False otherwise.
+        """
+        was_rendering = self._rendering.is_set()
+        self._rendering.clear()
+        return was_rendering
+
 
 # Global instance — imported by server.py and registered by __init__.py
 render_guard = RenderGuard()
