@@ -10,7 +10,7 @@ from blend_ai.validators import (
     ValidationError,
 )
 
-ALLOWED_UNWRAP_METHODS = {"ANGLE_BASED", "CONFORMAL"}
+ALLOWED_UNWRAP_METHODS = {"ANGLE_BASED", "CONFORMAL", "SLIM"}
 ALLOWED_PROJECTIONS = {"CUBE", "CYLINDER", "SPHERE"}
 
 

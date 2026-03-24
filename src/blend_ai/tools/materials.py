@@ -73,6 +73,8 @@ ALLOWED_SHADER_NODE_TYPES = {
     "ShaderNodeSeparateXYZ", "ShaderNodeWavelength", "ShaderNodeBlackbody",
     # Output
     "ShaderNodeOutputMaterial", "ShaderNodeOutputWorld",
+    # Blender 5.1+ nodes
+    "ShaderNodeRaycast",
 }
 
 

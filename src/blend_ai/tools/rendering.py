@@ -161,3 +161,47 @@ def render_animation(filepath: str = "/tmp/render_", format: str = "PNG") -> dic
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
+
+
+@mcp.tool()
+def set_eevee_light_path(
+    diffuse_intensity: float | None = None,
+    glossy_intensity: float | None = None,
+    transmission_intensity: float | None = None,
+) -> dict[str, Any]:
+    """Set EEVEE light path intensity controls (Blender 5.1+).
+
+    Controls how strongly different light bounce types contribute to the final image.
+    Only applies when render engine is BLENDER_EEVEE.
+
+    Args:
+        diffuse_intensity: Intensity multiplier for diffuse bounces. Range: 0.0-10.0.
+        glossy_intensity: Intensity multiplier for glossy/specular bounces. Range: 0.0-10.0.
+        transmission_intensity: Intensity multiplier for transmission bounces. Range: 0.0-10.0.
+
+    Returns:
+        Dict with the current light path intensity values.
+    """
+    params = {}
+    if diffuse_intensity is not None:
+        validate_numeric_range(
+            diffuse_intensity, min_val=0.0, max_val=10.0, name="diffuse_intensity"
+        )
+        params["diffuse_intensity"] = diffuse_intensity
+    if glossy_intensity is not None:
+        validate_numeric_range(
+            glossy_intensity, min_val=0.0, max_val=10.0, name="glossy_intensity"
+        )
+        params["glossy_intensity"] = glossy_intensity
+    if transmission_intensity is not None:
+        validate_numeric_range(
+            transmission_intensity, min_val=0.0, max_val=10.0,
+            name="transmission_intensity",
+        )
+        params["transmission_intensity"] = transmission_intensity
+
+    conn = get_connection()
+    response = conn.send_command("set_eevee_light_path", params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")

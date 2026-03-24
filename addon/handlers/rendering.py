@@ -104,6 +104,24 @@ def handle_render_animation(params):
     }
 
 
+def handle_set_eevee_light_path(params: dict) -> dict:
+    """Set EEVEE light path intensity controls."""
+    eevee = bpy.context.scene.eevee
+
+    if "diffuse_intensity" in params:
+        eevee.light_path_diffuse_intensity = params["diffuse_intensity"]
+    if "glossy_intensity" in params:
+        eevee.light_path_glossy_intensity = params["glossy_intensity"]
+    if "transmission_intensity" in params:
+        eevee.light_path_transmission_intensity = params["transmission_intensity"]
+
+    return {
+        "diffuse_intensity": eevee.light_path_diffuse_intensity,
+        "glossy_intensity": eevee.light_path_glossy_intensity,
+        "transmission_intensity": eevee.light_path_transmission_intensity,
+    }
+
+
 def register():
     """Register all rendering handlers with the dispatcher."""
     dispatcher.register_handler("set_render_engine", handle_set_render_engine)
@@ -112,3 +130,4 @@ def register():
     dispatcher.register_handler("set_output_format", handle_set_output_format)
     dispatcher.register_handler("render_image", handle_render_image)
     dispatcher.register_handler("render_animation", handle_render_animation)
+    dispatcher.register_handler("set_eevee_light_path", handle_set_eevee_light_path)
