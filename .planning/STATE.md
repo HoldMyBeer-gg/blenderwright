@@ -76,6 +76,12 @@ Recent decisions affecting current work:
 
 None yet.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260324-r68 | Add !image inline command to blend-ai-chat REPL for reference images | 2026-03-25 | b5f0619 | [260324-r68-add-image-inline-command-to-blend-ai-cha](.planning/quick/260324-r68-add-image-inline-command-to-blend-ai-cha/) |
+
 ### Blockers/Concerns
 
 - [Research flag] Grease Pencil v3 scope: must decide whether COMPAT-04 targets GreasePencilv3 (3D drawing objects), Annotation (viewport overlays), or both — required before Phase 1 gpencil work begins
@@ -84,6 +90,7 @@ None yet.
 
 ## Session Continuity
 
+Last activity: 2026-03-25 - Completed quick task 260324-r68: Add !image inline command to blend-ai-chat REPL for reference images
 Last session: 2026-03-24T04:10:00.000Z
 Stopped at: All 4 phases complete — milestone finished
 Resume file: None
