@@ -76,6 +76,24 @@ class TestConstants:
         from blend_ai.ollama_chat import MAX_TOOL_ROUNDS
         assert MAX_TOOL_ROUNDS == 25
 
+    def test_system_prompt_has_modeling_strategy(self):
+        assert "Modeling strategy" in SYSTEM_PROMPT_BASE
+
+    def test_system_prompt_organic_uses_sculpt(self):
+        assert "sculpt" in SYSTEM_PROMPT_BASE.lower() or "Sculpt" in SYSTEM_PROMPT_BASE
+
+    def test_system_prompt_hard_surface_box_model(self):
+        assert "hard surface" in SYSTEM_PROMPT_BASE.lower() or "hard-surface" in SYSTEM_PROMPT_BASE.lower()
+
+    def test_system_prompt_has_planning_step(self):
+        assert "plan" in SYSTEM_PROMPT_BASE.lower()
+
+    def test_system_prompt_mentions_boolean(self):
+        assert "boolean" in SYSTEM_PROMPT_BASE.lower() or "Boolean" in SYSTEM_PROMPT_BASE
+
+    def test_system_prompt_mentions_subdivision(self):
+        assert "subdivision" in SYSTEM_PROMPT_BASE.lower() or "Subdivision" in SYSTEM_PROMPT_BASE
+
 
 class TestBlenderChatSession:
     def test_init_defaults(self, mock_ollama_client):

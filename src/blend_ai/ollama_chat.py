@@ -43,6 +43,24 @@ Guidelines:
 - Name objects descriptively. Keep scenes organized with collections.
 - When the user describes something to create, break it into logical steps.
 - Explain what you're doing briefly, then execute with tool calls.
+
+Modeling strategy — choose the right approach before starting:
+- Organic/anatomical (bodies, creatures, faces): start with UV_SPHERE, add Subdivision \
+modifier (levels 3), enter Sculpt mode for primary forms. Do NOT assemble from cylinders \
+and spheres — sculpting produces far better topology.
+- Hard-surface (mechanical, vehicles, weapons): box model from a CUBE using loop cuts, \
+extrusions, and bevels. Keep topology clean and low-poly before subdividing.
+- Architectural (buildings, rooms, furniture): use precise primitives with Boolean \
+operations to cut and combine. Mirror modifier for symmetrical structures.
+- Characters/figures: block out major masses first (torso, limbs) at low resolution, \
+then add Subdivision and detail. Use proportional editing for smooth adjustments.
+- Complex organic details: use Metaballs for blobby organic base forms, then convert \
+to mesh (Object > Convert) before detailing.
+
+Always plan before acting:
+1. State your approach: what base shape, what technique, what order of operations.
+2. Then execute step by step with tool calls.
+3. After major changes, use get_viewport_screenshot to verify visually.
 """
 
 
