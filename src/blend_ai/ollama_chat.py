@@ -298,6 +298,29 @@ class BlenderChatSession:
 
         return "(Reached maximum tool-calling rounds. Please try a simpler request.)"
 
+    def _handle_image_command(self, image_path: str, message: str) -> str:
+        """Handle a !image command by routing through the vision model first.
+
+        Sends the image to the vision model for analysis, then passes the
+        resulting text description to the chat model. This avoids sending
+        raw image bytes to non-vision chat models (which causes HTTP 500).
+
+        Args:
+            image_path: Path to the image file (already validated).
+            message: User's instruction about what to do with the image.
+
+        Returns:
+            The final assistant response text.
+        """
+        image_data = load_image_as_base64(image_path)
+        context = message if message else "Describe this image in detail for use as a 3D modeling reference."
+        print("  -> Analyzing image with vision model...")
+        description = self.analyze_screenshot(image_data, context=context)
+        combined = f"[Reference image analysis]: {description}"
+        if message:
+            combined += f"\n\nUser request: {message}"
+        return self.chat(combined)
+
     def close(self) -> None:
         """Disconnect from Blender."""
         from blend_ai import server as srv
@@ -517,11 +540,8 @@ def main():
             parsed_img = parse_image_command(user_input)
             if parsed_img is not None:
                 image_path, message = parsed_img
-                if not message:
-                    message = "Describe this image and use it as reference."
                 try:
-                    image_data = load_image_as_base64(image_path)
-                    response = session.chat(message, images=[image_data])
+                    response = session._handle_image_command(image_path, message)
                     print(f"\nAssistant: {response}\n")
                 except FileNotFoundError:
                     print(f"Error: Image file not found: {image_path}")

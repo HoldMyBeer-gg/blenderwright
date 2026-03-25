@@ -1,6 +1,7 @@
 """Tests for blend_ai.ollama_chat."""
 
 import json
+import unittest.mock
 import pytest
 from unittest.mock import MagicMock, patch, call
 
@@ -478,6 +479,48 @@ class TestSupportedImageFormats:
 
     def test_excludes_bmp(self):
         assert ".bmp" not in SUPPORTED_IMAGE_FORMATS
+
+
+class TestImageCommandRouting:
+    def test_image_command_calls_analyze_screenshot_not_chat_images(
+        self, mock_ollama_client, mock_blender_connection, mock_mcp_tools
+    ):
+        """!image should call analyze_screenshot (vision model) then chat() with text — not pass images to chat()."""
+        vision_description = "A detailed humanoid figure with clear muscle definition."
+        mock_response = MagicMock()
+        mock_response.message.tool_calls = None
+        mock_response.message.content = "I'll sculpt this!"
+        mock_ollama_client.chat.return_value = mock_response
+
+        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+            session = BlenderChatSession()
+            session.initialize()
+            with patch("blend_ai.ollama_chat.load_image_as_base64", return_value="base64data"):
+                with patch.object(session, "analyze_screenshot", return_value=vision_description) as mock_analyze:
+                    session._handle_image_command("/ref.png", "build this")
+                    mock_analyze.assert_called_once_with("base64data", context="build this")
+
+    def test_image_command_prepends_vision_description_to_chat(
+        self, mock_ollama_client, mock_blender_connection, mock_mcp_tools
+    ):
+        """chat() receives vision description prepended to user message, no images key."""
+        vision_description = "A sphere with rough surface texture."
+        mock_response = MagicMock()
+        mock_response.message.tool_calls = None
+        mock_response.message.content = "Got it!"
+        mock_ollama_client.chat.return_value = mock_response
+
+        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+            session = BlenderChatSession()
+            session.initialize()
+            with patch("blend_ai.ollama_chat.load_image_as_base64", return_value="base64data"):
+                with patch.object(session, "analyze_screenshot", return_value=vision_description):
+                    session._handle_image_command("/ref.png", "make this")
+
+        user_msg = next(m for m in session.messages if m["role"] == "user")
+        assert vision_description in user_msg["content"]
+        assert "make this" in user_msg["content"]
+        assert "images" not in user_msg
 
 
 class TestChatWithImages:
