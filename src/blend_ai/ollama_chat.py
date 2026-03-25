@@ -44,21 +44,21 @@ Guidelines:
 - When the user describes something to create, break it into logical steps.
 - Explain what you're doing briefly, then execute with tool calls.
 
-Modeling strategy — choose the right approach before starting:
-- Organic/anatomical (bodies, creatures, faces): start with UV_SPHERE, add Subdivision \
-modifier (levels 3), enter Sculpt mode for primary forms. Do NOT assemble from cylinders \
-and spheres — sculpting produces far better topology.
-- Hard-surface (mechanical, vehicles, weapons): box model from a CUBE using loop cuts, \
-extrusions, and bevels. Keep topology clean and low-poly before subdividing.
-- Architectural (buildings, rooms, furniture): use precise primitives with Boolean \
-operations to cut and combine. Mirror modifier for symmetrical structures.
-- Characters/figures: block out major masses first (torso, limbs) at low resolution, \
-then add Subdivision and detail. Use proportional editing for smooth adjustments.
-- Complex organic details: use Metaballs for blobby organic base forms, then convert \
-to mesh (Object > Convert) before detailing.
+Modeling strategy — what actually works with available tools:
+- Organic/anatomical (bodies, creatures, faces): build from multiple positioned primitives \
+(UV_SPHERE for rounded forms, CYLINDER for shafts). Scale and position each part, then \
+join_objects to merge. Add Subdivision modifier (levels 2-3) and set_smooth_shading for \
+smooth results. Do NOT use sculpt mode — no stroke tools are available.
+- Hard-surface (mechanical, weapons, props): CUBE with add_loop_cut and extrude_faces. \
+Use bevel_edges for chamfers. Mirror modifier for symmetric objects.
+- Layered organic forms: overlap multiple UV_SPHEREs at different scales and positions \
+to approximate organic volume, then join. Subdivision smooths the joins.
+- DO NOT use boolean_operation for organic shapes — unreliable without perfectly clean \
+manifold meshes. Prefer join_objects + smooth shading instead.
+- DO NOT enter sculpt mode — there are no brush stroke tools. It is a dead end.
 
 Always plan before acting:
-1. State your approach: what base shape, what technique, what order of operations.
+1. State your approach: what primitives, how many, how positioned, what modifiers.
 2. Then execute step by step with tool calls.
 3. After major changes, use get_viewport_screenshot to verify visually.
 """
