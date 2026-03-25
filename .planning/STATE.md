@@ -82,6 +82,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260324-r68 | Add !image inline command to blend-ai-chat REPL for reference images | 2026-03-25 | b5f0619 | [260324-r68-add-image-inline-command-to-blend-ai-cha](.planning/quick/260324-r68-add-image-inline-command-to-blend-ai-cha/) |
 | 260324-rdw | Fix MAX_TOOL_ROUNDS to 25 and set_modifier_property type coercion | 2026-03-25 | 228d09f | [260324-rdw-fix-max-tool-rounds-to-25-and-set-modifi](.planning/quick/260324-rdw-fix-max-tool-rounds-to-25-and-set-modifi/) |
+| 260324-rld | Add modeling strategy heuristics to SYSTEM_PROMPT_BASE | 2026-03-25 | ad577a1 | [260324-rld-add-modeling-strategy-heuristics-to-syst](.planning/quick/260324-rld-add-modeling-strategy-heuristics-to-syst/) |
 
 ### Blockers/Concerns
 
@@ -91,7 +92,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-25 - Completed quick task 260324-rdw: Fix MAX_TOOL_ROUNDS to 25 and set_modifier_property type coercion
+Last activity: 2026-03-25 - Completed quick task 260324-rld: Add modeling strategy heuristics to SYSTEM_PROMPT_BASE
 Last session: 2026-03-24T04:10:00.000Z
 Stopped at: All 4 phases complete — milestone finished
 Resume file: None
