@@ -71,6 +71,12 @@ def mock_mcp_tools():
         yield sample_tools
 
 
+class TestConstants:
+    def test_max_tool_rounds_is_25(self):
+        from blend_ai.ollama_chat import MAX_TOOL_ROUNDS
+        assert MAX_TOOL_ROUNDS == 25
+
+
 class TestBlenderChatSession:
     def test_init_defaults(self, mock_ollama_client):
         session = BlenderChatSession()

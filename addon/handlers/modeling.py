@@ -87,6 +87,22 @@ def handle_set_modifier_property(params):
             f"Modifier '{modifier_name}' has no property '{prop}'"
         )
 
+    # Coerce value to match the property's current type.
+    # LLMs often pass numbers as strings (e.g., "3" for int property).
+    current = getattr(mod, prop)
+    if current is not None and not isinstance(current, (list, tuple)):
+        target_type = type(current)
+        # Check bool before int — bool is a subclass of int
+        if target_type is bool:
+            if isinstance(value, str):
+                value = value.lower() in ("true", "1", "yes")
+            else:
+                value = bool(value)
+        elif not isinstance(value, target_type):
+            try:
+                value = target_type(value)
+            except (TypeError, ValueError):
+                pass  # Let setattr raise Blender's own error
     setattr(mod, prop, value)
     return {
         "object": obj.name,

@@ -25,7 +25,7 @@ DEFAULT_CHAT_MODEL = "qwen2.5-coder:14b"
 DEFAULT_VISION_MODEL = "llava-llama3:latest"
 
 # Max tool-call loop iterations to prevent infinite retries
-MAX_TOOL_ROUNDS = 10
+MAX_TOOL_ROUNDS = 25
 
 # Base system prompt — tool list is appended dynamically in initialize()
 SYSTEM_PROMPT_BASE = """You are an expert Blender 3D artist and technical director. You control \
