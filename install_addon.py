@@ -183,9 +183,20 @@ for scripts_dir in bpy.utils.script_paths(subdir='addons'):
 bpy.ops.preferences.addon_install(filepath=zip_path, overwrite=True)
 print('Installed:', zip_path)
 
-bpy.ops.preferences.addon_enable(module=module)
-bpy.ops.wm.save_userpref()
-print('SUCCESS: blend_ai enabled and preferences saved.')
+# addon_enable may raise a UI redraw error in background mode — catch and verify manually
+try:
+    bpy.ops.preferences.addon_enable(module=module)
+except Exception as e:
+    print(f'Warning during enable (expected in background mode): {{e}}'.format(e=e))
+
+# Verify the addon is actually registered
+import sys
+if module in bpy.context.preferences.addons or module in sys.modules:
+    bpy.ops.wm.save_userpref()
+    print('SUCCESS: blend_ai enabled and preferences saved.')
+else:
+    print('ERROR: module not found in addons or sys.modules after enable attempt')
+    sys.exit(1)
 """
 
 
