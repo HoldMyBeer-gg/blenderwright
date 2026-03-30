@@ -135,36 +135,37 @@ class TestFindZip:
 
 
 class TestBuildZip:
-    def test_calls_build_sh(self, tmp_path):
-        build_sh = tmp_path / "build.sh"
-        build_sh.write_text("#!/bin/bash\necho Built")
-        fake_zip = tmp_path / "blend-ai-v1.0.0.zip"
-        fake_zip.write_bytes(b"zip")
+    def _make_addon(self, tmp_path):
+        """Create a minimal addon/ structure with bl_info."""
+        addon = tmp_path / "addon"
+        addon.mkdir()
+        (addon / "__init__.py").write_text(
+            'bl_info = {"name": "blend-ai", "version": (1, 0, 0), "blender": (4, 0, 0)}\n'
+        )
+        (addon / "server.py").write_text("# server\n")
+        return addon
 
+    def test_builds_zip_from_addon_dir(self, tmp_path):
+        self._make_addon(tmp_path)
         log_calls = []
-        with patch.object(installer, "SCRIPT_DIR", tmp_path), \
-             patch("subprocess.run") as mock_run, \
-             patch.object(installer, "find_zip", return_value=fake_zip):
-            mock_run.return_value = MagicMock(returncode=0, stdout="Built: blend-ai-v1.0.0.zip", stderr="")
+        with patch.object(installer, "SCRIPT_DIR", tmp_path):
             result = installer.build_zip(log_calls.append)
-
-        assert result == fake_zip
+        assert result is not None
+        assert result.name == "blend-ai-v1.0.0.zip"
+        assert result.exists()
         assert any("Building" in str(m) for m in log_calls)
 
-    def test_returns_none_when_build_fails(self, tmp_path):
-        build_sh = tmp_path / "build.sh"
-        build_sh.write_text("#!/bin/bash\nexit 1")
-
+    def test_zip_contains_blend_ai_prefix(self, tmp_path):
+        self._make_addon(tmp_path)
         log_calls = []
-        with patch.object(installer, "SCRIPT_DIR", tmp_path), \
-             patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Build error")
+        import zipfile
+        with patch.object(installer, "SCRIPT_DIR", tmp_path):
             result = installer.build_zip(log_calls.append)
+        with zipfile.ZipFile(result) as zf:
+            names = zf.namelist()
+        assert all(n.startswith("blend_ai/") for n in names)
 
-        assert result is None
-        assert any("failed" in str(m).lower() for m in log_calls)
-
-    def test_returns_none_when_build_sh_missing(self, tmp_path):
+    def test_returns_none_when_addon_dir_missing(self, tmp_path):
         log_calls = []
         with patch.object(installer, "SCRIPT_DIR", tmp_path):
             result = installer.build_zip(log_calls.append)

@@ -110,28 +110,49 @@ def find_zip() -> Path | None:
 
 
 def build_zip(log_fn) -> Path | None:
-    build_script = SCRIPT_DIR / "build.sh"
-    if not build_script.exists():
-        log_fn("[red]build.sh not found — cannot build zip.[/red]")
+    addon_dir = SCRIPT_DIR / "addon"
+    if not addon_dir.exists():
+        log_fn("[red]addon/ directory not found.[/red]")
         return None
-    log_fn("Building addon zip...")
-    # On Windows, convert to forward-slash path so bash can find it
-    bash_path = build_script.as_posix()
-    if platform.system() == "Windows":
-        # Convert C:/Users/... to /c/Users/... for Git Bash
-        if len(bash_path) > 2 and bash_path[1] == ":":
-            bash_path = "/" + bash_path[0].lower() + bash_path[2:]
-    result = subprocess.run(
-        ["bash", bash_path],
-        cwd=SCRIPT_DIR,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        log_fn(f"[red]Build failed:[/red]\n{result.stderr}")
-        return None
-    log_fn(result.stdout.strip())
-    return find_zip()
+
+    # Read version from bl_info
+    try:
+        import ast
+        src = (addon_dir / "__init__.py").read_text(encoding="utf-8")
+        tree = ast.parse(src)
+        version = "0.0.0"
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id == "bl_info":
+                        d = ast.literal_eval(node.value)
+                        version = ".".join(str(x) for x in d["version"])
+    except Exception as e:
+        log_fn(f"[yellow]Could not read version: {e} — using 0.0.0[/yellow]")
+
+    output = SCRIPT_DIR / f"blend-ai-v{version}.zip"
+    log_fn(f"Building addon zip v{version}...")
+
+    import shutil
+    import tempfile
+    import zipfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp) / "blend_ai"
+        shutil.copytree(addon_dir, dest)
+        # Remove __pycache__ and .pyc
+        for cache in dest.rglob("__pycache__"):
+            shutil.rmtree(cache)
+        for pyc in dest.rglob("*.pyc"):
+            pyc.unlink()
+        # Write zip
+        output.unlink(missing_ok=True)
+        with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as zf:
+            for f in sorted(dest.rglob("*")):
+                zf.write(f, Path("blend_ai") / f.relative_to(dest))
+
+    log_fn(f"Built: {output.name}")
+    return output
 
 
 # ---------------------------------------------------------------------------
