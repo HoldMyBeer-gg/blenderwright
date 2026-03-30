@@ -115,8 +115,14 @@ def build_zip(log_fn) -> Path | None:
         log_fn("[red]build.sh not found — cannot build zip.[/red]")
         return None
     log_fn("Building addon zip...")
+    # On Windows, convert to forward-slash path so bash can find it
+    bash_path = build_script.as_posix()
+    if platform.system() == "Windows":
+        # Convert C:/Users/... to /c/Users/... for Git Bash
+        if len(bash_path) > 2 and bash_path[1] == ":":
+            bash_path = "/" + bash_path[0].lower() + bash_path[2:]
     result = subprocess.run(
-        ["bash", str(build_script)],
+        ["bash", bash_path],
         cwd=SCRIPT_DIR,
         capture_output=True,
         text=True,
