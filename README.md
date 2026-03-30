@@ -8,6 +8,10 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ![blend-ai screenshot](./screenshot.png)
 
+&nbsp;
+
+![blend-ai screenshot 2](./screenshot2.png)
+
 ## Key Features
 
 - **164 tools** across 24 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
