@@ -8,7 +8,6 @@ import json
 import socket
 import struct
 import threading
-from typing import Any
 
 from . import dispatcher
 from . import thread_safety

@@ -8,7 +8,6 @@ _server.mcp.prompt.return_value = lambda fn: fn
 
 from blend_ai.prompts.workflows import auto_critique_workflow  # noqa: E402
 
-import pytest
 
 
 class TestAutoCritiquePrompt:

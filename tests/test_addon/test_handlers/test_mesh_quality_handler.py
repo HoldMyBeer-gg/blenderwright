@@ -3,7 +3,7 @@
 import os
 import sys
 import importlib.util
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock
 import pytest
 
 

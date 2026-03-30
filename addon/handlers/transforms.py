@@ -1,8 +1,6 @@
 """Blender addon handlers for object transform operations."""
 
-import math
 import bpy
-import mathutils
 from .. import dispatcher
 
 # Map origin type param to bpy.ops.object.origin_set type arg

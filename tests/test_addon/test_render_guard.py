@@ -1,6 +1,5 @@
 """Unit tests for render guard (render state tracking)."""
 
-import pytest
 from addon.render_guard import RenderGuard
 
 

@@ -1,6 +1,5 @@
 """MCP Server entry point for blend-ai."""
 
-import sys
 from mcp.server.fastmcp import FastMCP
 
 from blend_ai.connection import BlenderConnection

@@ -115,7 +115,7 @@ def set_output_format(format: str, filepath: str = "") -> dict[str, Any]:
 
 
 @mcp.tool()
-def render_image(filepath: str = "/tmp/render.png") -> dict[str, Any]:
+def render_image(filepath: str = "/tmp/render.png") -> dict[str, Any]:  # nosec B108
     """Render the current scene to an image file.
 
     Args:
@@ -135,7 +135,7 @@ def render_image(filepath: str = "/tmp/render.png") -> dict[str, Any]:
 
 
 @mcp.tool()
-def render_animation(filepath: str = "/tmp/render_", format: str = "PNG") -> dict[str, Any]:
+def render_animation(filepath: str = "/tmp/render_", format: str = "PNG") -> dict[str, Any]:  # nosec B108
     """Render the animation sequence to image files.
 
     Args:

@@ -1,7 +1,6 @@
 """Blender handlers for camera operations."""
 
 import base64
-import math
 import os
 import tempfile
 

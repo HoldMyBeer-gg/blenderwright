@@ -70,7 +70,7 @@ def handle_add_bone(params: dict) -> dict:
 
         # Store previous mode and active object
         prev_active = bpy.context.view_layer.objects.active
-        prev_mode = prev_active.mode if prev_active else 'OBJECT'
+        prev_mode = prev_active.mode if prev_active else 'OBJECT'  # noqa: F841
 
         # Ensure we're in object mode first, then switch to edit mode
         if bpy.context.view_layer.objects.active and bpy.context.view_layer.objects.active.mode != 'OBJECT':

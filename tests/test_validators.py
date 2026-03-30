@@ -10,7 +10,6 @@ from blend_ai.validators import (
     validate_vector,
     validate_enum,
     MAX_OBJECT_NAME_LENGTH,
-    ALLOWED_IMPORT_EXTENSIONS,
 )
 
 

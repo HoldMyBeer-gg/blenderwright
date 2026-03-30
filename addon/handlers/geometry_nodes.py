@@ -143,7 +143,7 @@ def handle_connect_geometry_nodes(params: dict) -> dict:
                 f"(node has {len(to_node.inputs)} inputs)"
             )
 
-        link = node_group.links.new(
+        link = node_group.links.new(  # noqa: F841
             from_node.outputs[from_socket_idx],
             to_node.inputs[to_socket_idx],
         )

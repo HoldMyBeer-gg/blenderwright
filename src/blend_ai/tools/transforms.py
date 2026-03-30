@@ -8,7 +8,6 @@ from blend_ai.validators import (
     validate_enum,
     validate_vector,
     validate_numeric_range,
-    ValidationError,
 )
 
 # Allowed rotation modes

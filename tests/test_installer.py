@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import importlib
+import importlib.util
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+# Skip entire module if textual is not installed
+pytest.importorskip("textual", reason="textual not installed — skipping installer tests")
 
 # ---------------------------------------------------------------------------
 # Helpers — import install_addon without triggering sys.exit on missing textual
@@ -13,8 +18,6 @@ import pytest
 
 def _import_installer():
     """Import install_addon, skipping the sys.exit guard."""
-    import importlib
-    # Patch sys.exit so the ImportError guard in the module doesn't kill the process
     with patch("sys.exit"):
         spec = importlib.util.spec_from_file_location(
             "install_addon",

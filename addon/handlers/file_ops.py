@@ -125,7 +125,7 @@ def handle_export_file(params: dict) -> dict:
             # Most exporters use use_selection, some use export_selected_objects
             kwargs["use_selection"] = True
 
-        result = export_op(filepath, **kwargs)
+        result = export_op(filepath, **kwargs)  # noqa: F841
 
         return {
             "filepath": filepath,

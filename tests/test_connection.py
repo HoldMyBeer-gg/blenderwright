@@ -3,7 +3,6 @@
 import json
 import struct
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
 
 from blend_ai.connection import BlenderConnection, BlenderConnectionError
 

@@ -1,6 +1,5 @@
 """Tests for new Blender 5.1 shader node types."""
 
-import pytest
 from blend_ai.tools.materials import ALLOWED_SHADER_NODE_TYPES
 
 

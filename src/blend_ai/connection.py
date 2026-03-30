@@ -125,7 +125,7 @@ class BlenderConnection:
                     response_data = self._recv_raw()
                     response = json.loads(response_data.decode("utf-8"))
                 except (OSError, json.JSONDecodeError, BlenderConnectionError) as e:
-                    last_error = e
+                    last_error = e  # noqa: F841
                     self.disconnect()
                     if attempt == 0:
                         continue  # retry with fresh connection

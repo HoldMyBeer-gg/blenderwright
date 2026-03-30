@@ -6,7 +6,6 @@ builtins (exec, eval, open, compile) while allowing safe Blender
 operations (bpy, bmesh, mathutils, math, json).
 """
 
-import bpy
 import sys
 import io
 from .. import dispatcher

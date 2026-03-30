@@ -4,8 +4,7 @@ import os
 import sys
 import base64
 import importlib.util
-import tempfile
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock
 import pytest
 
 

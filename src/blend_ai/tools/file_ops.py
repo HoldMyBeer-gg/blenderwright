@@ -6,7 +6,6 @@ from blend_ai.server import mcp, get_connection
 from blend_ai.validators import (
     validate_file_path,
     validate_enum,
-    ValidationError,
     ALLOWED_IMPORT_EXTENSIONS,
     ALLOWED_EXPORT_EXTENSIONS,
 )
