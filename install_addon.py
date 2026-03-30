@@ -41,12 +41,12 @@ def _blender_candidates() -> list[Path]:
     candidates: list[Path | str] = []
 
     if system == "Windows":
-        roots = [
+        roots = list(dict.fromkeys(filter(None, [  # deduplicate while preserving order
             os.environ.get("ProgramFiles", r"C:\Program Files"),
             os.environ.get("ProgramW6432", r"C:\Program Files"),
             os.environ.get("LOCALAPPDATA", ""),
-        ]
-        for root in filter(None, roots):
+        ])))
+        for root in roots:
             candidates += glob.glob(
                 os.path.join(root, "Blender Foundation", "**", "blender.exe"),
                 recursive=True,
@@ -229,6 +229,7 @@ class InstallerApp(App):
     def __init__(self, preselected: str | None = None):
         super().__init__()
         self._found: list[tuple[str | Path, str]] = []  # (path, label)
+        self._preselected = preselected
         self._selected: str | Path | None = preselected
         self._searching = True
 
@@ -254,7 +255,7 @@ class InstallerApp(App):
         found_list = self.query_one("#found-list", ListView)
         searching = self.query_one("#searching", Label)
 
-        candidates = _blender_candidates()
+        candidates = list(dict.fromkeys(_blender_candidates()))  # deduplicate
 
         async def check(candidate):
             version = await _get_blender_version(candidate)
@@ -263,7 +264,7 @@ class InstallerApp(App):
                 self._found.append((candidate, label))
                 item = ListItem(Label(label, classes="found-item"))
                 await found_list.append(item)
-                if not self._selected:
+                if not self._selected and not self._preselected:
                     self._selected = candidate
                     self.query_one("#path-input", Input).value = str(candidate)
 
