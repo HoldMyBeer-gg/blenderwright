@@ -20,7 +20,7 @@ from pathlib import Path
 try:
     from textual.app import App, ComposeResult
     from textual.binding import Binding
-    from textual.containers import Horizontal, Vertical, ScrollableContainer
+    from textual.containers import Horizontal
     from textual.widgets import Button, Footer, Header, Input, Label, ListItem, ListView, RichLog
 except ImportError:
     print("textual is required: pip install textual")

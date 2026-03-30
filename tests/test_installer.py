@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import sys
-import types
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -122,7 +120,8 @@ class TestFindZip:
         z2 = tmp_path / "blend-ai-v1.0.0.zip"
         z1.write_bytes(b"old")
         z2.write_bytes(b"new")
-        import time; time.sleep(0.01)
+        import time
+        time.sleep(0.01)
         z2.touch()  # ensure z2 is newer
 
         with patch.object(installer, "SCRIPT_DIR", tmp_path):
