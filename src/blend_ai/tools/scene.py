@@ -3,7 +3,7 @@
 from typing import Any
 
 from blend_ai.server import mcp, get_connection
-from blend_ai.validators import validate_object_name, validate_enum, validate_numeric_range, ValidationError
+from blend_ai.validators import validate_object_name, validate_enum, validate_numeric_range
 
 # Allowed scene properties that can be set
 ALLOWED_SCENE_PROPERTIES = {

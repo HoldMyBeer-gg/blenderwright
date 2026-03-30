@@ -6,7 +6,6 @@ on the main thread from background threads.
 """
 
 import queue
-import traceback
 from typing import Any, Callable
 
 import bpy

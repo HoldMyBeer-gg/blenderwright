@@ -1,7 +1,6 @@
 """Blender addon handlers for object operations."""
 
 import bpy
-import mathutils
 from .. import dispatcher
 
 # Map of primitive type to bpy.ops function
@@ -181,7 +180,7 @@ def handle_get_object_info(params: dict) -> dict:
             raise ValueError(f"Object '{name}' not found")
 
         modifiers = [{"name": m.name, "type": m.type} for m in obj.modifiers]
-        materials = [{"name": m.name, "index": i} for i, m in enumerate(obj.data.material_slots) if m.material] if hasattr(obj, "data") and obj.data and hasattr(obj.data, "material_slots") else []
+        materials = [{"name": m.name, "index": i} for i, m in enumerate(obj.data.material_slots) if m.material] if hasattr(obj, "data") and obj.data and hasattr(obj.data, "material_slots") else []  # noqa: F841
 
         # Get material slot names directly from object
         mat_slots = []

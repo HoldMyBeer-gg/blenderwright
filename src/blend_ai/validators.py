@@ -3,7 +3,6 @@
 import re
 import os
 from pathlib import Path
-from typing import Any, Optional
 
 # Allowed file extensions for import/export
 ALLOWED_IMPORT_EXTENSIONS = {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usda", ".usdc", ".usdz", ".stl", ".ply", ".abc", ".dae", ".svg", ".x3d"}

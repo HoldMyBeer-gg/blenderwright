@@ -239,7 +239,7 @@ def handle_set_physics_property(params: dict) -> dict:
                 raise ValueError(f"Property '{prop}' not allowed for particles. Allowed: {sorted(ALLOWED_PARTICLE_PROPS)}")
             settings = obj.particle_systems[0].settings
             setattr(settings, prop, value)
-            actual = getattr(settings, prop)
+            actual = getattr(settings, prop)  # noqa: F841
 
         else:
             raise ValueError(f"Unknown physics type: {physics_type}")

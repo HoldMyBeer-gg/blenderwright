@@ -1,6 +1,5 @@
 """Blender handlers for lighting operations."""
 
-import math
 import bpy
 from .. import dispatcher
 
@@ -222,7 +221,7 @@ def handle_create_light_rig(params: dict) -> dict:
                                  intensity * 0.8, (1.0, 1.0, 1.0))
 
         elif rig_type == "OUTDOOR":
-            sun = _create_light_in_rig("Sun Light", "SUN",
+            sun = _create_light_in_rig("Sun Light", "SUN",  # noqa: F841
                                        (target_loc[0] + 5, target_loc[1] - 5, target_loc[2] + 10),
                                        intensity * 0.005, (1.0, 0.95, 0.85))
             _create_light_in_rig("Sky Fill", "AREA",

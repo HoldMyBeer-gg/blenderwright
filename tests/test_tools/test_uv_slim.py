@@ -1,6 +1,5 @@
 """Tests for SLIM UV unwrap method (Blender 5.1)."""
 
-import pytest
 from blend_ai.tools.uv import ALLOWED_UNWRAP_METHODS
 
 

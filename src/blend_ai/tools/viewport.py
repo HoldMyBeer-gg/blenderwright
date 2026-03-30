@@ -3,7 +3,7 @@
 from typing import Any
 
 from blend_ai.server import mcp, get_connection
-from blend_ai.validators import validate_object_name, validate_enum, ValidationError
+from blend_ai.validators import validate_object_name, validate_enum
 
 # Allowed viewport shading modes
 ALLOWED_SHADING_MODES = {"WIREFRAME", "SOLID", "MATERIAL", "RENDERED"}
