@@ -160,16 +160,25 @@ def build_zip(log_fn) -> Path | None:
 # ---------------------------------------------------------------------------
 
 INSTALL_SCRIPT = """
-import bpy, sys
+import bpy, shutil
+from pathlib import Path
 
 zip_path = r'{zip_path}'
 module   = '{module}'
 
+# Disable and remove via Blender API
 addons = bpy.context.preferences.addons
 if module in addons:
     bpy.ops.preferences.addon_disable(module=module)
     bpy.ops.preferences.addon_remove(module=module)
     print('Removed existing', module, 'addon.')
+
+# Also physically delete any leftover directory (handles namespace package remnants)
+for scripts_dir in bpy.utils.script_paths(subdir='addons'):
+    leftover = Path(scripts_dir) / module
+    if leftover.exists():
+        shutil.rmtree(leftover)
+        print('Deleted leftover directory:', leftover)
 
 bpy.ops.preferences.addon_install(filepath=zip_path, overwrite=True)
 print('Installed:', zip_path)
