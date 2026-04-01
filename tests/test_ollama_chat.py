@@ -37,7 +37,7 @@ def mock_blender_connection():
         mock_conn.send_command.return_value = {"status": "ok", "result": {"name": "Cube"}}
         mock_cls.return_value = mock_conn
         # Also patch the server module's connection
-        with patch("blend_ai.server._connection", mock_conn):
+        with patch("blend_ai.server._connection", mock_conn, create=True):
             with patch("blend_ai.server.get_connection", return_value=mock_conn):
                 yield mock_conn
 
