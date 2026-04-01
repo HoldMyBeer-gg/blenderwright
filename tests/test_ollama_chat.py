@@ -117,7 +117,7 @@ class TestBlenderChatSession:
             mock_cls.assert_called_with(host="http://myserver:11434")
 
     def test_initialize(self, mock_ollama_client, mock_blender_connection, mock_mcp_tools):
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             mock_blender_connection.connect.assert_called_once()
@@ -163,7 +163,7 @@ class TestBlenderChatSession:
         mock_response.message.content = "I'll help you with Blender!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             result = session.chat("Hello")
@@ -187,7 +187,7 @@ class TestBlenderChatSession:
 
         mock_ollama_client.chat.side_effect = [tool_response, final_response]
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(BlenderChatSession, "execute_tool", return_value='{"name": "Cube"}'):
                 session = BlenderChatSession()
                 session.initialize()
@@ -212,7 +212,7 @@ class TestBlenderChatSession:
 
         mock_ollama_client.chat.side_effect = [text_response, final_response]
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(BlenderChatSession, "execute_tool", return_value='{"name": "Cube"}'):
                 session = BlenderChatSession()
                 session.initialize()
@@ -239,7 +239,7 @@ class TestBlenderChatSession:
 
         mock_ollama_client.chat.side_effect = [tool_response, final_response]
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(
                 BlenderChatSession, "execute_tool", return_value=screenshot_result
             ):
@@ -317,7 +317,7 @@ class TestBlenderChatSession:
 
         mock_ollama_client.chat.side_effect = [tool_response, final_response]
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(BlenderChatSession, "execute_tool", return_value=screenshot_result):
                 with patch.object(
                     BlenderChatSession, "analyze_screenshot", return_value=analysis_text
@@ -375,7 +375,7 @@ class TestBlenderChatSession:
 
         screenshot_json = json.dumps({"image": "data", "width": 100, "height": 100})
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(
                 BlenderChatSession, "execute_tool", return_value=screenshot_json
             ):
@@ -647,7 +647,7 @@ class TestImageCommandRouting:
         mock_response.message.content = "I'll sculpt this!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             with patch("blend_ai.ollama_chat.load_image_as_base64", return_value="base64data"):
@@ -665,7 +665,7 @@ class TestImageCommandRouting:
         mock_response.message.content = "Got it!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             with patch("blend_ai.ollama_chat.load_image_as_base64", return_value="base64data"):
@@ -688,7 +688,7 @@ class TestChatWithImages:
         mock_response.message.content = "I see the reference image!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             session.chat("Build this", images=["base64imagedata"])
@@ -706,7 +706,7 @@ class TestChatWithImages:
         mock_response.message.content = "Sure!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             session.chat("Hello")
