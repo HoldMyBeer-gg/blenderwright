@@ -14,9 +14,8 @@ except ImportError:
     ollama = None
     OllamaClient = None
 
-from blend_ai.connection import BlenderConnection, BlenderConnectionError
+from blend_ai.connection import BlenderConnectionError
 from blend_ai.tool_registry import get_ollama_tools
-from blend_ai.validators import ValidationError
 
 # Supported image formats for the !image REPL command
 SUPPORTED_IMAGE_FORMATS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
@@ -134,7 +133,7 @@ class BlenderChatSession:
     def initialize(self) -> None:
         """Connect to Blender and load tool definitions."""
         # Import here to avoid circular imports — server module registers all tools
-        from blend_ai.server import mcp, get_connection
+        from blend_ai.server import mcp
 
         # Configure and verify Blender connection
         from blend_ai.connection import BlenderConnection

@@ -1,9 +1,8 @@
 """Tests for blend_ai.ollama_chat."""
 
 import json
-import unittest.mock
 import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 from blend_ai.ollama_chat import (
     BlenderChatSession,
@@ -114,7 +113,7 @@ class TestBlenderChatSession:
 
     def test_init_ollama_host(self):
         with patch("blend_ai.ollama_chat.OllamaClient") as mock_cls:
-            session = BlenderChatSession(ollama_host="http://myserver:11434")
+            BlenderChatSession(ollama_host="http://myserver:11434")
             mock_cls.assert_called_with(host="http://myserver:11434")
 
     def test_initialize(self, mock_ollama_client, mock_blender_connection, mock_mcp_tools):
