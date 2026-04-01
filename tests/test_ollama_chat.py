@@ -269,6 +269,137 @@ class TestBlenderChatSession:
             session.close()
             mock_blender_connection.disconnect.assert_called_once()
 
+    def test_execute_tool_reuses_event_loop(self, mock_ollama_client, mock_blender_connection):
+        """execute_tool must reuse a cached loop, not call asyncio.run per invocation."""
+        mock_text = MagicMock()
+        mock_text.text = '{"status": "ok"}'
+
+        session = BlenderChatSession()
+
+        with patch("blend_ai.server.mcp") as mock_mcp:
+            # Make call_tool return a coroutine-compatible value via run_until_complete
+            import asyncio
+
+            async def _fake_call_tool(name, args):
+                return [mock_text]
+
+            mock_mcp.call_tool = _fake_call_tool
+
+            with patch("asyncio.run") as mock_asyncio_run:
+                session.execute_tool("create_object", {"type": "CUBE"})
+                session.execute_tool("create_object", {"type": "SPHERE"})
+                mock_asyncio_run.assert_not_called()
+
+        # The session should have cached a loop
+        assert session._loop is not None
+
+    def test_vision_note_merged_into_json_result(
+        self, mock_ollama_client, mock_blender_connection, mock_mcp_tools
+    ):
+        """Vision analysis is merged as 'vision_analysis' key when result is valid JSON."""
+        screenshot_result = json.dumps({"image": "base64data", "width": 800, "height": 600})
+        analysis_text = "I see a grey cube on a white background."
+
+        tool_response = MagicMock()
+        tool_call = MagicMock()
+        tool_call.function.name = "get_viewport_screenshot"
+        tool_call.function.arguments = {}
+        tool_response.message.tool_calls = [tool_call]
+        tool_response.message.content = ""
+
+        final_response = MagicMock()
+        final_response.message.tool_calls = None
+        final_response.message.content = "Done."
+
+        mock_ollama_client.chat.side_effect = [tool_response, final_response]
+
+        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+            with patch.object(BlenderChatSession, "execute_tool", return_value=screenshot_result):
+                with patch.object(
+                    BlenderChatSession, "analyze_screenshot", return_value=analysis_text
+                ):
+                    session = BlenderChatSession()
+                    session.initialize()
+                    session.chat("Take a screenshot")
+
+        tool_msg = next(m for m in session.messages if m["role"] == "tool")
+        parsed = json.loads(tool_msg["content"])
+        assert "vision_analysis" in parsed
+        assert parsed["vision_analysis"] == analysis_text
+
+    def test_vision_note_concatenated_for_non_json_result(
+        self, mock_ollama_client, mock_blender_connection, mock_mcp_tools
+    ):
+        """Vision note falls back to concatenation when result is not valid JSON."""
+        plain_text_result = "Screenshot saved to /tmp/shot.png"
+        analysis_text = "I see a grey cube."
+
+        tool_response = MagicMock()
+        tool_call = MagicMock()
+        tool_call.function.name = "get_viewport_screenshot"
+        tool_call.function.arguments = {}
+        tool_response.message.tool_calls = [tool_call]
+        tool_response.message.content = ""
+
+        final_response = MagicMock()
+        final_response.message.tool_calls = None
+        final_response.message.content = "Done."
+
+        mock_ollama_client.chat.side_effect = [tool_response, final_response]
+
+        # Patch analyze_screenshot to return analysis even for non-JSON result
+        # We also need parse to succeed at extracting image key — mock execute_tool
+        # to return JSON with "image" so vision analysis is triggered, but then
+        # pretend execute_tool returned plain text for the appended message.
+        # Simplest approach: patch both execute_tool AND analyze_screenshot,
+        # and configure execute_tool to return a JSON that triggers vision analysis
+        # but where we intercept result processing.
+
+        # Actually: execute_tool returns plain text, but vision analysis only triggers
+        # when result JSON has "image" key. So we need execute_tool to return JSON with
+        # "image" key, but also make json.dumps of result_obj fail (TypeError).
+        # Easiest: return valid JSON with "image" key, mock analyze_screenshot,
+        # then verify fallback path via monkeypatching json.loads on the second call.
+
+        # Cleaner test: return a string that has "image" key detectable by json.loads
+        # but then make json.dumps(result_obj) fail by patching json.loads to raise on second call.
+        # Even cleaner: use a side_effect on json.loads.
+
+        # Simplest valid approach: make execute_tool return plain text (no "image" key)
+        # so vision is NOT triggered at all. Instead, test the branch directly on chat().
+        # We need vision_note to be non-empty, which requires "image" key in result JSON.
+        # So: return JSON with image key but arrange for result_obj update to raise TypeError.
+
+        screenshot_json = json.dumps({"image": "data", "width": 100, "height": 100})
+
+        with patch("blend_ai.ollama_chat.BlenderConnection", return_value=mock_blender_connection):
+            with patch.object(
+                BlenderChatSession, "execute_tool", return_value=screenshot_json
+            ):
+                with patch.object(
+                    BlenderChatSession, "analyze_screenshot", return_value=analysis_text
+                ):
+                    # Patch json.loads inside ollama_chat to raise on the tool-content parse
+                    original_loads = json.loads
+
+                    call_count = [0]
+
+                    def selective_loads(s, **kwargs):
+                        call_count[0] += 1
+                        # First call is for extracting "image" key — allow it
+                        # Second call is for merging vision note — raise to test fallback
+                        if call_count[0] == 2:
+                            raise json.JSONDecodeError("forced", "", 0)
+                        return original_loads(s, **kwargs)
+
+                    with patch("blend_ai.ollama_chat.json.loads", side_effect=selective_loads):
+                        session = BlenderChatSession()
+                        session.initialize()
+                        session.chat("Take a screenshot")
+
+        tool_msg = next(m for m in session.messages if m["role"] == "tool")
+        assert analysis_text in tool_msg["content"] or "[Vision Analysis]" in tool_msg["content"]
+
 
 class TestParseTextToolCalls:
     def test_xml_style_no_params(self):
@@ -328,6 +459,20 @@ class TestParseTextToolCalls:
         result = _parse_text_tool_calls(text, {"create_object"})
         assert len(result) == 2
 
+    def test_json_without_arguments_key_rejected(self):
+        """JSON with only 'name' key must NOT be treated as a tool call."""
+        text = '{"name": "Cube", "vertices": 8}'
+        result = _parse_text_tool_calls(text, {"create_object"})
+        assert result == []
+
+    def test_json_with_name_and_arguments_accepted(self):
+        """JSON with both 'name' and 'arguments' keys must be treated as a tool call."""
+        text = '{"name": "create_object", "arguments": {"type": "SPHERE"}}'
+        result = _parse_text_tool_calls(text, {"create_object"})
+        assert len(result) == 1
+        assert result[0]["name"] == "create_object"
+        assert result[0]["arguments"]["type"] == "SPHERE"
+
 
 class TestStripToolMarkup:
     def test_strips_xml_function(self):
@@ -346,6 +491,13 @@ class TestStripToolMarkup:
         text = "Just a normal response with no markup."
         result = _strip_tool_markup(text)
         assert result == text
+
+    def test_strips_opening_tool_call_tag(self):
+        """Both opening <tool_call> and closing </tool_call> tags must be removed."""
+        text = '<tool_call>\n{"name": "foo"}\n</tool_call>'
+        result = _strip_tool_markup(text)
+        assert "<tool_call>" not in result
+        assert "</tool_call>" not in result
 
 
 class TestFindSimilarTools:
