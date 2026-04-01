@@ -1,5 +1,6 @@
 """Interactive Ollama chat client for controlling Blender via blend-ai."""
 
+import asyncio
 import base64
 import json
 import re
@@ -128,6 +129,7 @@ class BlenderChatSession:
         self.messages: list[dict[str, Any]] = []
         self.tools: list[dict[str, Any]] = []
         self._tool_names: set[str] = set()
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     def initialize(self) -> None:
         """Connect to Blender and load tool definitions."""
@@ -161,11 +163,13 @@ class BlenderChatSession:
         Returns:
             JSON string of the result.
         """
-        import asyncio
         from blend_ai.server import mcp
 
+        if self._loop is None:
+            self._loop = asyncio.new_event_loop()
+
         try:
-            result = asyncio.run(mcp.call_tool(name, arguments))
+            result = self._loop.run_until_complete(mcp.call_tool(name, arguments))
             # call_tool returns list[TextContent] — extract the text
             if result and hasattr(result[0], "text"):
                 return result[0].text
@@ -291,9 +295,18 @@ class BlenderChatSession:
                     except (json.JSONDecodeError, KeyError):
                         pass
 
+                if vision_note:
+                    try:
+                        result_obj = json.loads(result)
+                        result_obj["vision_analysis"] = analysis
+                        tool_content = json.dumps(result_obj)
+                    except (json.JSONDecodeError, TypeError):
+                        tool_content = result + vision_note
+                else:
+                    tool_content = result
                 self.messages.append({
                     "role": "tool",
-                    "content": result + vision_note,
+                    "content": tool_content,
                 })
 
         return "(Reached maximum tool-calling rounds. Please try a simpler request.)"
@@ -326,6 +339,9 @@ class BlenderChatSession:
         from blend_ai import server as srv
         if srv._connection:
             srv._connection.disconnect()
+        if self._loop is not None:
+            self._loop.close()
+            self._loop = None
 
 
 def _parse_text_tool_calls(text: str, known_tools: set[str]) -> list[dict[str, Any]]:
@@ -383,7 +399,7 @@ def _parse_text_tool_calls(text: str, known_tools: set[str]) -> list[dict[str, A
                 candidate = text[i:j + 1]
                 try:
                     obj = json.loads(candidate)
-                    if isinstance(obj, dict) and "name" in obj:
+                    if isinstance(obj, dict) and "name" in obj and "arguments" in obj:
                         calls.append({
                             "name": obj["name"],
                             "arguments": obj.get("arguments", {}),
@@ -440,7 +456,9 @@ def _strip_tool_markup(text: str) -> str:
     """Remove tool-call markup from text, keeping any natural language."""
     # Remove XML-style function calls
     cleaned = re.sub(r'<function=\w+>.*?</function>', '', text, flags=re.DOTALL)
-    # Remove </tool_call> tags
+    # Remove opening <tool_call> tags
+    cleaned = re.sub(r'<tool_call>', '', cleaned)
+    # Remove closing </tool_call> tags
     cleaned = re.sub(r'</tool_call>', '', cleaned)
     return cleaned.strip() or ""
 

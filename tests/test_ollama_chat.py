@@ -132,17 +132,24 @@ class TestBlenderChatSession:
         """Test tool execution routes through MCP call_tool."""
         mock_text = MagicMock()
         mock_text.text = '{"name": "Cube"}'
+
+        async def _fake_call_tool(name, args):
+            return [mock_text]
+
         with patch("blend_ai.server.mcp") as mock_mcp:
-            mock_mcp.call_tool = MagicMock(return_value=[mock_text])
-            with patch("asyncio.run", return_value=[mock_text]):
-                session = BlenderChatSession()
-                result = session.execute_tool("create_object", {"type": "CUBE"})
-                parsed = json.loads(result)
-                assert parsed["name"] == "Cube"
+            mock_mcp.call_tool = _fake_call_tool
+            session = BlenderChatSession()
+            result = session.execute_tool("create_object", {"type": "CUBE"})
+            parsed = json.loads(result)
+            assert parsed["name"] == "Cube"
 
     def test_execute_tool_error(self, mock_ollama_client, mock_blender_connection):
         """Test tool execution handles errors gracefully."""
-        with patch("asyncio.run", side_effect=RuntimeError("Blender error: not found")):
+        async def _failing_call_tool(name, args):
+            raise RuntimeError("Blender error: not found")
+
+        with patch("blend_ai.server.mcp") as mock_mcp:
+            mock_mcp.call_tool = _failing_call_tool
             session = BlenderChatSession()
             result = session.execute_tool("create_object", {"type": "CUBE"})
             parsed = json.loads(result)
@@ -278,8 +285,6 @@ class TestBlenderChatSession:
 
         with patch("blend_ai.server.mcp") as mock_mcp:
             # Make call_tool return a coroutine-compatible value via run_until_complete
-            import asyncio
-
             async def _fake_call_tool(name, args):
                 return [mock_text]
 
@@ -331,7 +336,6 @@ class TestBlenderChatSession:
         self, mock_ollama_client, mock_blender_connection, mock_mcp_tools
     ):
         """Vision note falls back to concatenation when result is not valid JSON."""
-        plain_text_result = "Screenshot saved to /tmp/shot.png"
         analysis_text = "I see a grey cube."
 
         tool_response = MagicMock()
