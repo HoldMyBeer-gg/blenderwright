@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "blend-ai": {
-      "command": "uvx",
-      "args": ["blend-ai"]
-    }
-  }
-}
