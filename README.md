@@ -8,10 +8,6 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ![blend-ai screenshot](./screenshot.png)
 
-&nbsp;
-
-![blend-ai screenshot 2](./screenshot2.png)
-
 ## Key Features
 
 - **164 tools** across 24 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
@@ -21,12 +17,12 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 - **Extension suggestions** — proactively recommends Bool Tool, LoopTools, and Node Wrangler when a task would benefit from them (skips already-installed extensions)
 - **Sandboxed code execution** — `execute_blender_code` blocks dangerous imports (`os`, `subprocess`, `socket`, etc.) and dangerous builtins (`exec`, `eval`, `open`) while allowing safe Blender operations
 - **Render-aware** — automatically detects when Blender is rendering and queues commands. Recovers from stuck render guards via `load_post` handler and reset command
-- **Blender 5.1 compatible** — EEVEE identifier, Annotation API, sculpt stroke_method, SLIM UV unwrap, Raycast shader node, EEVEE light path intensity controls
+- **Blender 4.2+ compatible** — ships as a Blender Extension; tested against Blender 5.1 with EEVEE identifier, Annotation API, sculpt stroke_method, SLIM UV unwrap, Raycast shader node, and EEVEE light path intensity controls
 - **Custom port** — configure the server port from the N-panel UI (default: 9876, range: 1024–65535)
 - **Zero telemetry** — no usage tracking, no analytics, no data collection. Everything runs locally on `127.0.0.1`
 - **Zero-dependency addon** — the Blender addon uses only Python stdlib + `bpy`. Nothing to pip install inside Blender
 - **Thread-safe architecture** — background TCP server with queue-based main-thread execution, TCP keepalive for stale connection detection
-- **1186 tests** — comprehensive test coverage across tools, handlers, validators, prompts, and the cross-platform installer
+- **1190 tests** — comprehensive coverage across tools, handlers, validators, prompts, and the cross-platform installer (ubuntu/macos/windows × py3.11/3.13 in CI)
 
 ## Quickstart
 
@@ -235,7 +231,7 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 <summary><strong>Security</strong></summary>
 
 - **Localhost only**: The TCP socket binds to `127.0.0.1` — never exposed to the network.
-- **Sandboxed code execution**: `execute_blender_code` blocks dangerous imports (`os`, `subprocess`, `socket`, `shutil`, `ctypes`, `importlib`, and 18+ more) and removes dangerous builtins (`exec`, `eval`, `open`, `compile`, `globals`). Safe Blender imports (`bpy`, `bmesh`, `mathutils`, `math`, `json`) are allowed.
+- **Sandboxed code execution**: `execute_blender_code` blocks 25 dangerous imports (`os`, `subprocess`, `socket`, `shutil`, `sys`, `ctypes`, `importlib`, `pathlib`, `signal`, `multiprocessing`, `pickle`, `shelve`, `tempfile`, `http`, `urllib`, `ftplib`, `smtplib`, `xmlrpc`, `code`, `codeop`, `compileall`, `webbrowser`, `antigravity`, `turtle`, `tkinter`) and removes dangerous builtins (`__import__`, `exec`, `eval`, `compile`, `open`, `globals`, `locals`, `vars`, `input`, `breakpoint`, `exit`, `quit`, `help`, `memoryview`). Safe Blender imports (`bpy`, `bmesh`, `mathutils`, `math`, `json`) are allowed.
 - **Input validation**: All inputs pass through validators before reaching Blender — name sanitization, path traversal prevention, numeric range checks, enum allowlists.
 - **File safety**: Import operations disable `use_scripts_auto_execute` to prevent script injection from imported files. File extensions are checked against allowlists.
 - **Command allowlist**: The addon dispatcher only processes explicitly registered commands. Unknown commands are rejected.
@@ -265,7 +261,7 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 # Install with dev dependencies
 uv pip install -e ".[dev]"
 
-# Run tests (1186 tests)
+# Run tests (1190 tests)
 uv run --extra dev pytest
 
 # Run tests with coverage
@@ -291,7 +287,8 @@ blend-ai/
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 12 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)
-│   ├── __init__.py         # bl_info + register/unregister
+│   ├── blender_manifest.toml  # Blender 4.2+ Extension manifest
+│   ├── __init__.py         # bl_info (legacy fallback) + register/unregister
 │   ├── server.py           # TCP socket server (SO_KEEPALIVE)
 │   ├── dispatcher.py       # Command routing + allowlist
 │   ├── thread_safety.py    # Main-thread execution queue
