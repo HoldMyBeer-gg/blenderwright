@@ -361,12 +361,15 @@ class TestBlenderUserConfigDirs:
     def test_macos_points_at_application_support(self):
         with patch("platform.system", return_value="Darwin"):
             dirs = installer.blender_user_config_dirs()
-        assert any("Application Support/Blender" in str(d) for d in dirs)
+        # Check by path parts to be independent of OS separator
+        assert any(
+            "Application Support" in d.parts and "Blender" in d.parts for d in dirs
+        )
 
     def test_linux_points_at_dot_config(self):
         with patch("platform.system", return_value="Linux"):
             dirs = installer.blender_user_config_dirs()
-        assert any(str(d).replace("\\", "/").endswith(".config/blender") for d in dirs)
+        assert any(".config" in d.parts and "blender" in d.parts for d in dirs)
 
     def test_windows_points_at_appdata(self):
         with patch("platform.system", return_value="Windows"), \
@@ -480,14 +483,37 @@ class TestFindBlendAiInstalls:
 
 class TestIsBlenderRunning:
     def test_returns_false_when_process_absent(self):
-        with patch("subprocess.run") as mock_run:
+        with patch("platform.system", return_value="Darwin"), \
+             patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="")
             assert installer.is_blender_running() is False
 
-    def test_returns_true_when_process_present(self):
-        with patch("subprocess.run") as mock_run:
+    def test_returns_true_when_process_present_unix(self):
+        with patch("platform.system", return_value="Darwin"), \
+             patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="12345\n", stderr="")
             assert installer.is_blender_running() is True
+
+    def test_returns_true_when_process_present_windows(self):
+        tasklist_out = (
+            'Image Name                     PID\r\n'
+            '========================= ========\r\n'
+            'blender.exe                   1234\r\n'
+        )
+        with patch("platform.system", return_value="Windows"), \
+             patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout=tasklist_out, stderr="")
+            assert installer.is_blender_running() is True
+
+    def test_returns_false_on_windows_when_absent(self):
+        with patch("platform.system", return_value="Windows"), \
+             patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0,
+                stdout='INFO: No tasks are running which match the specified criteria.\r\n',
+                stderr="",
+            )
+            assert installer.is_blender_running() is False
 
 
 class TestDoctor:
