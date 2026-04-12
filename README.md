@@ -26,43 +26,59 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 - **Zero telemetry** — no usage tracking, no analytics, no data collection. Everything runs locally on `127.0.0.1`
 - **Zero-dependency addon** — the Blender addon uses only Python stdlib + `bpy`. Nothing to pip install inside Blender
 - **Thread-safe architecture** — background TCP server with queue-based main-thread execution, TCP keepalive for stale connection detection
-- **1059 tests** — comprehensive test coverage across tools, handlers, validators, and prompts
+- **1186 tests** — comprehensive test coverage across tools, handlers, validators, prompts, and the cross-platform installer
 
 ## Quickstart
 
 ### 1. Install the MCP server
 
 ```bash
-git clone https://github.com/jabberwock/blend-ai.git
+git clone https://github.com/HoldMyBeer-gg/blend-ai.git
 cd blend-ai
 uv pip install -e .
 ```
 
 ### 2. Install the Blender addon
 
-1. Download the latest addon zip from [GitHub Releases](https://github.com/jabberwock/blend-ai/releases)
-2. Open Blender (4.0+ or 5.1)
-3. Go to **Edit > Preferences > Add-ons > Install from Disk...**
+1. Download the latest addon zip from [GitHub Releases](https://github.com/HoldMyBeer-gg/blend-ai/releases)
+2. Open Blender 4.2 or later
+3. Go to **Edit > Preferences > Get Extensions**, click the dropdown (▾) top-right, and choose **Install from Disk...**
 4. Select the downloaded `.zip` file
-5. Enable **"blend-ai"** in the addon list
+5. Enable **"blend-ai"** in the extensions list
+
+> **Blender 4.0 / 4.1 users:** Not supported. blend-ai ships as a Blender Extension, which requires Blender 4.2 (LTS) or later. Please upgrade Blender from [blender.org/download](https://www.blender.org/download/).
 
 <details>
 <summary><strong>Developer install (symlink)</strong></summary>
 
-If you're developing on blend-ai, symlink the addon folder instead:
+If you're developing on blend-ai, symlink the addon folder into Blender's user extensions directory instead. Replace `<ver>` with your Blender version (e.g. `4.2`, `5.1`).
 
 ```bash
 # macOS
-ln -s "$(pwd)/addon" ~/Library/Application\ Support/Blender/5.1/scripts/addons/blend_ai
+ln -s "$(pwd)/addon" ~/Library/Application\ Support/Blender/<ver>/extensions/user_default/blend_ai
 
 # Linux
-ln -s "$(pwd)/addon" ~/.config/blender/5.1/scripts/addons/blend_ai
+ln -s "$(pwd)/addon" ~/.config/blender/<ver>/extensions/user_default/blend_ai
 
 # Windows (run as admin)
-mklink /D "%APPDATA%\Blender Foundation\Blender\5.1\scripts\addons\blend_ai" "%cd%\addon"
+mklink /D "%APPDATA%\Blender Foundation\Blender\<ver>\extensions\user_default\blend_ai" "%cd%\addon"
 ```
 
-Then enable the addon in Blender preferences.
+Then enable the extension in Blender preferences under **Get Extensions > User**.
+
+</details>
+
+<details>
+<summary><strong>Upgrading from a previous version</strong></summary>
+
+blend-ai ships as a Blender Extension (`blender_manifest.toml`), installed under **Edit > Preferences > Get Extensions**. Python caches imported modules, so replacing files in-place without a restart can leave stale handlers registered.
+
+1. If the server is running, open the N-panel **blend-ai** tab and click **Stop Server**.
+2. In Blender, open **Edit > Preferences > Get Extensions**, find **blend-ai**, and click **Uninstall**.
+3. Quit and restart Blender (this clears cached `blend_ai` modules).
+4. Install the new `.zip` via the **▾ > Install from Disk...** menu and enable it.
+
+For the developer symlink install, upgrading is just `git pull` followed by a full Blender restart — do not rely on reloading scripts, because the background TCP server thread survives reloads.
 
 </details>
 
@@ -113,7 +129,7 @@ Add blend-ai to your Claude Desktop config (`~/Library/Application Support/Claud
 }
 ```
 
-Replace `/path/to/blend-ai` with the actual path to your clone. Or copy the contents of the bundled [`mcp.json`](mcp.json) into your config file.
+Replace `/path/to/blend-ai` with the actual path to your clone.
 
 Restart Claude Desktop. The Blender tools will appear in the tool list.
 
@@ -122,12 +138,14 @@ Restart Claude Desktop. The Blender tools will appear in the tool list.
 <details>
 <summary><strong>Other MCP Clients</strong></summary>
 
-blend-ai is a standard MCP server using stdio transport. Any MCP-compatible client can connect using the [`mcp.json`](mcp.json) config or by running the server directly:
+blend-ai is a standard MCP server using stdio transport. Any MCP-compatible client can connect by running the server directly:
 
 ```bash
 uv run --directory /path/to/blend-ai blend-ai
 # or: python -m blend_ai.server
 ```
+
+The exact config location and format vary by client (typically JSON or TOML under `~/.<client>/`). The `command` is `uv` and the `args` are `["run", "--directory", "/path/to/blend-ai", "blend-ai"]`.
 
 The server communicates over stdin/stdout using the MCP protocol. It connects to Blender's addon over TCP on `127.0.0.1:9876` (or your configured port).
 
@@ -159,7 +177,7 @@ blend-ai includes 12 MCP prompts that guide the LLM toward professional-quality 
 
 | Domain | Tools | Highlights |
 |--------|-------|-----------|
-| Scene | 5 | Get scene info, set frame range, manage scenes |
+| Scene | 6 | Get scene info, set frame range, manage scenes, suggest helpful extensions |
 | Objects | 14 | Create primitives, duplicate, parent, join, visibility, origin, convert, auto-smooth |
 | Transforms | 6 | Position, rotation (euler/quat), scale, apply, snap |
 | Modeling | 13 | Modifiers, booleans, subdivide, extrude, bevel, loop cut, bridge edge loops |
@@ -183,7 +201,6 @@ blend-ai includes 12 MCP prompts that guide the LLM toward professional-quality 
 | Viewport | 3 | Shading mode, overlays, focus on object |
 | Screenshot | 1 | Fast viewport capture (OpenGL) or full render, base64 output |
 | Code Exec | 1 | Sandboxed Python execution in Blender (dangerous imports blocked) |
-| Extensions | 1 | Suggest helpful extensions based on task description |
 
 </details>
 
@@ -222,7 +239,7 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 - **Input validation**: All inputs pass through validators before reaching Blender — name sanitization, path traversal prevention, numeric range checks, enum allowlists.
 - **File safety**: Import operations disable `use_scripts_auto_execute` to prevent script injection from imported files. File extensions are checked against allowlists.
 - **Command allowlist**: The addon dispatcher only processes explicitly registered commands. Unknown commands are rejected.
-- **Shader node allowlist**: Only ~66 known shader node types can be created — prevents arbitrary type injection.
+- **Shader node allowlist**: Only 64 known shader node types can be created — prevents arbitrary type injection.
 
 </details>
 
@@ -248,7 +265,7 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 # Install with dev dependencies
 uv pip install -e ".[dev]"
 
-# Run tests (1059 tests)
+# Run tests (1186 tests)
 uv run --extra dev pytest
 
 # Run tests with coverage
@@ -280,12 +297,14 @@ blend-ai/
 │   ├── thread_safety.py    # Main-thread execution queue
 │   ├── render_guard.py     # Render state tracking + crash recovery
 │   ├── ui_panel.py         # N-panel UI (start/stop + port config)
-│   └── handlers/           # 24 handler modules
-└── tests/                  # 1059 unit tests
+│   └── handlers/           # 23 handler modules
+└── tests/                  # 1186 unit tests
 ```
 
 </details>
 
 ## License
 
-MIT
+AGPL-3.0-or-later. See [LICENSE](LICENSE).
+
+Copyright © 2026 jabberwock.

@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-extension:
+    name: Build extension zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Blender 4.2 LTS
+        run: |
+          curl -sSfL -o blender.tar.xz \
+            https://download.blender.org/release/Blender4.2/blender-4.2.0-linux-x64.tar.xz
+          mkdir -p blender
+          tar -xf blender.tar.xz -C blender --strip-components=1
+          echo "$PWD/blender" >> "$GITHUB_PATH"
+
+      - name: Validate manifest
+        run: blender --command extension validate addon/
+
+      - name: Build extension zip
+        run: |
+          mkdir -p dist
+          blender --command extension build --source-dir addon --output-dir dist
+          ls -la dist/
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blend-ai-extension
+          path: dist/blend_ai-*.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/blend_ai-*.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
