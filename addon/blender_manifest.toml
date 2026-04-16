@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "blend_ai"
-version = "1.1.0"
+version = "1.2.0"
 name = "blend-ai"
 tagline = "MCP server integration for AI-assisted 3D workflows"
 maintainer = "jabberwock <88205+jabberwock@users.noreply.github.com>"
@@ -14,7 +14,7 @@ tags = ["Pipeline", "Development"]
 blender_version_min = "4.2.0"
 
 license = [
-  "SPDX:AGPL-3.0-or-later",
+  "SPDX:GPL-3.0-or-later",
 ]
 
 copyright = [
