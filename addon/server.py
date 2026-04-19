@@ -141,9 +141,20 @@ class BlenderServer:
                 pass
 
     def _send_message(self, sock: socket.socket, data: bytes) -> None:
-        """Send a length-prefixed message."""
+        """Send a length-prefixed message.
+
+        The header and payload are sent in two separate sendall calls rather
+        than concatenated. On Blender 5.1 Windows builds, some reports
+        (issue #5) showed the length prefix being silently dropped when the
+        concatenated bytes were passed to sendall — every response arrived
+        as raw JSON without the 4-byte header, causing the client to misread
+        the first four JSON bytes as a length and bail with "Response too
+        large". Splitting the call guarantees the header is transmitted
+        before the body and rules out any concat atomicity edge case.
+        """
         header = struct.pack(">I", len(data))
-        sock.sendall(header + data)
+        sock.sendall(header)
+        sock.sendall(data)
 
     def _recv_message(self, sock: socket.socket) -> bytes | None:
         """Receive a length-prefixed message. Returns None on disconnect."""
