@@ -568,6 +568,7 @@ class InstallerApp(App):
         self._preselected = preselected
         self._selected: str | Path | None = preselected
         self._searching = True
+        self._install_complete = False
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -623,7 +624,10 @@ class InstallerApp(App):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "install-btn":
-            self.run_worker(self._do_install(), exclusive=True)
+            if self._install_complete:
+                self.exit()
+            else:
+                self.run_worker(self._do_install(), exclusive=True)
 
     async def _do_install(self) -> None:
         log = self.query_one("#log", RichLog)
@@ -658,8 +662,13 @@ class InstallerApp(App):
         else:
             log.write("\n[bold red]Installation may have failed — check output above.[/bold red]")
 
-        btn.label = "Done" if success else "Retry"
-        btn.disabled = False
+        if success:
+            btn.label = "Done"
+            btn.disabled = False
+            self._install_complete = True
+        else:
+            btn.label = "Retry"
+            btn.disabled = False
 
 
 # ---------------------------------------------------------------------------

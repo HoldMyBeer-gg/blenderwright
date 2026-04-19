@@ -24,7 +24,7 @@ if (-not (Test-Path $AddonDir)) {
 if (-not $Version) {
     $manifestPath = Join-Path $AddonDir "blender_manifest.toml"
     $manifestContent = Get-Content $manifestPath -Raw
-    if ($manifestContent -match 'version\s*=\s*"(\d+\.\d+\.\d+)"') {
+    if ($manifestContent -match '(?m)^version\s*=\s*"(\d+\.\d+\.\d+)"') {
         $Version = $Matches[1]
     } else {
         Write-Error "Could not parse version from addon\blender_manifest.toml"
