@@ -1,5 +1,7 @@
 """Blender addon handlers for object operations."""
 
+import math
+
 import bpy
 from .. import dispatcher
 
@@ -66,6 +68,201 @@ def handle_create_object(params: dict) -> dict:
         }
     except Exception as e:
         raise RuntimeError(f"Failed to create object: {e}")
+
+
+def handle_create_polygon_prism(params: dict) -> dict:
+    """Create an N-sided regular prism via primitive_cylinder_add(vertices=N)."""
+    sides = int(params.get("sides", 6))
+    radius = float(params.get("radius", 1.0))
+    depth = float(params.get("depth", 2.0))
+    name = params.get("name", "")
+    location = tuple(params.get("location", (0, 0, 0)))
+    rotation = tuple(params.get("rotation", (0, 0, 0)))
+    scale = tuple(params.get("scale", (1, 1, 1)))
+
+    try:
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=sides,
+            radius=radius,
+            depth=depth,
+            location=location,
+            rotation=rotation,
+            scale=scale,
+        )
+        obj = bpy.context.active_object
+        if name:
+            obj.name = name
+            if obj.data:
+                obj.data.name = name
+
+        return {
+            "name": obj.name,
+            "type": obj.type,
+            "location": list(obj.location),
+            "sides": sides,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to create polygon prism: {e}")
+
+
+def handle_create_threaded_shaft(params: dict) -> dict:
+    """Create a threaded cylindrical shaft: solid core + helical V-ridge union.
+
+    The Screw modifier revolves a 2D profile along a helix. Feeding it a filled
+    profile does NOT create a solid revolved body — it creates a thick-walled
+    helical tube, because adjacent rotation steps are connected only by side
+    walls. That leaves the interior hollow.
+
+    Correct construction:
+    1. Create a solid cylinder at minor_r spanning the full length (the shaft core).
+    2. Sweep a small 3-vertex triangular profile (the thread V cross-section)
+       via Screw modifier, producing a helical triangular prism.
+    3. Fill the two open triangular faces at helix start and end with fill_holes
+       so the ridge is a closed manifold solid.
+    4. Boolean-UNION the ridge into the core (exact solver).
+    5. Clean up duplicate verts and recompute normals.
+
+    Result is a truly solid, watertight threaded cylinder ready for further
+    boolean ops (e.g., a button-head union) and 3D printing.
+    """
+    diameter = float(params.get("diameter"))
+    length = float(params.get("length"))
+    pitch = float(params.get("pitch"))
+    thread_depth = float(params.get("thread_depth", 0.0))
+    segments = int(params.get("segments", 32))
+    thread_runout = float(params.get("thread_runout", -1.0))
+    name = params.get("name") or "ThreadedShaft"
+    location = tuple(params.get("location", (0, 0, 0)))
+
+    if thread_depth <= 0:
+        thread_depth = pitch * 0.54
+    # thread_runout < 0 is "auto" — threads go as high as they fit. For a
+    # printed fastener this is what you want structurally: threads continue
+    # up to ~z=length, where a boolean-unioned head overlaps them, giving
+    # one continuous stress path. A smooth-cylinder runout leaves a
+    # thin-walled neck at minor_r which snaps under torque in FDM prints.
+    # If the head has a deep hex socket whose bottom reaches below z=length,
+    # pass an explicit thread_runout to clear it.
+    if thread_runout < 0:
+        thread_runout = 0.0
+
+    major_r = diameter / 2.0
+    minor_r = major_r - thread_depth
+    half_base = thread_depth * math.tan(math.radians(30.0))
+
+    try:
+        # --- 1) Solid core cylinder at exactly [0, length] ---
+        # Thread ridges will overhang by half_base (~0.156 of pitch) on each
+        # end — cosmetic, real screws have ragged thread ends anyway. Keeping
+        # the core at exact length means no trim-boolean is needed, which
+        # avoided a class of Blender boolean-solver failures that collapsed
+        # the mesh or erased thread peaks.
+        core_depth = length
+        core_center = (
+            location[0],
+            location[1],
+            location[2] + length / 2.0,
+        )
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=segments,
+            radius=minor_r,
+            depth=core_depth,
+            location=core_center,
+        )
+        core = bpy.context.active_object
+        core.name = name
+        if core.data:
+            core.data.name = name + "_mesh"
+
+        # --- 2) Helical ridge from a triangular profile ---
+        # Edges-only closed triangle in the XZ plane, centered around pitch/2.
+        # A filled face would make the Screw modifier stamp the face at every
+        # rotation step, creating internal divider faces that break manifoldness.
+        # With edges only, the sweep produces just the 3 outer walls of a
+        # triangular tube — which fill_holes then caps to close the volume.
+        ridge_verts = [
+            (minor_r, 0.0, pitch / 2.0 - half_base),  # lower minor corner
+            (major_r, 0.0, pitch / 2.0),              # V peak
+            (minor_r, 0.0, pitch / 2.0 + half_base),  # upper minor corner
+        ]
+        ridge_edges = [(0, 1), (1, 2), (2, 0)]
+        ridge_mesh = bpy.data.meshes.new(name + "_ridge_mesh")
+        ridge_mesh.from_pydata(ridge_verts, ridge_edges, [])
+        ridge_mesh.update()
+        ridge = bpy.data.objects.new(name + "_ridge", ridge_mesh)
+        bpy.context.collection.objects.link(ridge)
+        ridge.location = location
+
+        # Thread iterations: cap N so the sweep's topmost geometry ends below
+        # (length - thread_runout). The Screw modifier places the profile's
+        # upper tip at z = N*pitch + pitch/2 + half_base after N iterations.
+        # Solve N*pitch + pitch/2 + half_base ≤ length - thread_runout.
+        max_top = length - thread_runout
+        allowed = (max_top - pitch / 2.0 - half_base) / pitch
+        iterations = max(1, int(math.floor(allowed))) if allowed >= 1 else 1
+        screw = ridge.modifiers.new(name="Screw", type="SCREW")
+        screw.axis = "Z"
+        screw.angle = 2.0 * math.pi
+        screw.screw_offset = pitch
+        screw.iterations = iterations
+        screw.steps = segments
+        screw.render_steps = segments
+        screw.use_merge_vertices = True
+        screw.merge_threshold = 1e-5
+        screw.use_normal_calculate = True
+
+        bpy.context.view_layer.objects.active = ridge
+        bpy.ops.object.select_all(action="DESELECT")
+        ridge.select_set(True)
+        bpy.ops.object.modifier_apply(modifier=screw.name)
+
+        # --- 3) Close the two open triangle ends so the ridge is manifold. ---
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="DESELECT")
+        bpy.ops.mesh.select_non_manifold()
+        bpy.ops.mesh.fill_holes(sides=3)
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        # --- 4) Boolean UNION ridge into core ---
+        bpy.ops.object.select_all(action="DESELECT")
+        core.select_set(True)
+        bpy.context.view_layer.objects.active = core
+        bool_mod = core.modifiers.new(name="Threads", type="BOOLEAN")
+        bool_mod.operation = "UNION"
+        bool_mod.object = ridge
+        bool_mod.solver = "EXACT"
+        bpy.ops.object.modifier_apply(modifier=bool_mod.name)
+
+        # Ridge is consumed — remove the now-unused helper object.
+        bpy.data.objects.remove(ridge, do_unlink=True)
+
+        # --- 5) Final cleanup: merge tight duplicates, recalc normals. ---
+        # Trim-booleans were removed: they were numerically unstable and
+        # either collapsed the mesh or erased thread peaks. Thread overhang
+        # past z=0 and z=length (~half_base per end) is cosmetic and matches
+        # how real fastener threads terminate.
+        bpy.ops.object.select_all(action="DESELECT")
+        core.select_set(True)
+        bpy.context.view_layer.objects.active = core
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.remove_doubles(threshold=1e-5)
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        obj = core
+
+        return {
+            "name": obj.name,
+            "diameter": diameter,
+            "length": iterations * pitch,
+            "pitch": pitch,
+            "thread_depth": thread_depth,
+            "iterations": iterations,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to create threaded shaft: {e}")
 
 
 def handle_delete_object(params: dict) -> dict:
@@ -433,6 +630,8 @@ def handle_make_single_user(params: dict) -> dict:
 def register():
     """Register object handlers with the dispatcher."""
     dispatcher.register_handler("create_object", handle_create_object)
+    dispatcher.register_handler("create_polygon_prism", handle_create_polygon_prism)
+    dispatcher.register_handler("create_threaded_shaft", handle_create_threaded_shaft)
     dispatcher.register_handler("delete_object", handle_delete_object)
     dispatcher.register_handler("duplicate_object", handle_duplicate_object)
     dispatcher.register_handler("rename_object", handle_rename_object)
