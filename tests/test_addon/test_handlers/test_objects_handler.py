@@ -260,7 +260,7 @@ class TestCreateThreadedShaft:
         """The trim-boolean step was removed. No primitive_cube_add calls
         should happen during threaded shaft construction."""
         import bpy
-        h = _setup_threaded_shaft_mocks(objects_handler)
+        _setup_threaded_shaft_mocks(objects_handler)
         objects_handler.handle_create_threaded_shaft({
             "diameter": 3.0, "length": 10.0, "pitch": 0.5,
             "thread_depth": 0.27, "segments": 32,
@@ -271,7 +271,7 @@ class TestCreateThreadedShaft:
     def test_only_ridge_is_removed(self, objects_handler):
         """Only the ridge helper is removed — no trim cubes any more."""
         import bpy
-        h = _setup_threaded_shaft_mocks(objects_handler)
+        _setup_threaded_shaft_mocks(objects_handler)
         objects_handler.handle_create_threaded_shaft({
             "diameter": 3.0, "length": 10.0, "pitch": 0.5,
             "thread_depth": 0.27, "segments": 32,
@@ -292,7 +292,7 @@ class TestCreateThreadedShaft:
 
     def test_auto_thread_depth_when_zero(self, objects_handler):
         """thread_depth=0 triggers auto-compute: pitch * 0.54."""
-        h = _setup_threaded_shaft_mocks(objects_handler)
+        _setup_threaded_shaft_mocks(objects_handler)
         result = objects_handler.handle_create_threaded_shaft({
             "diameter": 3.0, "length": 10.0, "pitch": 0.5,
             "thread_depth": 0.0, "segments": 32,
