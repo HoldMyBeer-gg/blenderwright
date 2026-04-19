@@ -2,7 +2,7 @@
 # Usage: .\build.ps1 [version]
 # Example: .\build.ps1 0.2.0
 #
-# If no version is provided, reads it from addon\__init__.py bl_info.
+# If no version is provided, reads it from addon\blender_manifest.toml.
 # The zip contains a blend_ai\ folder so Blender installs it as the
 # "blend_ai" addon module.
 
@@ -22,11 +22,12 @@ if (-not (Test-Path $AddonDir)) {
 
 # Get version from argument or parse from bl_info
 if (-not $Version) {
-    $initContent = Get-Content (Join-Path $AddonDir "__init__.py") -Raw
-    if ($initContent -match '"version":\s*\((\d+),\s*(\d+),\s*(\d+)\)') {
-        $Version = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
+    $manifestPath = Join-Path $AddonDir "blender_manifest.toml"
+    $manifestContent = Get-Content $manifestPath -Raw
+    if ($manifestContent -match 'version\s*=\s*"(\d+\.\d+\.\d+)"') {
+        $Version = $Matches[1]
     } else {
-        Write-Error "Could not parse version from addon\__init__.py"
+        Write-Error "Could not parse version from addon\blender_manifest.toml"
         exit 1
     }
 }
