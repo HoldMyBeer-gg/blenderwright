@@ -6,6 +6,8 @@ from unittest.mock import patch, MagicMock
 from blend_ai.validators import ValidationError
 from blend_ai.tools.objects import (
     create_object,
+    create_polygon_prism,
+    create_threaded_shaft,
     delete_object,
     duplicate_object,
     rename_object,
@@ -448,3 +450,182 @@ class TestMakeSingleUser:
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
             make_single_user("Cube")
+
+
+# ---------------------------------------------------------------------------
+# create_polygon_prism
+# ---------------------------------------------------------------------------
+
+
+class TestCreatePolygonPrism:
+    def test_valid_hex(self, mock_conn):
+        create_polygon_prism(sides=6, radius=1.0, depth=0.5, name="Hex")
+        mock_conn.send_command.assert_called_once_with(
+            "create_polygon_prism",
+            {
+                "sides": 6,
+                "radius": 1.0,
+                "depth": 0.5,
+                "name": "Hex",
+                "location": [0, 0, 0],
+                "rotation": [0, 0, 0],
+                "scale": [1, 1, 1],
+            },
+        )
+
+    def test_defaults_applied(self, mock_conn):
+        create_polygon_prism(sides=8)
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["sides"] == 8
+        assert args["radius"] == 1.0
+        assert args["depth"] == 2.0
+        assert args["name"] == ""
+
+    def test_sides_below_minimum_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_polygon_prism(sides=2)
+
+    def test_sides_above_maximum_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_polygon_prism(sides=65)
+
+    def test_sides_non_integer_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_polygon_prism(sides=6.5)
+
+    def test_radius_zero_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_polygon_prism(sides=6, radius=0)
+
+    def test_radius_negative_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_polygon_prism(sides=6, radius=-1.0)
+
+    def test_depth_zero_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_polygon_prism(sides=6, depth=0)
+
+    def test_invalid_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_polygon_prism(sides=6, name="bad;name")
+
+    def test_invalid_location_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_polygon_prism(sides=6, location=[1, 2])
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            create_polygon_prism(sides=6)
+
+
+# ---------------------------------------------------------------------------
+# create_threaded_shaft
+# ---------------------------------------------------------------------------
+
+
+class TestCreateThreadedShaft:
+    def test_valid_m3(self, mock_conn):
+        create_threaded_shaft(
+            diameter=3.0, length=10.0, pitch=0.5, name="M3Shaft"
+        )
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["diameter"] == 3.0
+        assert args["length"] == 10.0
+        assert args["pitch"] == 0.5
+        assert args["name"] == "M3Shaft"
+        # thread_depth defaults to 0 (auto — handler computes it)
+        assert args["thread_depth"] == 0.0
+        assert args["segments"] == 32
+        # thread_runout defaults to -1 (auto — handler sets to one pitch)
+        assert args["thread_runout"] == -1.0
+
+    def test_explicit_thread_runout(self, mock_conn):
+        create_threaded_shaft(
+            diameter=3.0, length=10.0, pitch=0.5, thread_runout=2.0
+        )
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["thread_runout"] == 2.0
+
+    def test_thread_runout_zero_threads_full_length(self, mock_conn):
+        """thread_runout=0 means no smooth cylinder at the top — threads all
+        the way up. Distinct from the -1 auto sentinel."""
+        create_threaded_shaft(
+            diameter=3.0, length=10.0, pitch=0.5, thread_runout=0.0
+        )
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["thread_runout"] == 0.0
+
+    def test_thread_runout_exceeds_length_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(
+                diameter=3.0, length=10.0, pitch=0.5, thread_runout=15.0
+            )
+
+    def test_explicit_thread_depth(self, mock_conn):
+        create_threaded_shaft(
+            diameter=3.0, length=10.0, pitch=0.5, thread_depth=0.27
+        )
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["thread_depth"] == 0.27
+
+    def test_custom_segments(self, mock_conn):
+        create_threaded_shaft(diameter=3.0, length=10.0, pitch=0.5, segments=64)
+        args = mock_conn.send_command.call_args[0][1]
+        assert args["segments"] == 64
+
+    def test_diameter_zero_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(diameter=0, length=10.0, pitch=0.5)
+
+    def test_diameter_negative_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(diameter=-1.0, length=10.0, pitch=0.5)
+
+    def test_length_zero_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(diameter=3.0, length=0, pitch=0.5)
+
+    def test_pitch_zero_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(diameter=3.0, length=10.0, pitch=0)
+
+    def test_pitch_larger_than_length_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(diameter=3.0, length=0.3, pitch=0.5)
+
+    def test_thread_depth_exceeds_radius_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            # radius = 1.5, thread_depth = 2.0 would eat through the shaft
+            create_threaded_shaft(
+                diameter=3.0, length=10.0, pitch=0.5, thread_depth=2.0
+            )
+
+    def test_segments_too_few_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(
+                diameter=3.0, length=10.0, pitch=0.5, segments=2
+            )
+
+    def test_segments_too_many_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(
+                diameter=3.0, length=10.0, pitch=0.5, segments=1024
+            )
+
+    def test_invalid_name_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(
+                diameter=3.0, length=10.0, pitch=0.5, name="bad;name"
+            )
+
+    def test_invalid_location_raises(self, mock_conn):
+        with pytest.raises(ValidationError):
+            create_threaded_shaft(
+                diameter=3.0, length=10.0, pitch=0.5, location=[1, 2]
+            )
+
+    def test_error_response_raises(self, mock_conn):
+        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
+        with pytest.raises(RuntimeError):
+            create_threaded_shaft(diameter=3.0, length=10.0, pitch=0.5)
