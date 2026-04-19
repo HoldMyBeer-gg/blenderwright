@@ -8,7 +8,7 @@ Blender's Python API.
 bl_info = {
     "name": "blend-ai",
     "author": "blend-ai",
-    "version": (1, 1, 0),
+    "version": (1, 2, 1),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > blend-ai",
     "description": "MCP Server integration for AI-assisted 3D workflows",

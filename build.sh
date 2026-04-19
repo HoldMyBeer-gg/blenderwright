@@ -3,7 +3,7 @@
 # Usage: ./build.sh [version]
 # Example: ./build.sh 0.2.0
 #
-# If no version is provided, reads it from addon/__init__.py bl_info.
+# If no version is provided, reads it from addon/blender_manifest.toml.
 # The zip contains a blend_ai/ folder so Blender installs it as the
 # "blend_ai" addon module.
 
@@ -17,21 +17,11 @@ if [ ! -d "$ADDON_DIR" ]; then
     exit 1
 fi
 
-# Get version from argument or parse from bl_info
+# Get version from argument or parse from blender_manifest.toml
 if [ $# -ge 1 ]; then
     VERSION="$1"
 else
-    VERSION=$(python3 -c "
-import ast, pathlib
-src = pathlib.Path('$ADDON_DIR/__init__.py').read_text()
-tree = ast.parse(src)
-for node in ast.walk(tree):
-    if isinstance(node, ast.Assign):
-        for target in node.targets:
-            if isinstance(target, ast.Name) and target.id == 'bl_info':
-                d = ast.literal_eval(node.value)
-                print('.'.join(str(x) for x in d['version']))
-")
+    VERSION=$(grep -m1 '^version' "$ADDON_DIR/blender_manifest.toml" | sed 's/.*"\(.*\)"/\1/')
 fi
 
 OUTPUT="$SCRIPT_DIR/blend-ai-v${VERSION}.zip"
