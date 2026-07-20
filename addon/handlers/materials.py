@@ -424,6 +424,268 @@ def handle_get_node_tree(params: dict) -> dict:
         raise RuntimeError(f"Failed to get node tree: {e}")
 
 
+# Node-level properties that may be written by set_shader_node_property.
+# Deliberately duplicated from the MCP tool layer: any local process can open
+# the addon's socket, so the allowlist has to be enforced on this side too.
+# Without it, setattr() on a caller-supplied name is an arbitrary attribute
+# write against a live Blender datablock.
+ALLOWED_NODE_PROPERTIES = {
+    "operation", "use_clamp", "blend_type", "data_type", "clamp",
+    "clamp_factor", "clamp_result", "interpolation_type", "factor_mode",
+    "noise_dimensions", "noise_type", "normalize",
+    "voronoi_dimensions", "feature", "distance",
+    "wave_type", "wave_profile", "bands_direction", "rings_direction",
+    "gradient_type", "offset", "offset_frequency", "squash", "squash_frequency",
+    "turbulence_depth",
+    "interpolation", "projection", "extension",
+    "vector_type", "rotation_type", "invert", "space", "uv_map",
+    "convert_from", "convert_to", "mode", "component", "axis",
+    "attribute_name", "attribute_type", "from_instancer",
+    "distribution", "subsurface_method",
+}
+
+ALLOWED_RAMP_INTERPOLATIONS = {"EASE", "CARDINAL", "LINEAR", "B_SPLINE", "CONSTANT"}
+ALLOWED_RAMP_COLOR_MODES = {"RGB", "HSV", "HSL"}
+
+
+def _get_node(tree, node_name: str):
+    """Get a node from a tree by name or raise."""
+    node = tree.nodes.get(node_name)
+    if node is None:
+        raise ValueError(f"Node '{node_name}' not found")
+    return node
+
+
+def _get_socket(node, socket):
+    """Resolve a socket by name or by zero-based index."""
+    if isinstance(socket, bool):
+        raise ValueError("socket must be a name or a non-negative index")
+    if isinstance(socket, int):
+        if socket < 0 or socket >= len(node.inputs):
+            raise ValueError(
+                f"Socket index {socket} out of range on node '{node.name}' "
+                f"({len(node.inputs)} inputs)"
+            )
+        return node.inputs[socket]
+    resolved = node.inputs.get(socket)
+    if resolved is None:
+        raise ValueError(f"Input socket '{socket}' not found on node '{node.name}'")
+    return resolved
+
+
+def _get_ramp(node):
+    """Get a node's colour ramp or raise if it has none."""
+    ramp = getattr(node, "color_ramp", None)
+    if ramp is None:
+        raise ValueError(
+            f"Node '{node.name}' has no colour ramp "
+            f"(expected a ColorRamp / ShaderNodeValToRGB node)"
+        )
+    return ramp
+
+
+def _ramp_element(ramp, index: int):
+    """Get a ramp element by index or raise."""
+    if not isinstance(index, int) or isinstance(index, bool):
+        raise ValueError("index must be an integer")
+    if index < 0 or index >= len(ramp.elements):
+        raise ValueError(
+            f"Element index {index} out of range ({len(ramp.elements)} elements)"
+        )
+    return ramp.elements[index]
+
+
+def handle_set_shader_node_input(params: dict) -> dict:
+    """Set the default value of an input socket on a shader node."""
+    try:
+        mat = _get_material(params["material_name"])
+        tree = _get_node_tree(mat)
+        node = _get_node(tree, params["node_name"])
+        socket = _get_socket(node, params["socket"])
+        value = params["value"]
+
+        if not hasattr(socket, "default_value"):
+            raise ValueError(
+                f"Socket '{socket.name}' on node '{node.name}' has no default "
+                f"value (shader and geometry sockets carry no standalone value)"
+            )
+
+        if isinstance(value, (list, tuple)):
+            socket.default_value = tuple(value)
+        else:
+            socket.default_value = value
+
+        return {
+            "material": mat.name,
+            "node_name": node.name,
+            "socket": socket.name,
+            "value": value,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to set shader node input: {e}")
+
+
+def handle_set_shader_node_property(params: dict) -> dict:
+    """Set an allowlisted node-level property on a shader node."""
+    try:
+        prop = params["property"]
+        if prop not in ALLOWED_NODE_PROPERTIES:
+            raise ValueError(f"Property '{prop}' is not allowed")
+
+        mat = _get_material(params["material_name"])
+        tree = _get_node_tree(mat)
+        node = _get_node(tree, params["node_name"])
+
+        if not hasattr(node, prop):
+            raise ValueError(f"Node '{node.name}' has no property '{prop}'")
+
+        setattr(node, prop, params["value"])
+
+        return {
+            "material": mat.name,
+            "node_name": node.name,
+            "property": prop,
+            "value": params["value"],
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to set shader node property: {e}")
+
+
+def handle_add_color_ramp_element(params: dict) -> dict:
+    """Add a colour stop to a ColorRamp node."""
+    try:
+        mat = _get_material(params["material_name"])
+        tree = _get_node_tree(mat)
+        node = _get_node(tree, params["node_name"])
+        ramp = _get_ramp(node)
+
+        element = ramp.elements.new(params["position"])
+        element.color = tuple(params["color"])
+
+        index = next(
+            (i for i, e in enumerate(ramp.elements) if e == element),
+            len(ramp.elements) - 1,
+        )
+
+        return {
+            "material": mat.name,
+            "node_name": node.name,
+            "index": index,
+            "position": element.position,
+            "color": list(element.color),
+            "total": len(ramp.elements),
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to add colour ramp element: {e}")
+
+
+def handle_remove_color_ramp_element(params: dict) -> dict:
+    """Remove a colour stop from a ColorRamp node."""
+    try:
+        mat = _get_material(params["material_name"])
+        tree = _get_node_tree(mat)
+        node = _get_node(tree, params["node_name"])
+        ramp = _get_ramp(node)
+
+        if len(ramp.elements) <= 1:
+            raise ValueError("A colour ramp must keep at least one element")
+
+        element = _ramp_element(ramp, params["index"])
+        ramp.elements.remove(element)
+
+        return {
+            "material": mat.name,
+            "node_name": node.name,
+            "removed": params["index"],
+            "remaining": len(ramp.elements),
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to remove colour ramp element: {e}")
+
+
+def handle_set_color_ramp_element(params: dict) -> dict:
+    """Move or recolor an existing ColorRamp stop."""
+    try:
+        mat = _get_material(params["material_name"])
+        tree = _get_node_tree(mat)
+        node = _get_node(tree, params["node_name"])
+        ramp = _get_ramp(node)
+        element = _ramp_element(ramp, params["index"])
+
+        if "position" in params:
+            element.position = params["position"]
+        if "color" in params:
+            element.color = tuple(params["color"])
+
+        return {
+            "material": mat.name,
+            "node_name": node.name,
+            "index": params["index"],
+            "position": element.position,
+            "color": list(element.color),
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to set colour ramp element: {e}")
+
+
+def handle_set_color_ramp_interpolation(params: dict) -> dict:
+    """Set the interpolation and optionally the colour mode of a ColorRamp."""
+    try:
+        interpolation = params["interpolation"]
+        if interpolation not in ALLOWED_RAMP_INTERPOLATIONS:
+            raise ValueError(f"Interpolation '{interpolation}' is not allowed")
+
+        color_mode = params.get("color_mode")
+        if color_mode is not None and color_mode not in ALLOWED_RAMP_COLOR_MODES:
+            raise ValueError(f"Colour mode '{color_mode}' is not allowed")
+
+        mat = _get_material(params["material_name"])
+        tree = _get_node_tree(mat)
+        node = _get_node(tree, params["node_name"])
+        ramp = _get_ramp(node)
+
+        ramp.interpolation = interpolation
+        if color_mode is not None:
+            ramp.color_mode = color_mode
+
+        return {
+            "material": mat.name,
+            "node_name": node.name,
+            "interpolation": ramp.interpolation,
+            "color_mode": ramp.color_mode,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to set colour ramp interpolation: {e}")
+
+
+def handle_get_color_ramp(params: dict) -> dict:
+    """Serialize every stop on a ColorRamp node."""
+    try:
+        mat = _get_material(params["material_name"])
+        tree = _get_node_tree(mat)
+        node = _get_node(tree, params["node_name"])
+        ramp = _get_ramp(node)
+
+        elements = [
+            {
+                "index": i,
+                "position": element.position,
+                "color": list(element.color),
+            }
+            for i, element in enumerate(ramp.elements)
+        ]
+
+        return {
+            "material": mat.name,
+            "node_name": node.name,
+            "elements": elements,
+            "interpolation": ramp.interpolation,
+            "color_mode": ramp.color_mode,
+        }
+    except Exception as e:
+        raise RuntimeError(f"Failed to get colour ramp: {e}")
+
+
 def register():
     """Register all material handlers with the dispatcher."""
     dispatcher.register_handler("create_material", handle_create_material)
@@ -441,3 +703,10 @@ def register():
     dispatcher.register_handler("disconnect_shader_nodes", handle_disconnect_shader_nodes)
     dispatcher.register_handler("remove_shader_node", handle_remove_shader_node)
     dispatcher.register_handler("get_node_tree", handle_get_node_tree)
+    dispatcher.register_handler("set_shader_node_input", handle_set_shader_node_input)
+    dispatcher.register_handler("set_shader_node_property", handle_set_shader_node_property)
+    dispatcher.register_handler("add_color_ramp_element", handle_add_color_ramp_element)
+    dispatcher.register_handler("remove_color_ramp_element", handle_remove_color_ramp_element)
+    dispatcher.register_handler("set_color_ramp_element", handle_set_color_ramp_element)
+    dispatcher.register_handler("set_color_ramp_interpolation", handle_set_color_ramp_interpolation)
+    dispatcher.register_handler("get_color_ramp", handle_get_color_ramp)

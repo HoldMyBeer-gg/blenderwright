@@ -8,6 +8,10 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ![blend-ai screenshot](./screenshot.png)
 
+<small>Fifteen procedural materials, each built by a single `create_procedural_material` call. The selected ball's node graph below was generated entirely by that one call — coordinates, mapping, noise, height mask, colour ramp, and Principled BSDF, laid out and wired:</small>
+
+![blend-ai procedural shader preview](./shader-preview.png)
+
 ## Key Features
 
 - **164 tools** across 24 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions

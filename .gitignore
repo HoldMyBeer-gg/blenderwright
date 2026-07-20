@@ -25,3 +25,6 @@ htmlcov/
 .python-version
 CLAUDE.md
 README.html
+
+# Planning artifacts - do not reintroduce
+.planning/

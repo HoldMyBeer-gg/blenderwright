@@ -1,5 +1,6 @@
 """MCP tools for Blender materials and shading."""
 
+import re
 from typing import Any
 
 from blend_ai.server import mcp, get_connection
@@ -76,6 +77,80 @@ ALLOWED_SHADER_NODE_TYPES = {
     # Blender 5.1+ nodes
     "ShaderNodeRaycast",
 }
+
+# Node-level properties that may be set via set_shader_node_property.
+# These are the enum/bool/float attributes that live on the node itself
+# rather than on one of its input sockets.
+ALLOWED_SHADER_NODE_PROPERTIES = {
+    # Math / Mix / Map Range
+    "operation", "use_clamp", "blend_type", "data_type", "clamp",
+    "clamp_factor", "clamp_result", "interpolation_type", "factor_mode",
+    # Noise / Voronoi / Wave / Gradient / Brick / Musgrave
+    "noise_dimensions", "noise_type", "normalize",
+    "voronoi_dimensions", "feature", "distance",
+    "wave_type", "wave_profile", "bands_direction", "rings_direction",
+    "gradient_type", "offset", "offset_frequency", "squash", "squash_frequency",
+    "turbulence_depth",
+    # Image / environment texture
+    "interpolation", "projection", "extension",
+    # Vector / mapping / normal
+    "vector_type", "rotation_type", "invert", "space", "uv_map",
+    "convert_from", "convert_to", "mode", "component", "axis",
+    # Attribute / UV / object info
+    "attribute_name", "attribute_type", "from_instancer",
+    # Shader distributions
+    "distribution", "subsurface_method",
+    # Colour ramp element interpolation lives on the ramp, see the ramp tools.
+}
+
+# Maximum length and permitted charset for string property values. Blender
+# enum identifiers and datablock names never need anything outside this set,
+# so anything else is rejected rather than forwarded.
+MAX_PROPERTY_VALUE_LENGTH = 64
+SAFE_PROPERTY_VALUE_PATTERN = re.compile(r"^[A-Za-z0-9_. -]+$")
+
+ALLOWED_COLOR_RAMP_INTERPOLATIONS = {
+    "EASE", "CARDINAL", "LINEAR", "B_SPLINE", "CONSTANT",
+}
+ALLOWED_COLOR_RAMP_COLOR_MODES = {"RGB", "HSV", "HSL"}
+
+# Procedural patterns that native shader nodes reproduce.
+# Notably absent: runes. Stamping discrete glyphs at random positions is not
+# expressible in the shader graph and needs a raster path instead.
+PROCEDURAL_PATTERNS = {
+    "gradient", "noise", "cloud", "voronoi", "veins", "scales",
+    "stripes", "wood", "marble", "weave", "plasma", "fire", "sparks",
+}
+
+PROCEDURAL_PATTERN_DESCRIPTIONS = {
+    "gradient": "Smooth linear ramp. Base for skies, fades, and masks.",
+    "noise": "Fractal noise. General-purpose surface variation and grunge.",
+    "cloud": "Soft billowing noise. Skies, smoke, vapour.",
+    "voronoi": "Cellular chunks. Stone, cracked plates, organic cells.",
+    "veins": "Voronoi distance-to-edge. Cracks, leaf veins, dry riverbeds.",
+    "scales": "Offset cellular grid. Reptile scales, fish, armour plating.",
+    "stripes": "Hard or soft banding. Fabric, warning markings, ribbing.",
+    "wood": "Distorted rings. Timber grain, tree cross-sections.",
+    "marble": "Turbulent banding. Marble, swirled stone, oil-on-water.",
+    "weave": "Crossed waves. Woven cloth, baskets, mesh.",
+    "plasma": "Layered noise into a wide colour sweep. Energy, magic, heat.",
+    "fire": "Vertically-masked noise into a heat ramp. Flame, lava, embers.",
+    "sparks": "Sparse bright points. Embers, glints, star fields.",
+}
+
+# Patterns that need real pixels because they place discrete marks. Kept
+# disjoint from PROCEDURAL_PATTERNS: anything a shader node can express
+# belongs there instead, where it stays resolution-independent.
+RASTER_PATTERNS = {"runes"}
+
+MAX_RASTER_SIZE = 2048
+MAX_RASTER_COUNT = 512
+
+# Blender's Noise Texture caps Detail at 15.
+MAX_PROCEDURAL_DETAIL = 15.0
+MAX_PROCEDURAL_SCALE = 10000.0
+# A colour ramp holds at most 32 stops.
+MAX_PROCEDURAL_COLORS = 32
 
 
 def _send_material_command(command: str, params: dict[str, Any] | None = None) -> Any:
@@ -463,3 +538,498 @@ def get_node_tree(material_name: str) -> dict[str, Any]:
     return _send_material_command("get_node_tree", {
         "material_name": material_name,
     })
+
+
+def _validate_socket_ref(socket: object) -> str | int:
+    """Validate a socket reference: either a name or a zero-based index.
+
+    Index form exists because socket names are not unique — a Math node has
+    two inputs both named 'Value', and only the index can tell them apart.
+    """
+    if isinstance(socket, bool):
+        raise ValidationError("socket must be a name or a non-negative index")
+    if isinstance(socket, int):
+        if socket < 0:
+            raise ValidationError("socket index must be >= 0")
+        return socket
+    if isinstance(socket, str) and len(socket) > 0:
+        return socket
+    raise ValidationError("socket must be a non-empty name or a non-negative index")
+
+
+def _validate_socket_value(value: object) -> Any:
+    """Validate a socket default value: number, boolean, or 2-4 component vector."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, (list, tuple)):
+        if len(value) not in (2, 3, 4):
+            raise ValidationError(
+                "vector/color value must have 2, 3, or 4 components"
+            )
+        for i, component in enumerate(value):
+            if isinstance(component, bool) or not isinstance(component, (int, float)):
+                raise ValidationError(f"value component {i} must be a number")
+        return list(value)
+    raise ValidationError(
+        "value must be a number, boolean, or a 2-4 component list of numbers"
+    )
+
+
+def _validate_property_value(value: object) -> Any:
+    """Validate a node property value: string (charset-limited), number, or boolean."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        if not 1 <= len(value) <= MAX_PROPERTY_VALUE_LENGTH:
+            raise ValidationError(
+                f"property value must be 1-{MAX_PROPERTY_VALUE_LENGTH} characters"
+            )
+        if SAFE_PROPERTY_VALUE_PATTERN.match(value) is None:
+            raise ValidationError(
+                "property value may only contain letters, digits, spaces, "
+                "underscores, dots, and hyphens"
+            )
+        return value
+    raise ValidationError("property value must be a string, number, or boolean")
+
+
+def _validate_element_index(index: object) -> int:
+    """Validate a zero-based colour ramp element index."""
+    if isinstance(index, bool) or not isinstance(index, int):
+        raise ValidationError("index must be an integer")
+    if index < 0:
+        raise ValidationError("index must be >= 0")
+    return index
+
+
+def _validate_ramp_color(color: list | tuple) -> list[float]:
+    """Validate a ramp colour, padding RGB to RGBA so the wire format is uniform."""
+    validated = validate_color(color)
+    if len(validated) == 3:
+        validated = (*validated, 1.0)
+    return list(validated)
+
+
+@mcp.tool()
+def set_shader_node_input(
+    material_name: str,
+    node_name: str,
+    socket: str | int,
+    value: float | bool | list,
+) -> dict[str, Any]:
+    """Set the default value of an unconnected input socket on a shader node.
+
+    This is how you dial in a procedural texture: Noise 'Scale' and 'Detail',
+    Mapping 'Scale' and 'Rotation', a Principled BSDF 'Roughness', and so on.
+    A socket that has a link into it ignores its default value, so disconnect
+    it first if you want the default to take effect.
+
+    Args:
+        material_name: Name of the material.
+        node_name: Name of the node.
+        socket: Socket name, or a zero-based index. Use the index when names
+            are ambiguous — a Math node has two inputs both called 'Value'.
+        value: A number, a boolean, or a 2-4 component list for vectors and
+            colors (colors are RGBA).
+
+    Returns:
+        Dict with the node, socket, and the value that was applied.
+    """
+    material_name = validate_object_name(material_name)
+    node_name = validate_object_name(node_name)
+    socket = _validate_socket_ref(socket)
+    value = _validate_socket_value(value)
+
+    return _send_material_command("set_shader_node_input", {
+        "material_name": material_name,
+        "node_name": node_name,
+        "socket": socket,
+        "value": value,
+    })
+
+
+@mcp.tool()
+def set_shader_node_property(
+    material_name: str,
+    node_name: str,
+    property: str,
+    value: str | float | bool,
+) -> dict[str, Any]:
+    """Set a node-level property (not a socket) on a shader node.
+
+    These are the dropdowns and checkboxes on the node body rather than its
+    input sockets: Math 'operation', Mix 'blend_type', Voronoi 'feature'
+    (use 'DISTANCE_TO_EDGE' for vein and crack patterns), Wave 'wave_type'
+    and 'bands_direction', Noise 'noise_dimensions'.
+
+    Args:
+        material_name: Name of the material.
+        node_name: Name of the node.
+        property: Property name. Must be one of the allowed node properties.
+        value: String enum identifier, number, or boolean.
+
+    Returns:
+        Dict with the node, property, and the value that was applied.
+    """
+    material_name = validate_object_name(material_name)
+    node_name = validate_object_name(node_name)
+    validate_enum(property, ALLOWED_SHADER_NODE_PROPERTIES, name="property")
+    value = _validate_property_value(value)
+
+    return _send_material_command("set_shader_node_property", {
+        "material_name": material_name,
+        "node_name": node_name,
+        "property": property,
+        "value": value,
+    })
+
+
+@mcp.tool()
+def add_color_ramp_element(
+    material_name: str,
+    node_name: str,
+    position: float,
+    color: list,
+) -> dict[str, Any]:
+    """Add a colour stop to a ColorRamp (ShaderNodeValToRGB) node.
+
+    A new ramp starts with two stops, black at 0.0 and white at 1.0. Add
+    stops to shape a gradient: fire needs dark red, orange, yellow, white
+    bunched toward the top; rust needs a hard break between metal and oxide.
+
+    Args:
+        material_name: Name of the material.
+        node_name: Name of the ColorRamp node.
+        position: Stop position along the ramp, 0.0 to 1.0.
+        color: RGB or RGBA color, components 0.0 to 1.0. RGB gains alpha 1.0.
+
+    Returns:
+        Dict with the new element's index, position, and color.
+    """
+    material_name = validate_object_name(material_name)
+    node_name = validate_object_name(node_name)
+    validate_numeric_range(position, min_val=0.0, max_val=1.0, name="position")
+    color = _validate_ramp_color(color)
+
+    return _send_material_command("add_color_ramp_element", {
+        "material_name": material_name,
+        "node_name": node_name,
+        "position": position,
+        "color": color,
+    })
+
+
+@mcp.tool()
+def remove_color_ramp_element(
+    material_name: str,
+    node_name: str,
+    index: int,
+) -> dict[str, Any]:
+    """Remove a colour stop from a ColorRamp node.
+
+    Blender requires at least one stop to remain; removing the last one fails.
+
+    Args:
+        material_name: Name of the material.
+        node_name: Name of the ColorRamp node.
+        index: Zero-based index of the stop to remove.
+
+    Returns:
+        Dict with the removed index and the remaining element count.
+    """
+    material_name = validate_object_name(material_name)
+    node_name = validate_object_name(node_name)
+    index = _validate_element_index(index)
+
+    return _send_material_command("remove_color_ramp_element", {
+        "material_name": material_name,
+        "node_name": node_name,
+        "index": index,
+    })
+
+
+@mcp.tool()
+def set_color_ramp_element(
+    material_name: str,
+    node_name: str,
+    index: int,
+    position: float | None = None,
+    color: list | None = None,
+) -> dict[str, Any]:
+    """Move or recolor an existing ColorRamp stop.
+
+    At least one of position or color must be given. Moving a stop past a
+    neighbour reorders the ramp, so indices may shift after this call — read
+    the ramp back with get_color_ramp if you need certainty.
+
+    Args:
+        material_name: Name of the material.
+        node_name: Name of the ColorRamp node.
+        index: Zero-based index of the stop to edit.
+        position: New position, 0.0 to 1.0. Omit to leave unchanged.
+        color: New RGB or RGBA color. Omit to leave unchanged.
+
+    Returns:
+        Dict with the element's resulting position and color.
+    """
+    material_name = validate_object_name(material_name)
+    node_name = validate_object_name(node_name)
+    index = _validate_element_index(index)
+
+    if position is None and color is None:
+        raise ValidationError("at least one of position or color must be provided")
+
+    params: dict[str, Any] = {
+        "material_name": material_name,
+        "node_name": node_name,
+        "index": index,
+    }
+    if position is not None:
+        validate_numeric_range(position, min_val=0.0, max_val=1.0, name="position")
+        params["position"] = position
+    if color is not None:
+        params["color"] = _validate_ramp_color(color)
+
+    return _send_material_command("set_color_ramp_element", params)
+
+
+@mcp.tool()
+def set_color_ramp_interpolation(
+    material_name: str,
+    node_name: str,
+    interpolation: str,
+    color_mode: str = "",
+) -> dict[str, Any]:
+    """Set how a ColorRamp blends between its stops.
+
+    'CONSTANT' gives hard-edged bands with no blending, which is what turns a
+    noise or voronoi texture into discrete regions: scale plates, cracked mud,
+    stylised cel shading. 'EASE' and 'B_SPLINE' give softer falloff than
+    'LINEAR'. Set color_mode to 'HSV' to sweep through hues between two stops
+    rather than blending through grey.
+
+    Args:
+        material_name: Name of the material.
+        node_name: Name of the ColorRamp node.
+        interpolation: One of EASE, CARDINAL, LINEAR, B_SPLINE, CONSTANT.
+        color_mode: Optional. One of RGB, HSV, HSL. Omit to leave unchanged.
+
+    Returns:
+        Dict with the applied interpolation and color mode.
+    """
+    material_name = validate_object_name(material_name)
+    node_name = validate_object_name(node_name)
+    validate_enum(
+        interpolation, ALLOWED_COLOR_RAMP_INTERPOLATIONS, name="interpolation"
+    )
+
+    params: dict[str, Any] = {
+        "material_name": material_name,
+        "node_name": node_name,
+        "interpolation": interpolation,
+    }
+    if color_mode:
+        validate_enum(
+            color_mode, ALLOWED_COLOR_RAMP_COLOR_MODES, name="color_mode"
+        )
+        params["color_mode"] = color_mode
+
+    return _send_material_command("set_color_ramp_interpolation", params)
+
+
+@mcp.tool()
+def get_color_ramp(material_name: str, node_name: str) -> dict[str, Any]:
+    """Read every stop on a ColorRamp node.
+
+    Use this before editing to learn the current indices and positions, since
+    add and move operations reorder stops.
+
+    Args:
+        material_name: Name of the material.
+        node_name: Name of the ColorRamp node.
+
+    Returns:
+        Dict with elements (index, position, color), interpolation, color_mode.
+    """
+    material_name = validate_object_name(material_name)
+    node_name = validate_object_name(node_name)
+
+    return _send_material_command("get_color_ramp", {
+        "material_name": material_name,
+        "node_name": node_name,
+    })
+
+
+@mcp.tool()
+def create_procedural_material(
+    name: str,
+    pattern: str,
+    scale: float = 5.0,
+    detail: float = 2.0,
+    distortion: float = 0.0,
+    roughness: float = 0.5,
+    metallic: float = 0.0,
+    colors: list | None = None,
+    banded: bool = False,
+    connect_to_bsdf: bool = True,
+) -> dict[str, Any]:
+    """Build a complete procedural texture as a material, in one call.
+
+    Prefer this over hand-wiring texture nodes. It creates the full graph —
+    coordinates, mapping, the pattern's texture nodes, a tuned colour ramp,
+    and the Principled BSDF — and returns the node names so you can adjust
+    anything afterwards with set_shader_node_input or the colour ramp tools.
+
+    Procedural beats image textures here: no files, no UV unwrap needed, and
+    it stays sharp at any camera distance.
+
+    Call list_procedural_patterns() to see what each pattern looks like.
+
+    Args:
+        name: Name for the new material.
+        pattern: One of the supported patterns, e.g. 'fire', 'wood', 'veins'.
+        scale: Feature size. Lower is bigger and broader, higher is finer and
+            busier. 5.0 is a sensible default; try 1-3 for large forms and
+            20+ for fine detail.
+        detail: Fractal octaves, 0-15. Higher adds finer sub-detail at the
+            cost of render time. Applies to noise, cloud, wood, marble,
+            plasma and fire. The cellular patterns (voronoi, veins, scales,
+            sparks), stripes, weave and gradient have no detail socket and
+            ignore it.
+        distortion: Warps the pattern. Small values (0.5-2.0) make wood and
+            marble look organic rather than machine-perfect. Applies to
+            noise, cloud, stripes, wood, marble, plasma and fire. The
+            cellular patterns, weave and gradient ignore it.
+        roughness: Surface roughness 0-1 for the Principled BSDF.
+        metallic: Metallic 0-1 for the Principled BSDF.
+        colors: Optional list of RGB or RGBA colours for the ramp, in order.
+            Omit to use the pattern's own tuned palette.
+        banded: Use CONSTANT ramp interpolation, giving hard-edged bands
+            instead of smooth blending. Turns noise into discrete regions:
+            scale plates, cracked mud, cel shading.
+        connect_to_bsdf: Wire the result into the Principled BSDF base colour
+            so the material renders immediately. Set False to leave the
+            pattern subtree unconnected for manual wiring.
+
+    Returns:
+        Dict with the material name, the created node names, and
+        ignored_params listing any arguments this pattern could not use.
+    """
+    name = validate_object_name(name)
+    validate_enum(pattern, PROCEDURAL_PATTERNS, name="pattern")
+    validate_numeric_range(
+        scale, min_val=0.0001, max_val=MAX_PROCEDURAL_SCALE, name="scale"
+    )
+    validate_numeric_range(
+        detail, min_val=0.0, max_val=MAX_PROCEDURAL_DETAIL, name="detail"
+    )
+    validate_numeric_range(distortion, min_val=0.0, max_val=1000.0, name="distortion")
+    validate_numeric_range(roughness, min_val=0.0, max_val=1.0, name="roughness")
+    validate_numeric_range(metallic, min_val=0.0, max_val=1.0, name="metallic")
+
+    params: dict[str, Any] = {
+        "name": name,
+        "pattern": pattern,
+        "scale": scale,
+        "detail": detail,
+        "distortion": distortion,
+        "roughness": roughness,
+        "metallic": metallic,
+        "banded": bool(banded),
+        "connect_to_bsdf": bool(connect_to_bsdf),
+    }
+
+    if colors is not None:
+        if not isinstance(colors, (list, tuple)):
+            raise ValidationError("colors must be a list of colours")
+        if not 1 <= len(colors) <= MAX_PROCEDURAL_COLORS:
+            raise ValidationError(
+                f"colors must contain 1-{MAX_PROCEDURAL_COLORS} entries"
+            )
+        params["colors"] = [_validate_ramp_color(c) for c in colors]
+
+    return _send_material_command("create_procedural_material", params)
+
+
+@mcp.tool()
+def create_raster_texture(
+    name: str,
+    pattern: str,
+    size: int = 512,
+    count: int = 12,
+    seed: int = 0,
+    foreground: list | None = None,
+    background: list | None = None,
+) -> dict[str, Any]:
+    """Generate an image texture for patterns shader nodes cannot express.
+
+    Use this only for patterns that place discrete marks. Shader nodes
+    evaluate a function per point and have no way to say "draw a glyph here,
+    then another over there", so runes need real pixels. Everything else
+    should go through create_procedural_material, which stays sharp at any
+    resolution.
+
+    The image is packed into the blend file. No file is written to disk.
+
+    Args:
+        name: Name for the generated image datablock.
+        pattern: A raster pattern. Currently 'runes'.
+        size: Pixel width and height, up to 2048. Cost grows with the square.
+        count: How many marks to stamp. 0 leaves a blank field.
+        seed: Change for a different arrangement; the same seed always
+            reproduces the same image.
+        foreground: RGB or RGBA colour of the marks.
+        background: RGB or RGBA colour behind them.
+
+    Returns:
+        Dict with the image name, size, and mark count.
+    """
+    name = validate_object_name(name)
+    validate_enum(pattern, RASTER_PATTERNS, name="pattern")
+
+    if isinstance(size, bool) or not isinstance(size, int):
+        raise ValidationError("size must be an integer")
+    validate_numeric_range(size, min_val=1, max_val=MAX_RASTER_SIZE, name="size")
+
+    if isinstance(count, bool) or not isinstance(count, int):
+        raise ValidationError("count must be an integer")
+    validate_numeric_range(count, min_val=0, max_val=MAX_RASTER_COUNT, name="count")
+
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise ValidationError("seed must be an integer")
+    validate_numeric_range(seed, min_val=0, max_val=2**31 - 1, name="seed")
+
+    if foreground is None:
+        foreground = [0.4, 0.8, 1.0, 1.0]
+    if background is None:
+        background = [0.02, 0.01, 0.06, 1.0]
+
+    return _send_material_command("create_raster_texture", {
+        "name": name,
+        "pattern": pattern,
+        "size": size,
+        "count": count,
+        "seed": seed,
+        "foreground": _validate_ramp_color(foreground),
+        "background": _validate_ramp_color(background),
+    })
+
+
+@mcp.tool()
+def list_procedural_patterns() -> dict[str, Any]:
+    """List every procedural pattern with a description of what it looks like.
+
+    Read this before calling create_procedural_material so you pick a pattern
+    that matches the surface you are trying to make.
+
+    Returns:
+        Dict with the sorted pattern names and a description of each.
+    """
+    return {
+        "patterns": sorted(PROCEDURAL_PATTERNS),
+        "descriptions": dict(PROCEDURAL_PATTERN_DESCRIPTIONS),
+    }

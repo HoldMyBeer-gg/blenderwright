@@ -14,6 +14,17 @@ from . import thread_safety
 from .render_guard import render_guard
 
 
+def _reject_non_finite(constant: str):
+    """Reject NaN and Infinity at the protocol boundary.
+
+    Python's json parser accepts the non-standard NaN, Infinity and
+    -Infinity literals by default. Assigning those into Blender properties
+    writes garbage that persists into the saved .blend, so they are refused
+    here rather than in each handler.
+    """
+    raise ValueError(f"Non-finite JSON constant '{constant}' is not accepted")
+
+
 class BlenderServer:
     """TCP socket server for receiving MCP commands inside Blender."""
 
@@ -100,7 +111,9 @@ class BlenderServer:
                     if data is None:
                         break
 
-                    message = json.loads(data.decode("utf-8"))
+                    message = json.loads(
+                        data.decode("utf-8"), parse_constant=_reject_non_finite
+                    )
                     command = message.get("command", "")
                     params = message.get("params", {})
 

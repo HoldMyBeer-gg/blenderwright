@@ -27,9 +27,20 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install bandit pip-audit
+      - name: Upgrade build tooling
+        # The runner image ships its own setuptools/pip. pip-audit reports
+        # vulnerabilities in those even though this project does not depend
+        # on them (the build backend is hatchling), so keep them current
+        # rather than let runner drift fail the build.
+        run: pip install --upgrade pip setuptools wheel
       - name: bandit
         run: bandit -r src/ -ll  # low severity threshold; skip install_addon.py (subprocess by design)
+      - name: Install project dependencies
+        run: pip install -e ".[dev,installer]"
       - name: pip-audit
+        # Audits the environment, which now contains this project's declared
+        # dependencies. The upgrade step above keeps the runner's own build
+        # tooling current so drift in the image does not fail the build.
         run: pip-audit
 
   tests:
