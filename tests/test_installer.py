@@ -507,6 +507,14 @@ class TestUninstall:
                 installer.uninstall(dry_run=False)
 
 
+def _fake_blender(tmp_path):
+    """A real executable file, so validate_blender_path accepts it."""
+    exe = tmp_path / "blender"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    return exe
+
+
 class TestUpgrade:
     def test_upgrade_calls_uninstall_then_install(self, tmp_path):
         zip_path = tmp_path / "blend-ai-v1.0.0.zip"
@@ -515,7 +523,7 @@ class TestUpgrade:
         with patch.object(installer, "is_blender_running", return_value=False), \
              patch.object(installer, "uninstall", side_effect=lambda dry_run=False: calls.append("uninstall") or []), \
              patch.object(installer, "install", side_effect=lambda *a, **kw: calls.append("install") or True):
-            installer.upgrade("/usr/bin/blender", zip_path, log_fn=lambda m: None)
+            installer.upgrade(_fake_blender(tmp_path), zip_path, log_fn=lambda m: None)
         assert calls == ["uninstall", "install"]
 
     def test_upgrade_refuses_when_blender_running(self, tmp_path):
@@ -571,36 +579,36 @@ class TestChooseBlender:
 
     def test_numeric_choice_selects_from_the_list(self):
         found = [(Path("/a/blender"), "Blender 4.2.0"), (Path("/b/blender"), "Blender 5.1.0")]
-        with patch.object(installer.asyncio, "run", return_value=found), \
+        with patch.object(installer, "_discover_blender", return_value=found), \
              patch("builtins.input", return_value="2"):
             assert installer._choose_blender() == Path("/b/blender")
 
     def test_pasted_path_is_accepted_over_the_list(self):
         found = [(Path("/a/blender"), "Blender 4.2.0")]
-        with patch.object(installer.asyncio, "run", return_value=found), \
+        with patch.object(installer, "_discover_blender", return_value=found), \
              patch("builtins.input", return_value="/elsewhere/blender"):
             assert installer._choose_blender() == "/elsewhere/blender"
 
     def test_blank_answer_cancels(self):
         found = [(Path("/a/blender"), "Blender 4.2.0")]
-        with patch.object(installer.asyncio, "run", return_value=found), \
+        with patch.object(installer, "_discover_blender", return_value=found), \
              patch("builtins.input", return_value=""):
             assert installer._choose_blender() is None
 
     def test_out_of_range_number_is_treated_as_a_path(self):
         """9 with one result is not a selection; don't silently install the wrong one."""
         found = [(Path("/a/blender"), "Blender 4.2.0")]
-        with patch.object(installer.asyncio, "run", return_value=found), \
+        with patch.object(installer, "_discover_blender", return_value=found), \
              patch("builtins.input", return_value="9"):
             assert installer._choose_blender() == "9"
 
     def test_no_blender_found_prompts_for_a_path(self):
-        with patch.object(installer.asyncio, "run", return_value=[]), \
+        with patch.object(installer, "_discover_blender", return_value=[]), \
              patch("builtins.input", return_value="/typed/blender"):
             assert installer._choose_blender() == "/typed/blender"
 
     def test_no_blender_found_and_blank_cancels(self):
-        with patch.object(installer.asyncio, "run", return_value=[]), \
+        with patch.object(installer, "_discover_blender", return_value=[]), \
              patch("builtins.input", return_value=""):
             assert installer._choose_blender() is None
 
@@ -613,25 +621,28 @@ class TestCmdInstall:
             assert installer._cmd_install(args) == 1
         inst.assert_not_called()
 
-    def test_missing_zip_is_reported(self):
-        args = MagicMock(blender="/b")
-        with patch.object(installer, "_choose_blender", return_value="/b"), \
+    def test_missing_zip_is_reported(self, tmp_path):
+        exe = _fake_blender(tmp_path)
+        args = MagicMock(blender=str(exe))
+        with patch.object(installer, "_choose_blender", return_value=exe), \
              patch.object(installer, "build_zip", return_value=None), \
              patch.object(installer, "find_zip", return_value=None), \
              patch.object(installer, "install") as inst:
             assert installer._cmd_install(args) == 1
         inst.assert_not_called()
 
-    def test_successful_install_returns_zero(self):
-        args = MagicMock(blender="/b")
-        with patch.object(installer, "_choose_blender", return_value="/b"), \
+    def test_successful_install_returns_zero(self, tmp_path):
+        exe = _fake_blender(tmp_path)
+        args = MagicMock(blender=str(exe))
+        with patch.object(installer, "_choose_blender", return_value=exe), \
              patch.object(installer, "build_zip", return_value=Path("/tmp/x.zip")), \
              patch.object(installer, "install", return_value=True):
             assert installer._cmd_install(args) == 0
 
-    def test_failed_install_returns_nonzero(self):
-        args = MagicMock(blender="/b")
-        with patch.object(installer, "_choose_blender", return_value="/b"), \
+    def test_failed_install_returns_nonzero(self, tmp_path):
+        exe = _fake_blender(tmp_path)
+        args = MagicMock(blender=str(exe))
+        with patch.object(installer, "_choose_blender", return_value=exe), \
              patch.object(installer, "build_zip", return_value=Path("/tmp/x.zip")), \
              patch.object(installer, "install", return_value=False):
             assert installer._cmd_install(args) == 1
@@ -653,3 +664,89 @@ class TestNoThirdPartyDependencies:
             f"non-stdlib imports in install_addon.py: "
             f"{sorted(roots - set(sys.stdlib_module_names))}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Blender path validation
+# ---------------------------------------------------------------------------
+
+class TestValidateBlenderPath:
+    def test_accepts_an_executable_file(self, tmp_path):
+        exe = tmp_path / "blender"
+        exe.write_text("#!/bin/sh\n")
+        exe.chmod(0o755)
+        assert installer.validate_blender_path(exe) == exe
+
+    def test_app_bundle_gets_a_macos_hint(self, tmp_path):
+        """The natural thing to type on macOS is the .app, which is a directory."""
+        app = tmp_path / "Blender.app"
+        app.mkdir()
+        with pytest.raises(installer.BlenderPathError) as exc:
+            installer.validate_blender_path(app)
+        assert "Contents/MacOS/Blender" in str(exc.value)
+
+    def test_plain_directory_is_rejected(self, tmp_path):
+        with pytest.raises(installer.BlenderPathError):
+            installer.validate_blender_path(tmp_path)
+
+    def test_missing_path_is_rejected(self, tmp_path):
+        with pytest.raises(installer.BlenderPathError) as exc:
+            installer.validate_blender_path(tmp_path / "nope")
+        assert "not found" in str(exc.value).lower()
+
+    def test_non_executable_file_is_rejected(self, tmp_path):
+        f = tmp_path / "blender"
+        f.write_text("")
+        f.chmod(0o644)
+        with pytest.raises(installer.BlenderPathError):
+            installer.validate_blender_path(f)
+
+    def test_flatpak_invocation_is_passed_through(self):
+        """install() special-cases flatpak; validation must not block it."""
+        cmd = "flatpak run org.blender.Blender"
+        assert installer.validate_blender_path(cmd) == cmd
+
+
+class TestUpgradeDoesNotDestroyOnBadPath:
+    def test_bad_path_aborts_before_uninstalling(self, tmp_path):
+        """The addon must survive a typo; uninstall runs before install."""
+        bad = tmp_path / "Blender.app"
+        bad.mkdir()
+        with patch.object(installer, "is_blender_running", return_value=False), \
+             patch.object(installer, "uninstall") as uninst, \
+             patch.object(installer, "install") as inst:
+            with pytest.raises(installer.BlenderPathError):
+                installer.upgrade(bad)
+        uninst.assert_not_called()
+        inst.assert_not_called()
+
+    def test_good_path_still_uninstalls_then_installs(self, tmp_path):
+        exe = tmp_path / "blender"
+        exe.write_text("#!/bin/sh\n")
+        exe.chmod(0o755)
+        with patch.object(installer, "is_blender_running", return_value=False), \
+             patch.object(installer, "uninstall") as uninst, \
+             patch.object(installer, "build_zip", return_value=tmp_path / "x.zip"), \
+             patch.object(installer, "install", return_value=True) as inst:
+            assert installer.upgrade(exe) is True
+        uninst.assert_called_once()
+        inst.assert_called_once()
+
+
+class TestUpgradeWithoutAPath:
+    def test_no_path_falls_back_to_the_picker(self, tmp_path):
+        exe = tmp_path / "blender"
+        exe.write_text("#!/bin/sh\n")
+        exe.chmod(0o755)
+        args = MagicMock(blender=None)
+        with patch.object(installer, "_choose_blender", return_value=exe) as choose, \
+             patch.object(installer, "upgrade", return_value=True):
+            assert installer._cmd_upgrade(args) == 0
+        choose.assert_called_once()
+
+    def test_cancelled_picker_does_not_uninstall(self):
+        args = MagicMock(blender=None)
+        with patch.object(installer, "_choose_blender", return_value=None), \
+             patch.object(installer, "uninstall") as uninst:
+            assert installer._cmd_upgrade(args) != 0
+        uninst.assert_not_called()
