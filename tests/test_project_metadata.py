@@ -143,3 +143,37 @@ def test_tool_reference_documents_every_tool():
         page = f.read()
     anchors = set(re.findall(r'<article class="tool" id="([^"]+)"', page))
     assert len(anchors) == _tool_count()
+
+
+def test_crawler_files_are_current():
+    """robots.txt and sitemap.xml are generated alongside the page."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "generate_tool_docs", os.path.join(ROOT, "scripts", "generate_tool_docs.py")
+    )
+    gen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+
+    for name, expected in (
+        ("sitemap.xml", gen.render_sitemap()),
+        ("robots.txt", gen.render_robots()),
+    ):
+        path = os.path.join(ROOT, "docs", name)
+        assert os.path.exists(path), f"docs/{name} is missing"
+        with open(path, encoding="utf-8") as f:
+            assert f.read() == expected, (
+                f"docs/{name} is out of date. "
+                f"Run: python scripts/generate_tool_docs.py"
+            )
+
+
+def test_sitemap_matches_the_canonical_url():
+    """A sitemap pointing somewhere else is worse than none."""
+    import re
+
+    with open(os.path.join(ROOT, "docs", "sitemap.xml"), encoding="utf-8") as f:
+        loc = re.findall(r"<loc>([^<]+)</loc>", f.read())
+    with open(os.path.join(ROOT, "docs", "index.html"), encoding="utf-8") as f:
+        canonical = re.findall(r'rel="canonical" href="([^"]+)"', f.read())
+    assert loc == canonical, f"sitemap {loc} disagrees with canonical {canonical}"

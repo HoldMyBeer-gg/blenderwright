@@ -145,6 +145,25 @@ def _esc(text: str) -> str:
     return html.escape(text, quote=True)
 
 
+def render_sitemap() -> str:
+    """A sitemap for the one page there is.
+
+    No lastmod: it would change on every run and the staleness guard
+    compares generated output byte for byte.
+    """
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"  <url><loc>{SITE_URL}</loc><changefreq>weekly</changefreq>"
+        "<priority>1.0</priority></url>\n"
+        "</urlset>\n"
+    )
+
+
+def render_robots() -> str:
+    return f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}sitemap.xml\n"
+
+
 def render(tools: list[Tool]) -> str:
     by_module: dict[str, list[Tool]] = {}
     for tool in tools:
@@ -218,6 +237,7 @@ TEMPLATE = """<!DOCTYPE html>
 <title>blend-ai tool reference: {count} Blender MCP tools</title>
 <meta name="description" content="{description}">
 <link rel="canonical" href="{site}">
+<meta name="robots" content="index, follow">
 <meta property="og:title" content="blend-ai tool reference">
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{site}">
@@ -392,8 +412,15 @@ def main() -> int:
         if not target.exists():
             print(f"{target} is missing. Run: python {Path(__file__).name}")
             return 1
-        if target.read_text(encoding="utf-8") != page:
-            print(f"{target} is out of date. Run: python {Path(__file__).name}")
+        stale = [target] if target.read_text(encoding="utf-8") != page else []
+        for name, want in (("sitemap.xml", render_sitemap()),
+                           ("robots.txt", render_robots())):
+            path = OUT_DIR / name
+            if not path.exists() or path.read_text(encoding="utf-8") != want:
+                stale.append(path)
+        if stale:
+            names = ", ".join(p.name for p in stale)
+            print(f"out of date: {names}. Run: python {Path(__file__).name}")
             return 1
         print(f"{target} is current ({len(tools)} tools).")
         return 0
@@ -402,6 +429,8 @@ def main() -> int:
     target.write_text(page, encoding="utf-8")
     (OUT_DIR / "CNAME").write_text("blend-ai.holdmybeer.gg\n", encoding="utf-8")
     (OUT_DIR / ".nojekyll").write_text("", encoding="utf-8")
+    (OUT_DIR / "sitemap.xml").write_text(render_sitemap(), encoding="utf-8")
+    (OUT_DIR / "robots.txt").write_text(render_robots(), encoding="utf-8")
     print(f"wrote {target} ({len(tools)} tools, {os.path.getsize(target)} bytes)")
     return 0
 
