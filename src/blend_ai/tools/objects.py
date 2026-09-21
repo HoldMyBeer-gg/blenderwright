@@ -45,11 +45,6 @@ ALLOWED_TYPE_FILTERS = {
     "VOLUME",
 }
 
-ALLOWED_ORIGIN_TYPES = {
-    "ORIGIN_GEOMETRY", "ORIGIN_CURSOR", "ORIGIN_CENTER_OF_MASS",
-    "ORIGIN_CENTER_OF_VOLUME", "GEOMETRY_ORIGIN",
-}
-
 ALLOWED_CONVERT_TARGETS = {
     "MESH", "CURVE", "SURFACE", "META", "FONT", "CURVES", "POINTCLOUD", "GPENCIL",
 }
@@ -429,31 +424,6 @@ def join_objects(names: list[str]) -> dict[str, Any]:
     validated_names = [validate_object_name(n) for n in names]
     conn = get_connection()
     response = conn.send_command("join_objects", {"names": validated_names})
-    if response.get("status") == "error":
-        raise RuntimeError(f"Blender error: {response.get('result')}")
-    return response.get("result")
-
-
-@mcp.tool()
-def set_origin(object_name: str, type: str = "ORIGIN_GEOMETRY") -> dict[str, Any]:
-    """Set the origin point of an object.
-
-    Args:
-        object_name: Name of the object.
-        type: Origin type. One of: ORIGIN_GEOMETRY, ORIGIN_CURSOR,
-              ORIGIN_CENTER_OF_MASS, ORIGIN_CENTER_OF_VOLUME, GEOMETRY_ORIGIN.
-
-    Returns:
-        Confirmation dict.
-    """
-    object_name = validate_object_name(object_name)
-    validate_enum(type, ALLOWED_ORIGIN_TYPES, name="type")
-
-    conn = get_connection()
-    response = conn.send_command("set_origin", {
-        "object_name": object_name,
-        "type": type,
-    })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
