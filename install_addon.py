@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """
-Interactive installer for the blend-ai Blender addon.
-Searches for Blender installations in the background while letting
-you paste a path manually.
+Installer and maintenance tool for the blend-ai Blender addon.
 
-Requires: pip install textual
+Subcommands:
+    doctor      report every blend-ai install found, across all Blender versions
+    uninstall   remove them (dry run unless --yes)
+    upgrade     uninstall, rebuild the zip, install fresh
+    install     interactive TUI picker
+
+Only the TUI needs textual (pip install textual, or the "installer" extra).
+doctor, uninstall and upgrade run on the standard library alone.
 """
 
 from __future__ import annotations
@@ -20,14 +25,26 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Only the TUI needs textual. doctor/uninstall/upgrade must keep working
+# without it, so a missing textual is recorded here and reported at the point
+# the TUI is actually requested, rather than killing the whole module.
 try:
     from textual.app import App, ComposeResult
     from textual.binding import Binding
     from textual.containers import Horizontal
     from textual.widgets import Button, Footer, Header, Input, Label, ListItem, ListView, RichLog
-except ImportError:
-    print("textual is required: pip install textual")
-    sys.exit(1)
+
+    TEXTUAL_AVAILABLE = True
+except ImportError:  # pragma: no cover - exercised by the no-textual path
+    TEXTUAL_AVAILABLE = False
+
+    App = object            # InstallerApp subclasses this at import time
+    ComposeResult = object
+
+    def Binding(*_args, **_kwargs):   # evaluated in the class body
+        return None
+
+    Button = Footer = Header = Input = Label = ListItem = ListView = RichLog = None
 
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -469,7 +486,17 @@ def _cmd_upgrade(args) -> int:
     return 0 if ok else 1
 
 
+def _require_textual() -> bool:
+    if not TEXTUAL_AVAILABLE:
+        print("The interactive installer needs textual: pip install textual")
+        print("(doctor, uninstall and upgrade work without it.)")
+        return False
+    return True
+
+
 def _cmd_install_tui(args) -> int:
+    if not _require_textual():
+        return 2
     app = InstallerApp(preselected=args.blender)
     app.run()
     return 0
@@ -497,6 +524,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command is None:
         # Default: launch TUI (back-compat with `python install_addon.py`).
+        if not _require_textual():
+            return 2
         preselected = sys.argv[1] if len(sys.argv) > 1 and argv is None else None
         InstallerApp(preselected=preselected).run()
         return 0
