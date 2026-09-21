@@ -146,13 +146,28 @@ leaves a stale handler registered and the old socket still bound.
 ### One command (zip installs)
 
 ```bash
-python install_addon.py upgrade /path/to/blender
+python install_addon.py upgrade
 ```
 
-This refuses to run while Blender is open, removes every blend-ai install across *all*
-Blender version directories, rebuilds the zip from `addon/`, and installs it through
-Blender's own extension machinery. It is the recommended path, and it handles the case
-that bites people most: an older copy left behind under a previous Blender version.
+With no argument it finds your Blender installations and offers them as a numbered
+list, so there is no path to get wrong. You can still pass one explicitly:
+
+```bash
+# macOS - the binary inside the bundle, not the .app itself
+python install_addon.py upgrade /Applications/Blender.app/Contents/MacOS/Blender
+
+# Linux
+python install_addon.py upgrade /usr/local/bin/blender
+
+# Windows
+python install_addon.py upgrade "C:\Program Files\Blender Foundation\Blender 4.2\blender.exe"
+```
+
+It refuses to run while Blender is open, checks the path before touching anything,
+removes every blend-ai install across *all* Blender version directories, rebuilds the
+zip from `addon/`, and installs it through Blender's own extension machinery. It also
+handles the case that bites people most: an older copy left behind under a previous
+Blender version.
 
 Two companion commands:
 

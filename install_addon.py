@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import glob
+import inspect
 import os
 import platform
 import re
@@ -30,6 +31,43 @@ MODULE_NAME = "blend_ai"
 
 class BlenderRunningError(RuntimeError):
     """Raised when a destructive operation is attempted while Blender is running."""
+
+
+class BlenderPathError(RuntimeError):
+    """Raised when the given Blender path cannot be executed."""
+
+
+def validate_blender_path(blender: str | Path) -> str | Path:
+    """Check that `blender` can actually be run, before anything destructive.
+
+    upgrade() uninstalls before it installs, so an unusable path would
+    otherwise remove the addon and then fail to put it back.
+    """
+    # install() hands flatpak invocations to the shell as a command line.
+    if str(blender).startswith("flatpak"):
+        return blender
+
+    path = Path(blender)
+    if not path.exists():
+        raise BlenderPathError(f"Blender not found at: {path}")
+
+    if path.is_dir():
+        if path.suffix == ".app":
+            # macOS advice, so spell the path with forward slashes whatever
+            # platform we happen to be running on.
+            inner = f"{path.as_posix()}/Contents/MacOS/Blender"
+            raise BlenderPathError(
+                f"{path} is an application bundle, not the executable. "
+                f"Use the binary inside it:\n  {inner}"
+            )
+        raise BlenderPathError(f"{path} is a directory, not the Blender executable.")
+
+    # Windows has no executable bit; os.access(X_OK) is true for any file
+    # that exists, so the check only means something on POSIX.
+    if os.name != "nt" and not os.access(path, os.X_OK):
+        raise BlenderPathError(f"{path} is not executable.")
+
+    return blender
 
 
 # ---------------------------------------------------------------------------
@@ -409,6 +447,8 @@ def upgrade(blender: str | Path, zip_path: Path | None = None, log_fn=print) -> 
         raise BlenderRunningError(
             "Blender is currently running. Quit Blender before running upgrade."
         )
+    # Validate first: uninstall below is destructive and install may fail.
+    blender = validate_blender_path(blender)
     uninstall(dry_run=False)
     if zip_path is None:
         zip_path = build_zip(log_fn) or find_zip()
@@ -455,9 +495,16 @@ def _cmd_uninstall(args) -> int:
 
 
 def _cmd_upgrade(args) -> int:
+    blender = _choose_blender(getattr(args, "blender", None))
+    if not blender:
+        print("Cancelled.")
+        return 1
     try:
-        ok = upgrade(args.blender, None, log_fn=print)
+        ok = upgrade(blender, None, log_fn=print)
     except BlenderRunningError as e:
+        print(f"error: {e}")
+        return 2
+    except BlenderPathError as e:
         print(f"error: {e}")
         return 2
     return 0 if ok else 1
@@ -483,7 +530,9 @@ def _choose_blender(preselected: str | None = None) -> str | Path | None:
         return preselected
 
     print("Searching for Blender installations...")
-    found = asyncio.run(_discover_blender())
+    found = _discover_blender()
+    if inspect.isawaitable(found):
+        found = asyncio.run(found)
 
     if not found:
         print("No Blender found automatically.")
@@ -507,6 +556,11 @@ def _cmd_install(args) -> int:
     if not blender:
         print("Cancelled.")
         return 1
+    try:
+        blender = validate_blender_path(blender)
+    except BlenderPathError as e:
+        print(f"error: {e}")
+        return 2
 
     zip_path = build_zip(print) or find_zip()
     if zip_path is None:
@@ -527,7 +581,9 @@ def main(argv: list[str] | None = None) -> int:
     p_uninstall.set_defaults(func=_cmd_uninstall)
 
     p_upgrade = sub.add_parser("upgrade", help="Uninstall then install fresh")
-    p_upgrade.add_argument("blender", help="Path to the Blender executable")
+    p_upgrade.add_argument(
+        "blender", nargs="?", default=None,
+        help="Path to the Blender executable (omit to pick from detected installs)")
     p_upgrade.set_defaults(func=_cmd_upgrade)
 
     p_install = sub.add_parser("install", help="Install the addon, picking a Blender")
