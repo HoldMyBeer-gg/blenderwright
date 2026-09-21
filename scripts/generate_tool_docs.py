@@ -129,7 +129,7 @@ def collect_tools() -> list[Tool]:
     for path in sorted(TOOLS_DIR.glob("*.py")):
         if path.name == "__init__.py":
             continue
-        tree = ast.parse(path.read_text())
+        tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
@@ -215,7 +215,7 @@ TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blend-ai tool reference — {count} Blender MCP tools</title>
+<title>blend-ai tool reference: {count} Blender MCP tools</title>
 <meta name="description" content="{description}">
 <link rel="canonical" href="{site}">
 <meta property="og:title" content="blend-ai tool reference">
@@ -387,16 +387,16 @@ def main() -> int:
         if not target.exists():
             print(f"{target} is missing. Run: python {Path(__file__).name}")
             return 1
-        if target.read_text() != page:
+        if target.read_text(encoding="utf-8") != page:
             print(f"{target} is out of date. Run: python {Path(__file__).name}")
             return 1
         print(f"{target} is current ({len(tools)} tools).")
         return 0
 
     OUT_DIR.mkdir(exist_ok=True)
-    target.write_text(page)
-    (OUT_DIR / "CNAME").write_text("blend-ai.holdmybeer.gg\n")
-    (OUT_DIR / ".nojekyll").write_text("")
+    target.write_text(page, encoding="utf-8")
+    (OUT_DIR / "CNAME").write_text("blend-ai.holdmybeer.gg\n", encoding="utf-8")
+    (OUT_DIR / ".nojekyll").write_text("", encoding="utf-8")
     print(f"wrote {target} ({len(tools)} tools, {os.path.getsize(target)} bytes)")
     return 0
 
