@@ -14,7 +14,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ## Key Features
 
-- **164 tools** across 24 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **175 tools** across 24 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **12 expert prompts** — topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop** — fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis** — structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -65,20 +65,6 @@ mklink /D "%APPDATA%\Blender Foundation\Blender\<ver>\extensions\user_default\bl
 ```
 
 Then enable the extension in Blender preferences under **Get Extensions > User**.
-
-</details>
-
-<details>
-<summary><strong>Upgrading from a previous version</strong></summary>
-
-blend-ai ships as a Blender Extension (`blender_manifest.toml`), installed under **Edit > Preferences > Get Extensions**. Python caches imported modules, so replacing files in-place without a restart can leave stale handlers registered.
-
-1. If the server is running, open the N-panel **blend-ai** tab and click **Stop Server**.
-2. In Blender, open **Edit > Preferences > Get Extensions**, find **blend-ai**, and click **Uninstall**.
-3. Quit and restart Blender (this clears cached `blend_ai` modules).
-4. Install the new `.zip` via the **▾ > Install from Disk...** menu and enable it.
-
-For the developer symlink install, upgrading is just `git pull` followed by a full Blender restart — do not rely on reloading scripts, because the background TCP server thread survives reloads.
 
 </details>
 
@@ -151,6 +137,51 @@ The server communicates over stdin/stdout using the MCP protocol. It connects to
 
 </details>
 
+## Updating
+
+Whichever way you installed, **Blender must be fully restarted** — not "Reload Scripts".
+The addon runs a background TCP server thread that survives a script reload, so reloading
+leaves a stale handler registered and the old socket still bound.
+
+### One command (zip installs)
+
+```bash
+python install_addon.py upgrade /path/to/blender
+```
+
+This refuses to run while Blender is open, removes every blend-ai install across *all*
+Blender version directories, rebuilds the zip from `addon/`, and installs it through
+Blender's own extension machinery. It is the recommended path, and it handles the case
+that bites people most: an older copy left behind under a previous Blender version.
+
+Two companion commands:
+
+```bash
+python install_addon.py doctor          # list every blend-ai install found, and where
+python install_addon.py uninstall --yes # remove them all (omit --yes for a dry run)
+```
+
+Start with `doctor` if the addon is behaving strangely — a duplicate install under an
+old Blender version is the usual cause.
+
+### Developer symlink installs
+
+If you symlinked `addon/` into Blender's extensions directory, there is nothing to
+install. `git pull` and restart Blender. Use `doctor` to confirm which kind of install
+you have; it reports symlinks distinctly.
+
+### By hand, through the GUI
+
+<details>
+<summary><strong>Manual steps, if you would rather not run the script</strong></summary>
+
+1. If the server is running, open the N-panel **blend-ai** tab and click **Stop Server**.
+2. In Blender, open **Edit > Preferences > Get Extensions**, find **blend-ai**, and click **Uninstall**.
+3. Quit and restart Blender (this clears cached `blend_ai` modules).
+4. Install the new `.zip` via the **▾ > Install from Disk...** menu and enable it.
+
+</details>
+
 ## Expert Guidance
 
 blend-ai includes 12 MCP prompts that guide the LLM toward professional-quality results:
@@ -173,7 +204,7 @@ blend-ai includes 12 MCP prompts that guide the LLM toward professional-quality 
 ## Tool Domains
 
 <details>
-<summary><strong>All 164 tools across 24 modules</strong></summary>
+<summary><strong>All 175 tools across 24 modules</strong></summary>
 
 | Domain | Tools | Highlights |
 |--------|-------|-----------|
@@ -287,7 +318,7 @@ blend-ai/
 │   ├── server.py           # FastMCP entry point
 │   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
-│   ├── tools/              # 24 tool modules (164 tools)
+│   ├── tools/              # 24 tool modules (175 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 12 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)

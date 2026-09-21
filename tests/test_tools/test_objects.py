@@ -17,7 +17,6 @@ from blend_ai.tools.objects import (
     set_object_visibility,
     parent_objects,
     join_objects,
-    set_origin,
     convert_object,
     shade_auto_smooth,
     make_single_user,
@@ -314,40 +313,6 @@ class TestJoinObjects:
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
             join_objects(["Cube", "Sphere"])
-
-
-# ---------------------------------------------------------------------------
-# set_origin
-# ---------------------------------------------------------------------------
-
-
-class TestSetOrigin:
-    def test_valid(self, mock_conn):
-        set_origin("Cube")
-        mock_conn.send_command.assert_called_once_with(
-            "set_origin",
-            {"object_name": "Cube", "type": "ORIGIN_GEOMETRY"},
-        )
-
-    def test_valid_with_type(self, mock_conn):
-        set_origin("Cube", type="ORIGIN_CURSOR")
-        mock_conn.send_command.assert_called_once_with(
-            "set_origin",
-            {"object_name": "Cube", "type": "ORIGIN_CURSOR"},
-        )
-
-    def test_empty_name_raises(self, mock_conn):
-        with pytest.raises(ValidationError):
-            set_origin("")
-
-    def test_invalid_type_raises(self, mock_conn):
-        with pytest.raises(ValidationError):
-            set_origin("Cube", type="INVALID")
-
-    def test_error_response_raises(self, mock_conn):
-        mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
-        with pytest.raises(RuntimeError):
-            set_origin("Cube")
 
 
 # ---------------------------------------------------------------------------

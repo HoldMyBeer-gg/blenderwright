@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
-# Install the blend-ai Blender addon via an interactive TUI.
+# Install the blend-ai Blender addon.
 # Usage: ./install-addon.sh [path/to/blender]
 #
-# Requires: pip install textual
+# With no argument, Blender installations are auto-detected and offered
+# as a numbered list. No third-party dependencies.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-if ! python3 -c "import textual" 2>/dev/null; then
-    echo "Installing textual..."
-    pip install textual
-fi
-
-python3 "$SCRIPT_DIR/install_addon.py" "$@"
+exec python3 "$SCRIPT_DIR/install_addon.py" install "$@"

@@ -536,27 +536,6 @@ def _get_object(name):
     return obj
 
 
-def handle_set_origin(params: dict) -> dict:
-    """Set the origin point of an object."""
-    object_name = params.get("object_name")
-    origin_type = params.get("type", "ORIGIN_GEOMETRY")
-
-    try:
-        obj = _get_object(object_name)
-        _select_only(obj)
-        bpy.ops.object.origin_set(type=origin_type)
-
-        return {
-            "name": obj.name,
-            "type": origin_type,
-            "success": True,
-        }
-    except ValueError:
-        raise
-    except Exception as e:
-        raise RuntimeError(f"Failed to set origin for '{object_name}': {e}")
-
-
 def handle_convert_object(params: dict) -> dict:
     """Convert an object to a different type."""
     object_name = params.get("object_name")
@@ -641,7 +620,6 @@ def register():
     dispatcher.register_handler("set_object_visibility", handle_set_object_visibility)
     dispatcher.register_handler("parent_objects", handle_parent_objects)
     dispatcher.register_handler("join_objects", handle_join_objects)
-    dispatcher.register_handler("set_origin", handle_set_origin)
     dispatcher.register_handler("convert_object", handle_convert_object)
     dispatcher.register_handler("shade_auto_smooth", handle_shade_auto_smooth)
     dispatcher.register_handler("make_single_user", handle_make_single_user)

@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """
-Interactive installer for the blend-ai Blender addon.
-Searches for Blender installations in the background while letting
-you paste a path manually.
+Installer and maintenance tool for the blend-ai Blender addon.
 
-Requires: pip install textual
+Subcommands:
+    doctor      report every blend-ai install found, across all Blender versions
+    uninstall   remove them (dry run unless --yes)
+    upgrade     uninstall, rebuild the zip, install fresh
+    install     pick a Blender install and install the addon
+
+Standard library only, no third-party dependencies.
 """
 
 from __future__ import annotations
@@ -19,16 +23,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-
-try:
-    from textual.app import App, ComposeResult
-    from textual.binding import Binding
-    from textual.containers import Horizontal
-    from textual.widgets import Button, Footer, Header, Input, Label, ListItem, ListView, RichLog
-except ImportError:
-    print("textual is required: pip install textual")
-    sys.exit(1)
-
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 MODULE_NAME = "blend_ai"
@@ -469,10 +463,56 @@ def _cmd_upgrade(args) -> int:
     return 0 if ok else 1
 
 
-def _cmd_install_tui(args) -> int:
-    app = InstallerApp(preselected=args.blender)
-    app.run()
-    return 0
+async def _discover_blender() -> list[tuple[Path | str, str]]:
+    """Probe every candidate path concurrently; keep the ones that answer."""
+    candidates = list(dict.fromkeys(_blender_candidates()))
+    found: list[tuple[Path | str, str]] = []
+
+    async def check(candidate):
+        version = await _get_blender_version(candidate)
+        if version:
+            found.append((candidate, version))
+
+    await asyncio.gather(*[check(c) for c in candidates])
+    return found
+
+
+def _choose_blender(preselected: str | None = None) -> str | Path | None:
+    """Return a Blender path: the one given, or one the user picks."""
+    if preselected:
+        return preselected
+
+    print("Searching for Blender installations...")
+    found = asyncio.run(_discover_blender())
+
+    if not found:
+        print("No Blender found automatically.")
+        entered = input("Path to the Blender executable (blank to cancel): ").strip()
+        return entered or None
+
+    for i, (path, version) in enumerate(found, start=1):
+        print(f"  {i}. {path}  [{version}]")
+
+    prompt = f"Select 1-{len(found)}, or paste a path (blank to cancel): "
+    answer = input(prompt).strip()
+    if not answer:
+        return None
+    if answer.isdigit() and 1 <= int(answer) <= len(found):
+        return found[int(answer) - 1][0]
+    return answer
+
+
+def _cmd_install(args) -> int:
+    blender = _choose_blender(getattr(args, "blender", None))
+    if not blender:
+        print("Cancelled.")
+        return 1
+
+    zip_path = build_zip(print) or find_zip()
+    if zip_path is None:
+        print("No zip available to install.")
+        return 1
+    return 0 if install(blender, zip_path, print) else 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -490,185 +530,16 @@ def main(argv: list[str] | None = None) -> int:
     p_upgrade.add_argument("blender", help="Path to the Blender executable")
     p_upgrade.set_defaults(func=_cmd_upgrade)
 
-    p_install = sub.add_parser("install", help="Interactive install via TUI")
+    p_install = sub.add_parser("install", help="Install the addon, picking a Blender")
     p_install.add_argument("blender", nargs="?", default=None)
-    p_install.set_defaults(func=_cmd_install_tui)
+    p_install.set_defaults(func=_cmd_install)
 
     args = parser.parse_args(argv)
     if args.command is None:
-        # Default: launch TUI (back-compat with `python install_addon.py`).
+        # Back-compat with a bare `python install_addon.py [path]`.
         preselected = sys.argv[1] if len(sys.argv) > 1 and argv is None else None
-        InstallerApp(preselected=preselected).run()
-        return 0
+        return _cmd_install(argparse.Namespace(blender=preselected))
     return args.func(args)
-
-
-# ---------------------------------------------------------------------------
-# TUI
-# ---------------------------------------------------------------------------
-
-class InstallerApp(App):
-    CSS = """
-    Screen {
-        background: $surface;
-    }
-    #found-label {
-        padding: 1 2 0 2;
-        color: $text-muted;
-    }
-    #found-list {
-        height: auto;
-        max-height: 10;
-        margin: 0 2;
-        border: solid $primary-darken-2;
-    }
-    #manual-label {
-        padding: 1 2 0 2;
-        color: $text-muted;
-    }
-    #path-input {
-        margin: 0 2;
-    }
-    #btn-row {
-        height: 3;
-        margin: 1 2;
-        align: center middle;
-    }
-    #install-btn {
-        min-width: 16;
-    }
-    #log {
-        margin: 0 2 1 2;
-        height: 1fr;
-        border: solid $primary-darken-2;
-    }
-    .found-item {
-        padding: 0 1;
-    }
-    .found-item:hover {
-        background: $primary-darken-1;
-    }
-    .found-item.--highlight {
-        background: $primary;
-    }
-    #searching {
-        padding: 0 2;
-        color: $warning;
-    }
-    """
-
-    BINDINGS = [
-        Binding("ctrl+c", "quit", "Quit"),
-        Binding("enter", "install", "Install", show=False),
-    ]
-
-    def __init__(self, preselected: str | None = None):
-        super().__init__()
-        self._found: list[tuple[str | Path, str]] = []  # (path, label)
-        self._preselected = preselected
-        self._selected: str | Path | None = preselected
-        self._searching = True
-        self._install_complete = False
-
-    def compose(self) -> ComposeResult:
-        yield Header(show_clock=False)
-        yield Label("Found Blender installations:", id="found-label")
-        yield Label("  Searching...", id="searching")
-        yield ListView(id="found-list")
-        yield Label("Or paste Blender path:", id="manual-label")
-        yield Input(placeholder="/path/to/blender  or  C:\\...\\blender.exe", id="path-input",
-                    value=str(self._selected) if self._selected else "")
-        with Horizontal(id="btn-row"):
-            yield Button("Install", id="install-btn", variant="primary")
-        yield RichLog(id="log", highlight=True, markup=True)
-        yield Footer()
-
-    def on_mount(self) -> None:
-        self.title = "blend-ai Addon Installer"
-        self.sub_title = "Select a Blender install, then press Install"
-        self.run_worker(self._search_blender(), exclusive=False)
-
-    async def _search_blender(self) -> None:
-        found_list = self.query_one("#found-list", ListView)
-        searching = self.query_one("#searching", Label)
-
-        candidates = list(dict.fromkeys(_blender_candidates()))  # deduplicate
-
-        async def check(candidate):
-            version = await _get_blender_version(candidate)
-            if version:
-                label = f"{candidate}  [{version}]"
-                self._found.append((candidate, label))
-                item = ListItem(Label(label, classes="found-item"))
-                await found_list.append(item)
-                if not self._selected and not self._preselected:
-                    self._selected = candidate
-                    self.query_one("#path-input", Input).value = str(candidate)
-
-        await asyncio.gather(*[check(c) for c in candidates])
-
-        self._searching = False
-        searching.update("  " + (f"{len(self._found)} installation(s) found." if self._found
-                                  else "No Blender found — paste path below."))
-
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        idx = event.list_view.index
-        if idx is not None and idx < len(self._found):
-            path, _ = self._found[idx]
-            self._selected = path
-            self.query_one("#path-input", Input).value = str(path)
-
-    def on_input_changed(self, event: Input.Changed) -> None:
-        if event.input.id == "path-input":
-            self._selected = event.value.strip() or None
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "install-btn":
-            if self._install_complete:
-                self.exit()
-            else:
-                self.run_worker(self._do_install(), exclusive=True)
-
-    async def _do_install(self) -> None:
-        log = self.query_one("#log", RichLog)
-        btn = self.query_one("#install-btn", Button)
-        btn.disabled = True
-
-        blender = self._selected
-        if not blender:
-            log.write("[red]No Blender path selected.[/red]")
-            btn.disabled = False
-            return
-
-        log.write(f"[bold]Blender:[/bold] {blender}")
-
-        zip_path = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: build_zip(log.write)
-        )
-        if not zip_path:
-            log.write("[red]Could not find or build addon zip. Aborting.[/red]")
-            btn.disabled = False
-            return
-
-        log.write(f"[bold]Zip:[/bold] {zip_path}")
-
-        success = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: install(blender, zip_path, log.write)
-        )
-
-        if success:
-            log.write("\n[bold green]Installation complete![/bold green]")
-            self.sub_title = "Done — restart Blender if it was open."
-        else:
-            log.write("\n[bold red]Installation may have failed — check output above.[/bold red]")
-
-        if success:
-            btn.label = "Done"
-            btn.disabled = False
-            self._install_complete = True
-        else:
-            btn.label = "Retry"
-            btn.disabled = False
 
 
 # ---------------------------------------------------------------------------
