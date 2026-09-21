@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://blend-ai.holdmybeer.gg/sitemap.xml
