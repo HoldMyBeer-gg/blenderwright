@@ -21,7 +21,7 @@ TOOLS_DIR = os.path.join(ROOT, "src", "blend_ai", "tools")
 
 
 def _read(*parts):
-    with open(os.path.join(ROOT, *parts)) as f:
+    with open(os.path.join(ROOT, *parts), encoding="utf-8") as f:
         return f.read()
 
 
@@ -62,7 +62,7 @@ def _tool_count():
     for filename in sorted(os.listdir(TOOLS_DIR)):
         if not filename.endswith(".py") or filename == "__init__.py":
             continue
-        with open(os.path.join(TOOLS_DIR, filename)) as f:
+        with open(os.path.join(TOOLS_DIR, filename), encoding="utf-8") as f:
             tree = ast.parse(f.read())
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -108,3 +108,38 @@ def test_readme_module_count_matches_reality():
     assert claimed == {str(len(modules))}, (
         f"README claims {sorted(claimed)} modules; there are {len(modules)}."
     )
+
+
+def test_generated_tool_reference_is_current():
+    """docs/index.html is generated; a stale copy misleads the public site.
+
+    Regenerate with: python scripts/generate_tool_docs.py
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "generate_tool_docs", os.path.join(ROOT, "scripts", "generate_tool_docs.py")
+    )
+    gen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+
+    target = os.path.join(ROOT, "docs", "index.html")
+    assert os.path.exists(target), (
+        "docs/index.html is missing. Run: python scripts/generate_tool_docs.py"
+    )
+    with open(target, encoding="utf-8") as f:
+        committed = f.read()
+    assert committed == gen.render(gen.collect_tools()), (
+        "docs/index.html is out of date with the tools in src/. "
+        "Run: python scripts/generate_tool_docs.py"
+    )
+
+
+def test_tool_reference_documents_every_tool():
+    """Every tool must appear on the public page, not just the count."""
+    import re
+
+    with open(os.path.join(ROOT, "docs", "index.html"), encoding="utf-8") as f:
+        page = f.read()
+    anchors = set(re.findall(r'<article class="tool" id="([^"]+)"', page))
+    assert len(anchors) == _tool_count()

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>blend-ai tool reference: 175 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 175 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<link rel="canonical" href="https://blend-ai.holdmybeer.gg/">
+<meta property="og:title" content="blend-ai tool reference">
+<meta property="og:description" content="Complete reference for all 175 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:url" content="https://blend-ai.holdmybeer.gg/">
+<meta property="og:type" content="website">
+<style>
+:root {
+  --bg: #fbfaf8; --panel: #fff; --text: #1a1a1a; --muted: #5c5c5c;
+  --line: #e4e0da; --accent: #b4551f; --code-bg: #f4f1ec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14151a; --panel: #1b1d24; --text: #e8e6e3; --muted: #9a978f;
+    --line: #2b2e37; --accent: #e08a52; --code-bg: #22252e;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14151a; --panel: #1b1d24; --text: #e8e6e3; --muted: #9a978f;
+  --line: #2b2e37; --accent: #e08a52; --code-bg: #22252e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+code, pre, .sig { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+header { border-bottom: 1px solid var(--line); padding: 44px 0 28px; }
+h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 4vw, 2.4rem); letter-spacing: -0.02em; }
+.tag { color: var(--muted); margin: 0 0 20px; max-width: 62ch; }
+.stats { display: flex; gap: 22px; flex-wrap: wrap; color: var(--muted); font-size: .9rem; }
+.stats b { color: var(--accent); font-size: 1.05rem; }
+.links a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.links a:hover { text-decoration: underline; }
+#q {
+  width: 100%; margin: 24px 0 0; padding: 12px 14px; font-size: 1rem;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-radius: 9px;
+}
+#q:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.layout { display: grid; grid-template-columns: 210px 1fr; gap: 34px; padding: 30px 0 70px; }
+nav { position: sticky; top: 16px; align-self: start; max-height: 92vh; overflow: auto; }
+nav a {
+  display: flex; justify-content: space-between; gap: 8px;
+  padding: 5px 9px; border-radius: 6px; color: var(--muted);
+  text-decoration: none; font-size: .87rem;
+}
+nav a:hover { background: var(--code-bg); color: var(--text); }
+nav .n, h2 .n {
+  color: var(--muted); background: var(--code-bg);
+  border-radius: 20px; padding: 0 7px; font-size: .75rem; font-weight: 600;
+}
+h2 {
+  margin: 34px 0 14px; padding-bottom: 8px; font-size: 1.28rem;
+  border-bottom: 1px solid var(--line); scroll-margin-top: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.module:first-child h2 { margin-top: 0; }
+.tool {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 15px 17px; margin-bottom: 12px;
+  scroll-margin-top: 14px;
+}
+.tool h3 { margin: 0 0 8px; font-size: 1rem; }
+.tool h3 a { color: var(--accent); text-decoration: none; }
+.tool h3 a:hover { text-decoration: underline; }
+.tool p { margin: 0 0 10px; }
+.sig {
+  margin: 0 0 10px; padding: 9px 11px; overflow-x: auto;
+  background: var(--code-bg); border-radius: 7px;
+  font-size: .82rem; color: var(--muted);
+}
+.args { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.args th {
+  text-align: left; vertical-align: top; white-space: nowrap;
+  padding: 4px 12px 4px 0; color: var(--accent); font-weight: 600;
+}
+.args td { padding: 4px 0; color: var(--muted); }
+.ret { margin: 10px 0 0 !important; font-size: .88rem; color: var(--muted); }
+.ret span { color: var(--accent); font-weight: 600; margin-right: 6px; }
+.hidden { display: none !important; }
+#empty { color: var(--muted); padding: 30px 0; }
+footer { border-top: 1px solid var(--line); padding: 22px 0 46px; color: var(--muted); font-size: .87rem; }
+footer a { color: var(--accent); }
+@media (max-width: 820px) {
+  .layout { grid-template-columns: 1fr; gap: 0; }
+  nav { position: static; max-height: none; display: flex; flex-wrap: wrap;
+        gap: 4px; padding-bottom: 18px; }
+  nav a { border: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>blend-ai tool reference</h1>
+  <p class="tag">Every tool the blend-ai MCP server exposes to Blender, generated
+  directly from the source so it cannot drift out of date.</p>
+  <div class="stats">
+    <span><b>175</b> tools</span>
+    <span><b>24</b> modules</span>
+    <span class="links"><a href="https://github.com/HoldMyBeer-gg/blend-ai">GitHub</a></span>
+    <span class="links"><a href="https://github.com/HoldMyBeer-gg/blend-ai/releases/latest">Download</a></span>
+  </div>
+  <input id="q" type="search" placeholder="Filter tools, e.g. bevel, uv, keyframe"
+         autocomplete="off" aria-label="Filter tools">
+</header>
+<div class="layout">
+  <nav aria-label="Tool categories"><a href="#animation">Animation <span class="n">8</span></a>
+<a href="#armature">Armature &amp; Rigging <span class="n">6</span></a>
+<a href="#booltool">Bool Tool <span class="n">4</span></a>
+<a href="#camera">Camera <span class="n">6</span></a>
+<a href="#code_exec">Code Execution <span class="n">1</span></a>
+<a href="#collections">Collections <span class="n">4</span></a>
+<a href="#curves">Curves <span class="n">10</span></a>
+<a href="#file_ops">File I/O <span class="n">5</span></a>
+<a href="#geometry_nodes">Geometry Nodes <span class="n">5</span></a>
+<a href="#gpencil">Grease Pencil <span class="n">5</span></a>
+<a href="#lighting">Lighting <span class="n">7</span></a>
+<a href="#materials">Materials &amp; Shaders <span class="n">25</span></a>
+<a href="#mesh_editing">Mesh Editing <span class="n">16</span></a>
+<a href="#mesh_quality">Mesh Quality <span class="n">1</span></a>
+<a href="#modeling">Modeling <span class="n">13</span></a>
+<a href="#objects">Objects <span class="n">15</span></a>
+<a href="#physics">Physics <span class="n">9</span></a>
+<a href="#rendering">Rendering <span class="n">7</span></a>
+<a href="#scene">Scene <span class="n">6</span></a>
+<a href="#sculpting">Sculpting <span class="n">8</span></a>
+<a href="#transforms">Transforms <span class="n">6</span></a>
+<a href="#uv">UV Mapping <span class="n">4</span></a>
+<a href="#viewport">Viewport <span class="n">3</span></a>
+<a href="#screenshot">Viewport Capture <span class="n">1</span></a></nav>
+  <main>
+    <section class="module" id="animation" data-module="animation"><h2>Animation <span class="n">8</span></h2><article class="tool" id="clear_animation" data-search="clear_animation remove all animation data from an object."><h3><a href="#clear_animation">clear_animation</a></h3><pre class="sig"><code>clear_animation(object_name: str)</code></pre><p>Remove all animation data from an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="create_animation_path" data-search="create_animation_path make an object follow a path (curve) using a follow path constraint."><h3><a href="#create_animation_path">create_animation_path</a></h3><pre class="sig"><code>create_animation_path(object_name: str, path_object: str)</code></pre><p>Make an object follow a path (curve) using a Follow Path constraint.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to animate along the path.</td></tr>
+<tr><th>path_object</th><td>Name of the curve object to use as the path.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with constraint details.</p></article><article class="tool" id="delete_keyframe" data-search="delete_keyframe remove a keyframe from an object property at a specific frame."><h3><a href="#delete_keyframe">delete_keyframe</a></h3><pre class="sig"><code>delete_keyframe(object_name: str, data_path: str, frame: int)</code></pre><p>Remove a keyframe from an object property at a specific frame.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>data_path</th><td>Property data path (e.g., location, rotation_euler, scale).</td></tr>
+<tr><th>frame</th><td>Frame number of the keyframe to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="insert_keyframe" data-search="insert_keyframe insert a keyframe on an object property at a specific frame."><h3><a href="#insert_keyframe">insert_keyframe</a></h3><pre class="sig"><code>insert_keyframe(object_name: str, data_path: str, frame: int, value: Any = None)</code></pre><p>Insert a keyframe on an object property at a specific frame.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>data_path</th><td>Property to keyframe. Must be one of: location, rotation_euler, rotation_quaternion, scale, or indexed variants like location[0].</td></tr>
+<tr><th>frame</th><td>Frame number to insert the keyframe at.</td></tr>
+<tr><th>value</th><td>Optional value to set before inserting the keyframe.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with keyframe details.</p></article><article class="tool" id="list_keyframes" data-search="list_keyframes list all keyframes on an object."><h3><a href="#list_keyframes">list_keyframes</a></h3><pre class="sig"><code>list_keyframes(object_name: str)</code></pre><p>List all keyframes on an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> List of dicts with data_path, frame, and value for each keyframe.</p></article><article class="tool" id="set_frame" data-search="set_frame set the current frame in the timeline."><h3><a href="#set_frame">set_frame</a></h3><pre class="sig"><code>set_frame(frame: int)</code></pre><p>Set the current frame in the timeline.</p><table class="args"><tbody><tr><th>frame</th><td>Frame number to set as current.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new current frame.</p></article><article class="tool" id="set_frame_range" data-search="set_frame_range set the start and end frames of the scene timeline."><h3><a href="#set_frame_range">set_frame_range</a></h3><pre class="sig"><code>set_frame_range(start: int, end: int)</code></pre><p>Set the start and end frames of the scene timeline.</p><table class="args"><tbody><tr><th>start</th><td>Start frame number.</td></tr>
+<tr><th>end</th><td>End frame number. Must be greater than start.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new frame range.</p></article><article class="tool" id="set_interpolation" data-search="set_interpolation set the interpolation type for keyframes on a property."><h3><a href="#set_interpolation">set_interpolation</a></h3><pre class="sig"><code>set_interpolation(object_name: str, data_path: str, interpolation: str = &#x27;BEZIER&#x27;)</code></pre><p>Set the interpolation type for keyframes on a property.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>data_path</th><td>Property data path.</td></tr>
+<tr><th>interpolation</th><td>Interpolation type. One of: CONSTANT, LINEAR, BEZIER, SINE, QUAD, CUBIC, QUART, QUINT, EXPO, CIRC, BACK, BOUNCE, ELASTIC.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<section class="module" id="armature" data-module="armature &amp; rigging"><h2>Armature &amp; Rigging <span class="n">6</span></h2><article class="tool" id="add_bone" data-search="add_bone add a bone to an armature. enters edit mode automatically."><h3><a href="#add_bone">add_bone</a></h3><pre class="sig"><code>add_bone(armature_name: str, bone_name: str, head: list[float] | tuple[float, ...] = (0, 0, 0), tail: list[float] | tuple[float, ...] = (0, 0, 1), parent_bone: str = &#x27;&#x27;)</code></pre><p>Add a bone to an armature. Enters edit mode automatically.</p><table class="args"><tbody><tr><th>armature_name</th><td>Name of the armature object.</td></tr>
+<tr><th>bone_name</th><td>Name for the new bone.</td></tr>
+<tr><th>head</th><td>XYZ position of the bone head (root). Defaults to (0, 0, 0).</td></tr>
+<tr><th>tail</th><td>XYZ position of the bone tail (tip). Defaults to (0, 0, 1).</td></tr>
+<tr><th>parent_bone</th><td>Optional name of the parent bone for hierarchy.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created bone&#x27;s name, head, and tail positions.</p></article><article class="tool" id="add_constraint" data-search="add_constraint add a constraint to an object or bone."><h3><a href="#add_constraint">add_constraint</a></h3><pre class="sig"><code>add_constraint(object_name: str, bone_name: str = &#x27;&#x27;, constraint_type: str = &#x27;&#x27;, properties: dict[str, Any] | None = None)</code></pre><p>Add a constraint to an object or bone.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object (armature for bone constraints).</td></tr>
+<tr><th>bone_name</th><td>Name of the bone (empty string for object-level constraints).</td></tr>
+<tr><th>constraint_type</th><td>Constraint type. One of: IK, COPY_ROTATION, COPY_LOCATION, COPY_SCALE, COPY_TRANSFORMS, TRACK_TO, DAMPED_TRACK, LOCKED_TRACK, LIMIT_ROTATION, LIMIT_LOCATION, LIMIT_SCALE, STRETCH_TO, FLOOR, CLAMP_TO, TRANSFORM, MAINTAIN_VOLUME, CHILD_OF, PIVOT, ARMATURE.</td></tr>
+<tr><th>properties</th><td>Optional dict of constraint properties to set (e.g., target, subtarget, chain_count, influence, etc.).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created constraint&#x27;s name and type.</p></article><article class="tool" id="create_armature" data-search="create_armature create a new armature object."><h3><a href="#create_armature">create_armature</a></h3><pre class="sig"><code>create_armature(name: str = &#x27;Armature&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Create a new armature object.</p><table class="args"><tbody><tr><th>name</th><td>Name for the armature. Defaults to &quot;Armature&quot;.</td></tr>
+<tr><th>location</th><td>XYZ position for the armature. Defaults to origin.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created armature&#x27;s name and location.</p></article><article class="tool" id="parent_mesh_to_armature" data-search="parent_mesh_to_armature parent a mesh object to an armature with automatic weights or other methods."><h3><a href="#parent_mesh_to_armature">parent_mesh_to_armature</a></h3><pre class="sig"><code>parent_mesh_to_armature(mesh_name: str, armature_name: str, type: str = &#x27;ARMATURE_AUTO&#x27;)</code></pre><p>Parent a mesh object to an armature with automatic weights or other methods.</p><table class="args"><tbody><tr><th>mesh_name</th><td>Name of the mesh object to parent.</td></tr>
+<tr><th>armature_name</th><td>Name of the armature object.</td></tr>
+<tr><th>type</th><td>Parenting method. One of: ARMATURE_AUTO (automatic weights), ARMATURE_NAME (by bone names), ARMATURE_ENVELOPE (by envelope).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_bone_property" data-search="set_bone_property set a property on a bone in an armature."><h3><a href="#set_bone_property">set_bone_property</a></h3><pre class="sig"><code>set_bone_property(armature_name: str, bone_name: str, property: str, value: Any)</code></pre><p>Set a property on a bone in an armature.</p><table class="args"><tbody><tr><th>armature_name</th><td>Name of the armature object.</td></tr>
+<tr><th>bone_name</th><td>Name of the bone.</td></tr>
+<tr><th>property</th><td>Property to set. One of: roll, length, use_connect, use_deform, envelope_distance, head_radius, tail_radius, use_inherit_rotation, use_local_location.</td></tr>
+<tr><th>value</th><td>Value to set the property to.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with bone name, property, and new value.</p></article><article class="tool" id="set_pose" data-search="set_pose set the pose of a bone in an armature."><h3><a href="#set_pose">set_pose</a></h3><pre class="sig"><code>set_pose(armature_name: str, bone_name: str, location: list[float] | tuple[float, ...] | None = None, rotation: list[float] | tuple[float, ...] | None = None, scale: list[float] | tuple[float, ...] | None = None)</code></pre><p>Set the pose of a bone in an armature.</p><table class="args"><tbody><tr><th>armature_name</th><td>Name of the armature object.</td></tr>
+<tr><th>bone_name</th><td>Name of the bone to pose.</td></tr>
+<tr><th>location</th><td>Optional XYZ location offset for the bone.</td></tr>
+<tr><th>rotation</th><td>Optional XYZ Euler rotation in radians.</td></tr>
+<tr><th>scale</th><td>Optional XYZ scale.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the bone&#x27;s new pose values.</p></article></section>
+<section class="module" id="booltool" data-module="bool tool"><h2>Bool Tool <span class="n">4</span></h2><article class="tool" id="booltool_auto_difference" data-search="booltool_auto_difference auto boolean difference: subtract the target object from the main object.
+
+the target object is used as a cutter and removed after the operation.
+
+uses bool tool extension if installed, otherwise falls back to native
+boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_difference">booltool_auto_difference</a></h3><pre class="sig"><code>booltool_auto_difference(object_name: str, target_name: str)</code></pre><p>Auto boolean difference: subtract the target object from the main object.
+
+The target object is used as a cutter and removed after the operation.
+
+Uses Bool Tool extension if installed, otherwise falls back to native
+boolean modifier (a warning will be included in the response).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to cut from.</td></tr>
+<tr><th>target_name</th><td>Name of the cutter object (will be removed).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with operation details. May include a &#x27;warning&#x27; field if Bool Tool is not available and native fallback was used.</p></article><article class="tool" id="booltool_auto_intersect" data-search="booltool_auto_intersect auto boolean intersect: keep only the overlapping volume of two objects.
+
+the target object is removed after the operation.
+
+uses bool tool extension if installed, otherwise falls back to native
+boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_intersect">booltool_auto_intersect</a></h3><pre class="sig"><code>booltool_auto_intersect(object_name: str, target_name: str)</code></pre><p>Auto boolean intersect: keep only the overlapping volume of two objects.
+
+The target object is removed after the operation.
+
+Uses Bool Tool extension if installed, otherwise falls back to native
+boolean modifier (a warning will be included in the response).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the main object.</td></tr>
+<tr><th>target_name</th><td>Name of the intersecting object (will be removed).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with operation details. May include a &#x27;warning&#x27; field if Bool Tool is not available and native fallback was used.</p></article><article class="tool" id="booltool_auto_slice" data-search="booltool_auto_slice auto boolean slice: split the main object using the target as a cutter.
+
+creates two separate pieces from the intersection. the target object
+is removed after the operation.
+
+uses bool tool extension if installed, otherwise falls back to native
+boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_slice">booltool_auto_slice</a></h3><pre class="sig"><code>booltool_auto_slice(object_name: str, target_name: str)</code></pre><p>Auto boolean slice: split the main object using the target as a cutter.
+
+Creates two separate pieces from the intersection. The target object
+is removed after the operation.
+
+Uses Bool Tool extension if installed, otherwise falls back to native
+boolean modifier (a warning will be included in the response).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to slice.</td></tr>
+<tr><th>target_name</th><td>Name of the cutter object (will be removed).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with operation details. May include a &#x27;warning&#x27; field if Bool Tool is not available and native fallback was used.</p></article><article class="tool" id="booltool_auto_union" data-search="booltool_auto_union auto boolean union: merge two mesh objects into one.
+
+the target object is consumed and joined into the main object.
+this is useful for permanently joining meshes so parts don&#x27;t
+float away from their bodies.
+
+uses bool tool extension if installed, otherwise falls back to native
+boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_union">booltool_auto_union</a></h3><pre class="sig"><code>booltool_auto_union(object_name: str, target_name: str)</code></pre><p>Auto boolean union: merge two mesh objects into one.
+
+The target object is consumed and joined into the main object.
+This is useful for permanently joining meshes so parts don&#x27;t
+float away from their bodies.
+
+Uses Bool Tool extension if installed, otherwise falls back to native
+boolean modifier (a warning will be included in the response).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the main object to keep.</td></tr>
+<tr><th>target_name</th><td>Name of the object to merge into the main object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with operation details. May include a &#x27;warning&#x27; field if Bool Tool is not available and native fallback was used.</p></article></section>
+<section class="module" id="camera" data-module="camera"><h2>Camera <span class="n">6</span></h2><article class="tool" id="capture_viewport" data-search="capture_viewport render the viewport to a file or return as base64."><h3><a href="#capture_viewport">capture_viewport</a></h3><pre class="sig"><code>capture_viewport(filepath: str = &#x27;&#x27;, width: int = 1920, height: int = 1080)</code></pre><p>Render the viewport to a file or return as base64.</p><table class="args"><tbody><tr><th>filepath</th><td>Optional absolute path for output image. If empty, returns base64-encoded image.</td></tr>
+<tr><th>width</th><td>Render width in pixels, default 1920.</td></tr>
+<tr><th>height</th><td>Render height in pixels, default 1080.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with filepath or base64 image data.</p></article><article class="tool" id="create_camera" data-search="create_camera create a new camera in the scene."><h3><a href="#create_camera">create_camera</a></h3><pre class="sig"><code>create_camera(name: str = &#x27;Camera&#x27;, location: list = [0, 0, 0], rotation: list = [0, 0, 0], lens: float = 50.0)</code></pre><p>Create a new camera in the scene.</p><table class="args"><tbody><tr><th>name</th><td>Name for the camera, default &quot;Camera&quot;.</td></tr>
+<tr><th>location</th><td>XYZ location as [x, y, z], default [0, 0, 0].</td></tr>
+<tr><th>rotation</th><td>XYZ Euler rotation in radians as [x, y, z], default [0, 0, 0].</td></tr>
+<tr><th>lens</th><td>Focal length in mm, default 50.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with camera name and properties.</p></article><article class="tool" id="point_camera_at" data-search="point_camera_at point a camera at an object or a specific location using a track to constraint."><h3><a href="#point_camera_at">point_camera_at</a></h3><pre class="sig"><code>point_camera_at(camera_name: str, target: str = &#x27;&#x27;, location: list | None = None)</code></pre><p>Point a camera at an object or a specific location using a Track To constraint.</p><table class="args"><tbody><tr><th>camera_name</th><td>Name of the camera object.</td></tr>
+<tr><th>target</th><td>Name of the target object to point at. Mutually exclusive with location.</td></tr>
+<tr><th>location</th><td>XYZ location to point at as [x, y, z]. Mutually exclusive with target.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_active_camera" data-search="set_active_camera set the active scene camera."><h3><a href="#set_active_camera">set_active_camera</a></h3><pre class="sig"><code>set_active_camera(name: str)</code></pre><p>Set the active scene camera.</p><table class="args"><tbody><tr><th>name</th><td>Name of the camera object to make active.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_camera_from_view" data-search="set_camera_from_view match the active camera to the current 3d viewport view."><h3><a href="#set_camera_from_view">set_camera_from_view</a></h3><pre class="sig"><code>set_camera_from_view()</code></pre><p>Match the active camera to the current 3D viewport view.</p><p class="ret"><span>Returns</span> Confirmation dict with the camera&#x27;s new location and rotation.</p></article><article class="tool" id="set_camera_property" data-search="set_camera_property set a property on a camera."><h3><a href="#set_camera_property">set_camera_property</a></h3><pre class="sig"><code>set_camera_property(name: str, property: str, value: Any)</code></pre><p>Set a property on a camera.</p><table class="args"><tbody><tr><th>name</th><td>Name of the camera object.</td></tr>
+<tr><th>property</th><td>Property to set. One of: lens, clip_start, clip_end, sensor_width, sensor_height, dof.use_dof, dof.focus_distance, dof.aperture_fstop, ortho_scale, shift_x, shift_y, type, sensor_fit.</td></tr>
+<tr><th>value</th><td>The value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<section class="module" id="code_exec" data-module="code execution"><h2>Code Execution <span class="n">1</span></h2><article class="tool" id="execute_blender_code" data-search="execute_blender_code execute python code inside blender&#x27;s sandboxed environment.
+
+the code runs in a restricted sandbox that blocks dangerous imports
+(os, subprocess, socket, etc.) and dangerous builtins (exec, eval, open).
+safe blender imports (bpy, bmesh, mathutils, math, json) are allowed."><h3><a href="#execute_blender_code">execute_blender_code</a></h3><pre class="sig"><code>execute_blender_code(code: str)</code></pre><p>Execute Python code inside Blender&#x27;s sandboxed environment.
+
+The code runs in a restricted sandbox that blocks dangerous imports
+(os, subprocess, socket, etc.) and dangerous builtins (exec, eval, open).
+Safe Blender imports (bpy, bmesh, mathutils, math, json) are allowed.</p><table class="args"><tbody><tr><th>code</th><td>Python code to execute. bpy is available but must be imported.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with &#x27;output&#x27; (captured stdout) and &#x27;success&#x27; boolean.</p></article></section>
+<section class="module" id="collections" data-module="collections"><h2>Collections <span class="n">4</span></h2><article class="tool" id="create_collection" data-search="create_collection create a new collection, optionally nested under a parent collection."><h3><a href="#create_collection">create_collection</a></h3><pre class="sig"><code>create_collection(name: str, parent: str = &#x27;&#x27;)</code></pre><p>Create a new collection, optionally nested under a parent collection.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new collection.</td></tr>
+<tr><th>parent</th><td>Optional name of parent collection to nest under. Empty string uses the scene&#x27;s root collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created collection&#x27;s name and parent.</p></article><article class="tool" id="delete_collection" data-search="delete_collection delete a collection."><h3><a href="#delete_collection">delete_collection</a></h3><pre class="sig"><code>delete_collection(name: str, delete_objects: bool = False)</code></pre><p>Delete a collection.</p><table class="args"><tbody><tr><th>name</th><td>Name of the collection to delete.</td></tr>
+<tr><th>delete_objects</th><td>If True, also delete all objects in the collection. If False, objects are unlinked but kept in the scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="move_to_collection" data-search="move_to_collection move objects to a collection, unlinking them from their current collections."><h3><a href="#move_to_collection">move_to_collection</a></h3><pre class="sig"><code>move_to_collection(object_names: list[str], collection_name: str)</code></pre><p>Move objects to a collection, unlinking them from their current collections.</p><table class="args"><tbody><tr><th>object_names</th><td>List of object names to move.</td></tr>
+<tr><th>collection_name</th><td>Name of the destination collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the moved objects and destination collection.</p></article><article class="tool" id="set_collection_visibility" data-search="set_collection_visibility set collection visibility in viewport and/or render."><h3><a href="#set_collection_visibility">set_collection_visibility</a></h3><pre class="sig"><code>set_collection_visibility(name: str, visible: bool, viewport: bool = True, render: bool = True)</code></pre><p>Set collection visibility in viewport and/or render.</p><table class="args"><tbody><tr><th>name</th><td>Name of the collection.</td></tr>
+<tr><th>visible</th><td>Whether the collection should be visible.</td></tr>
+<tr><th>viewport</th><td>Apply visibility change to viewport. Defaults to True.</td></tr>
+<tr><th>render</th><td>Apply visibility change to render. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with visibility state.</p></article></section>
+<section class="module" id="curves" data-module="curves"><h2>Curves <span class="n">10</span></h2><article class="tool" id="add_curve_point" data-search="add_curve_point add a control point to an existing curve."><h3><a href="#add_curve_point">add_curve_point</a></h3><pre class="sig"><code>add_curve_point(curve_name: str, location: list[float] | tuple[float, ...] = (0, 0, 0), handle_type: str = &#x27;AUTO&#x27;)</code></pre><p>Add a control point to an existing curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object to add a point to.</td></tr>
+<tr><th>location</th><td>3D location for the new point as (x, y, z).</td></tr>
+<tr><th>handle_type</th><td>Handle type - AUTO, VECTOR, ALIGNED, or FREE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with curve name and new point count.</p></article><article class="tool" id="convert_curve_to_mesh" data-search="convert_curve_to_mesh convert a curve object to a mesh object."><h3><a href="#convert_curve_to_mesh">convert_curve_to_mesh</a></h3><pre class="sig"><code>convert_curve_to_mesh(curve_name: str)</code></pre><p>Convert a curve object to a mesh object.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object to convert.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the converted object name.</p></article><article class="tool" id="create_curve" data-search="create_curve create a new curve object."><h3><a href="#create_curve">create_curve</a></h3><pre class="sig"><code>create_curve(type: str = &#x27;BEZIER&#x27;, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Create a new curve object.</p><table class="args"><tbody><tr><th>type</th><td>Curve type - BEZIER, NURBS, or PATH.</td></tr>
+<tr><th>name</th><td>Optional name for the curve object.</td></tr>
+<tr><th>location</th><td>3D location as (x, y, z).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with created curve name and type.</p></article><article class="tool" id="create_text" data-search="create_text create a 3d text object."><h3><a href="#create_text">create_text</a></h3><pre class="sig"><code>create_text(text: str, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), size: float = 1.0, font: str = &#x27;&#x27;)</code></pre><p>Create a 3D text object.</p><table class="args"><tbody><tr><th>text</th><td>The text string to display.</td></tr>
+<tr><th>name</th><td>Optional name for the text object.</td></tr>
+<tr><th>location</th><td>3D location as (x, y, z).</td></tr>
+<tr><th>size</th><td>Font size.</td></tr>
+<tr><th>font</th><td>Optional path to a font file. Uses default Blender font if empty.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with created text object name.</p></article><article class="tool" id="set_curve_property" data-search="set_curve_property set a property on a curve object."><h3><a href="#set_curve_property">set_curve_property</a></h3><pre class="sig"><code>set_curve_property(curve_name: str, property: str, value: Any)</code></pre><p>Set a property on a curve object.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr>
+<tr><th>property</th><td>Property to set - resolution_u, fill_mode, bevel_depth, bevel_resolution, extrude, twist_mode, or use_fill_caps.</td></tr>
+<tr><th>value</th><td>Value to set. Type depends on property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with property name and new value.</p></article><article class="tool" id="set_handle_type" data-search="set_handle_type set the handle type for all control points of a curve."><h3><a href="#set_handle_type">set_handle_type</a></h3><pre class="sig"><code>set_handle_type(curve_name: str, handle_type: str = &#x27;AUTO&#x27;)</code></pre><p>Set the handle type for all control points of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr>
+<tr><th>handle_type</th><td>Handle type - AUTO, VECTOR, ALIGNED, or FREE_ALIGN.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of handle type change.</p></article><article class="tool" id="smooth_curve" data-search="smooth_curve smooth the control points of a curve."><h3><a href="#smooth_curve">smooth_curve</a></h3><pre class="sig"><code>smooth_curve(curve_name: str)</code></pre><p>Smooth the control points of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of smoothing.</p></article><article class="tool" id="subdivide_curve" data-search="subdivide_curve subdivide a curve by adding control points between existing ones."><h3><a href="#subdivide_curve">subdivide_curve</a></h3><pre class="sig"><code>subdivide_curve(curve_name: str, number_cuts: int = 1)</code></pre><p>Subdivide a curve by adding control points between existing ones.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr>
+<tr><th>number_cuts</th><td>Number of cuts to make (1-100).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of subdivision.</p></article><article class="tool" id="switch_curve_direction" data-search="switch_curve_direction switch the direction of a curve&#x27;s splines."><h3><a href="#switch_curve_direction">switch_curve_direction</a></h3><pre class="sig"><code>switch_curve_direction(curve_name: str)</code></pre><p>Switch the direction of a curve&#x27;s splines.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of direction switch.</p></article><article class="tool" id="toggle_cyclic" data-search="toggle_cyclic toggle the cyclic (closed loop) state of a curve."><h3><a href="#toggle_cyclic">toggle_cyclic</a></h3><pre class="sig"><code>toggle_cyclic(curve_name: str)</code></pre><p>Toggle the cyclic (closed loop) state of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of cyclic toggle.</p></article></section>
+<section class="module" id="file_ops" data-module="file i/o"><h2>File I/O <span class="n">5</span></h2><article class="tool" id="export_file" data-search="export_file export scene or selected objects to a 3d file.
+
+supports fbx, obj, gltf/glb, usd, stl, ply, alembic (abc), collada (dae),
+svg, and x3d formats."><h3><a href="#export_file">export_file</a></h3><pre class="sig"><code>export_file(filepath: str, type: str = &#x27;&#x27;, selected_only: bool = False)</code></pre><p>Export scene or selected objects to a 3D file.
+
+Supports FBX, OBJ, GLTF/GLB, USD, STL, PLY, Alembic (ABC), Collada (DAE),
+SVG, and X3D formats.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path for the export file.</td></tr>
+<tr><th>type</th><td>Optional format override. Auto-detected from extension if empty.</td></tr>
+<tr><th>selected_only</th><td>If True, export only selected objects. Defaults to False.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with exported file path and format.</p></article><article class="tool" id="import_file" data-search="import_file import a 3d file into blender.
+
+supports fbx, obj, gltf/glb, usd, stl, ply, alembic (abc), collada (dae),
+svg, and x3d formats. auto-detects format from file extension if type is empty."><h3><a href="#import_file">import_file</a></h3><pre class="sig"><code>import_file(filepath: str, type: str = &#x27;&#x27;)</code></pre><p>Import a 3D file into Blender.
+
+Supports FBX, OBJ, GLTF/GLB, USD, STL, PLY, Alembic (ABC), Collada (DAE),
+SVG, and X3D formats. Auto-detects format from file extension if type is empty.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to the file to import. Must exist.</td></tr>
+<tr><th>type</th><td>Optional format override. One of: FBX, OBJ, GLTF, USD, STL, PLY, ABC, DAE, SVG, X3D. Auto-detected from extension if empty.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with imported file path and format.</p></article><article class="tool" id="list_recent_files" data-search="list_recent_files list recently opened files from blender preferences."><h3><a href="#list_recent_files">list_recent_files</a></h3><pre class="sig"><code>list_recent_files()</code></pre><p>List recently opened files from Blender preferences.</p><p class="ret"><span>Returns</span> List of file path strings.</p></article><article class="tool" id="open_file" data-search="open_file open a .blend file."><h3><a href="#open_file">open_file</a></h3><pre class="sig"><code>open_file(filepath: str)</code></pre><p>Open a .blend file.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to the .blend file. Must exist.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the opened file path.</p></article><article class="tool" id="save_file" data-search="save_file save the current blender file.
+
+if filepath is empty, saves to the current file path (overwrite).
+if filepath is provided, performs a &quot;save as&quot; to the given path."><h3><a href="#save_file">save_file</a></h3><pre class="sig"><code>save_file(filepath: str = &#x27;&#x27;)</code></pre><p>Save the current Blender file.
+
+If filepath is empty, saves to the current file path (overwrite).
+If filepath is provided, performs a &quot;Save As&quot; to the given path.</p><table class="args"><tbody><tr><th>filepath</th><td>Optional absolute path to save as. Must have .blend extension. Empty string saves to current file.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the saved file path.</p></article></section>
+<section class="module" id="geometry_nodes" data-module="geometry nodes"><h2>Geometry Nodes <span class="n">5</span></h2><article class="tool" id="add_geometry_node" data-search="add_geometry_node add a node to a geometry nodes modifier&#x27;s node group."><h3><a href="#add_geometry_node">add_geometry_node</a></h3><pre class="sig"><code>add_geometry_node(modifier_name: str, node_type: str, location: list[float] | tuple[float, ...] = (0, 0))</code></pre><p>Add a node to a geometry nodes modifier&#x27;s node group.</p><table class="args"><tbody><tr><th>modifier_name</th><td>Name of the geometry nodes modifier (used to find the node group).</td></tr>
+<tr><th>node_type</th><td>Blender node type identifier, e.g. GeometryNodeMeshCube, GeometryNodeSetPosition, GeometryNodeTransform, ShaderNodeMath, GeometryNodeJoinGeometry, etc.</td></tr>
+<tr><th>location</th><td>XY position for the node in the node editor. Defaults to (0, 0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created node&#x27;s name and type.</p></article><article class="tool" id="connect_geometry_nodes" data-search="connect_geometry_nodes connect two nodes in a geometry nodes modifier&#x27;s node group."><h3><a href="#connect_geometry_nodes">connect_geometry_nodes</a></h3><pre class="sig"><code>connect_geometry_nodes(modifier_name: str, from_node: str, from_socket: int, to_node: str, to_socket: int)</code></pre><p>Connect two nodes in a geometry nodes modifier&#x27;s node group.</p><table class="args"><tbody><tr><th>modifier_name</th><td>Name of the geometry nodes modifier.</td></tr>
+<tr><th>from_node</th><td>Name of the source node.</td></tr>
+<tr><th>from_socket</th><td>Index of the output socket on the source node.</td></tr>
+<tr><th>to_node</th><td>Name of the destination node.</td></tr>
+<tr><th>to_socket</th><td>Index of the input socket on the destination node.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with connection details.</p></article><article class="tool" id="create_geometry_nodes" data-search="create_geometry_nodes create a geometry nodes modifier on an object."><h3><a href="#create_geometry_nodes">create_geometry_nodes</a></h3><pre class="sig"><code>create_geometry_nodes(object_name: str, name: str = &#x27;GeometryNodes&#x27;)</code></pre><p>Create a Geometry Nodes modifier on an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to add the modifier to.</td></tr>
+<tr><th>name</th><td>Name for the geometry nodes modifier. Defaults to &quot;GeometryNodes&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with modifier name and node group name.</p></article><article class="tool" id="list_geometry_node_inputs" data-search="list_geometry_node_inputs list all available inputs on a geometry nodes modifier."><h3><a href="#list_geometry_node_inputs">list_geometry_node_inputs</a></h3><pre class="sig"><code>list_geometry_node_inputs(object_name: str, modifier_name: str)</code></pre><p>List all available inputs on a geometry nodes modifier.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with the modifier.</td></tr>
+<tr><th>modifier_name</th><td>Name of the geometry nodes modifier.</td></tr></tbody></table><p class="ret"><span>Returns</span> List of dicts with input name, type, and current value.</p></article><article class="tool" id="set_geometry_node_input" data-search="set_geometry_node_input set an input value on a geometry nodes modifier."><h3><a href="#set_geometry_node_input">set_geometry_node_input</a></h3><pre class="sig"><code>set_geometry_node_input(object_name: str, modifier_name: str, input_name: str, value: Any)</code></pre><p>Set an input value on a geometry nodes modifier.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with the modifier.</td></tr>
+<tr><th>modifier_name</th><td>Name of the geometry nodes modifier.</td></tr>
+<tr><th>input_name</th><td>Name of the input socket to set (as shown in the modifier panel).</td></tr>
+<tr><th>value</th><td>The value to set. Type depends on the input (float, int, vector, etc.).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the input name and new value.</p></article></section>
+<section class="module" id="gpencil" data-module="grease pencil"><h2>Grease Pencil <span class="n">5</span></h2><article class="tool" id="add_annotation_layer" data-search="add_annotation_layer add a layer to an annotation.
+
+layers organize annotation strokes. each layer can have its own blend mode,
+opacity, and color."><h3><a href="#add_annotation_layer">add_annotation_layer</a></h3><pre class="sig"><code>add_annotation_layer(annotation_name: str, layer_name: str)</code></pre><p>Add a layer to an annotation.
+
+Layers organize annotation strokes. Each layer can have its own blend mode,
+opacity, and color.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
+<tr><th>layer_name</th><td>Name for the new layer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with annotation and layer names.</p></article><article class="tool" id="add_annotation_stroke" data-search="add_annotation_stroke add a stroke to an annotation layer.
+
+creates a new stroke with the given points on the specified layer.
+note: annotationstroke does not support per-point strength/opacity."><h3><a href="#add_annotation_stroke">add_annotation_stroke</a></h3><pre class="sig"><code>add_annotation_stroke(annotation_name: str, layer_name: str, points: list[list[float]], pressure: float = 1.0)</code></pre><p>Add a stroke to an annotation layer.
+
+Creates a new stroke with the given points on the specified layer.
+Note: AnnotationStroke does not support per-point strength/opacity.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
+<tr><th>layer_name</th><td>Name of the layer to add the stroke to.</td></tr>
+<tr><th>points</th><td>List of XYZ coordinates, e.g. [[0,0,0], [1,1,0], [2,0,0]]. Maximum 10000 points.</td></tr>
+<tr><th>pressure</th><td>Pen pressure for all points. Range: 0.0-1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with point count.</p></article><article class="tool" id="create_annotation" data-search="create_annotation create a new annotation data block.
+
+annotations are viewport overlays used for drawing marks, notes, and guides.
+unlike grease pencil objects, annotations are not positioned in 3d space."><h3><a href="#create_annotation">create_annotation</a></h3><pre class="sig"><code>create_annotation(name: str = &#x27;&#x27;)</code></pre><p>Create a new annotation data block.
+
+Annotations are viewport overlays used for drawing marks, notes, and guides.
+Unlike Grease Pencil objects, annotations are not positioned in 3D space.</p><table class="args"><tbody><tr><th>name</th><td>Optional name for the annotation. Auto-generated if empty.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created annotation&#x27;s name.</p></article><article class="tool" id="remove_annotation_layer" data-search="remove_annotation_layer remove a layer from an annotation."><h3><a href="#remove_annotation_layer">remove_annotation_layer</a></h3><pre class="sig"><code>remove_annotation_layer(annotation_name: str, layer_name: str)</code></pre><p>Remove a layer from an annotation.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
+<tr><th>layer_name</th><td>Name of the layer to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_annotation_stroke_property" data-search="set_annotation_stroke_property set a property on an annotation stroke."><h3><a href="#set_annotation_stroke_property">set_annotation_stroke_property</a></h3><pre class="sig"><code>set_annotation_stroke_property(annotation_name: str, layer_name: str, stroke_index: int, property: str, value: Any)</code></pre><p>Set a property on an annotation stroke.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
+<tr><th>layer_name</th><td>Name of the layer containing the stroke.</td></tr>
+<tr><th>stroke_index</th><td>Index of the stroke in the layer (0-based).</td></tr>
+<tr><th>property</th><td>Property to set. One of: line_width, material_index, display_mode.</td></tr>
+<tr><th>value</th><td>The value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<section class="module" id="lighting" data-module="lighting"><h2>Lighting <span class="n">7</span></h2><article class="tool" id="create_light" data-search="create_light create a new light in the scene."><h3><a href="#create_light">create_light</a></h3><pre class="sig"><code>create_light(type: str, name: str = &#x27;&#x27;, location: list = [0, 0, 0], energy: float = 1000.0, color: list = [1.0, 1.0, 1.0])</code></pre><p>Create a new light in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Light type. One of: POINT, SUN, SPOT, AREA.</td></tr>
+<tr><th>name</th><td>Optional name for the light.</td></tr>
+<tr><th>location</th><td>XYZ location as [x, y, z], default [0, 0, 0].</td></tr>
+<tr><th>energy</th><td>Light energy/power, default 1000.</td></tr>
+<tr><th>color</th><td>RGB color as [r, g, b], default [1.0, 1.0, 1.0].</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with light name and properties.</p></article><article class="tool" id="create_light_rig" data-search="create_light_rig create a pre-built lighting rig (multiple lights arranged for common setups)."><h3><a href="#create_light_rig">create_light_rig</a></h3><pre class="sig"><code>create_light_rig(type: str, target: str = &#x27;&#x27;, intensity: float = 1000.0)</code></pre><p>Create a pre-built lighting rig (multiple lights arranged for common setups).</p><table class="args"><tbody><tr><th>type</th><td>Rig type. One of: THREE_POINT, STUDIO, RIM, OUTDOOR.</td></tr>
+<tr><th>target</th><td>Optional name of the object the rig should point at.</td></tr>
+<tr><th>intensity</th><td>Overall intensity of the lights, default 1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with names of all created lights.</p></article><article class="tool" id="delete_light" data-search="delete_light delete a light object from the scene."><h3><a href="#delete_light">delete_light</a></h3><pre class="sig"><code>delete_light(name: str)</code></pre><p>Delete a light object from the scene.</p><table class="args"><tbody><tr><th>name</th><td>Name of the light object to delete.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="list_lights" data-search="list_lights list all light objects in the scene."><h3><a href="#list_lights">list_lights</a></h3><pre class="sig"><code>list_lights()</code></pre><p>List all light objects in the scene.</p><p class="ret"><span>Returns</span> List of dicts with light name, type, energy, color, and location.</p></article><article class="tool" id="set_light_property" data-search="set_light_property set a property on a light object."><h3><a href="#set_light_property">set_light_property</a></h3><pre class="sig"><code>set_light_property(name: str, property: str, value: Any)</code></pre><p>Set a property on a light object.</p><table class="args"><tbody><tr><th>name</th><td>Name of the light object.</td></tr>
+<tr><th>property</th><td>Property to set. One of: energy, color, shadow_soft_size, spot_size, spot_blend, area_size, area_size_y, use_shadow, angle, specular_factor, diffuse_factor, volume_factor.</td></tr>
+<tr><th>value</th><td>The value to set. Type depends on the property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_shadow_settings" data-search="set_shadow_settings configure shadow settings for a light."><h3><a href="#set_shadow_settings">set_shadow_settings</a></h3><pre class="sig"><code>set_shadow_settings(name: str, use_shadow: bool = True, shadow_soft_size: float = 0.25)</code></pre><p>Configure shadow settings for a light.</p><table class="args"><tbody><tr><th>name</th><td>Name of the light object.</td></tr>
+<tr><th>use_shadow</th><td>Whether to enable shadows, default True.</td></tr>
+<tr><th>shadow_soft_size</th><td>Soft shadow radius, default 0.25.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_world_background" data-search="set_world_background set the world background to a solid color or hdri environment map."><h3><a href="#set_world_background">set_world_background</a></h3><pre class="sig"><code>set_world_background(color: list | None = None, hdri_path: str | None = None, strength: float = 1.0)</code></pre><p>Set the world background to a solid color or HDRI environment map.</p><table class="args"><tbody><tr><th>color</th><td>RGB color as [r, g, b] for solid background. Mutually exclusive with hdri_path.</td></tr>
+<tr><th>hdri_path</th><td>Absolute path to an HDRI image file. Mutually exclusive with color.</td></tr>
+<tr><th>strength</th><td>Background strength/intensity, default 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<section class="module" id="materials" data-module="materials &amp; shaders"><h2>Materials &amp; Shaders <span class="n">25</span></h2><article class="tool" id="add_color_ramp_element" data-search="add_color_ramp_element add a colour stop to a colorramp (shadernodevaltorgb) node.
+
+a new ramp starts with two stops, black at 0.0 and white at 1.0. add
+stops to shape a gradient: fire needs dark red, orange, yellow, white
+bunched toward the top; rust needs a hard break between metal and oxide."><h3><a href="#add_color_ramp_element">add_color_ramp_element</a></h3><pre class="sig"><code>add_color_ramp_element(material_name: str, node_name: str, position: float, color: list)</code></pre><p>Add a colour stop to a ColorRamp (ShaderNodeValToRGB) node.
+
+A new ramp starts with two stops, black at 0.0 and white at 1.0. Add
+stops to shape a gradient: fire needs dark red, orange, yellow, white
+bunched toward the top; rust needs a hard break between metal and oxide.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the ColorRamp node.</td></tr>
+<tr><th>position</th><td>Stop position along the ramp, 0.0 to 1.0.</td></tr>
+<tr><th>color</th><td>RGB or RGBA color, components 0.0 to 1.0. RGB gains alpha 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the new element&#x27;s index, position, and color.</p></article><article class="tool" id="add_shader_node" data-search="add_shader_node add a shader node to a material&#x27;s node tree."><h3><a href="#add_shader_node">add_shader_node</a></h3><pre class="sig"><code>add_shader_node(material_name: str, node_type: str, location: list = [0, 0])</code></pre><p>Add a shader node to a material&#x27;s node tree.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_type</th><td>Blender shader node type (e.g. ShaderNodeBsdfPrincipled).</td></tr>
+<tr><th>location</th><td>Node location as [x, y], default [0, 0].</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with material, node_name, and node_type.</p></article><article class="tool" id="add_texture_node" data-search="add_texture_node add an image texture node to a material and connect it to the principled bsdf base color."><h3><a href="#add_texture_node">add_texture_node</a></h3><pre class="sig"><code>add_texture_node(material_name: str, image_path: str, label: str = &#x27;Image Texture&#x27;)</code></pre><p>Add an image texture node to a material and connect it to the Principled BSDF Base Color.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>image_path</th><td>Absolute path to the image file. Must exist on disk.</td></tr>
+<tr><th>label</th><td>Label for the texture node, default &quot;Image Texture&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="assign_material" data-search="assign_material assign a material to an object."><h3><a href="#assign_material">assign_material</a></h3><pre class="sig"><code>assign_material(object_name: str, material_name: str)</code></pre><p>Assign a material to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the target object.</td></tr>
+<tr><th>material_name</th><td>Name of the material to assign.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="connect_shader_nodes" data-search="connect_shader_nodes connect two shader nodes in a material&#x27;s node tree."><h3><a href="#connect_shader_nodes">connect_shader_nodes</a></h3><pre class="sig"><code>connect_shader_nodes(material_name: str, from_node: str, from_socket: str, to_node: str, to_socket: str)</code></pre><p>Connect two shader nodes in a material&#x27;s node tree.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>from_node</th><td>Name of the source node.</td></tr>
+<tr><th>from_socket</th><td>Name of the output socket on the source node.</td></tr>
+<tr><th>to_node</th><td>Name of the destination node.</td></tr>
+<tr><th>to_socket</th><td>Name of the input socket on the destination node.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="create_material" data-search="create_material create a new material with a principled bsdf shader node."><h3><a href="#create_material">create_material</a></h3><pre class="sig"><code>create_material(name: str)</code></pre><p>Create a new material with a Principled BSDF shader node.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new material.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the created material name.</p></article><article class="tool" id="create_principled_material" data-search="create_principled_material create a fully configured principled bsdf material in one call."><h3><a href="#create_principled_material">create_principled_material</a></h3><pre class="sig"><code>create_principled_material(name: str, color: list = [0.8, 0.8, 0.8, 1.0], metallic: float = 0.0, roughness: float = 0.5, specular: float = 0.5, emission_strength: float = 0.0, emission_color: list = [1.0, 1.0, 1.0, 1.0], alpha: float = 1.0, transmission: float = 0.0, ior: float = 1.45)</code></pre><p>Create a fully configured Principled BSDF material in one call.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new material.</td></tr>
+<tr><th>color</th><td>Base color as RGBA list, default [0.8, 0.8, 0.8, 1.0].</td></tr>
+<tr><th>metallic</th><td>Metallic value 0.0-1.0, default 0.0.</td></tr>
+<tr><th>roughness</th><td>Roughness value 0.0-1.0, default 0.5.</td></tr>
+<tr><th>specular</th><td>Specular IOR level 0.0-1.0, default 0.5.</td></tr>
+<tr><th>emission_strength</th><td>Emission strength, default 0.0.</td></tr>
+<tr><th>emission_color</th><td>Emission color as RGBA list, default [1.0, 1.0, 1.0, 1.0].</td></tr>
+<tr><th>alpha</th><td>Alpha value 0.0-1.0, default 1.0.</td></tr>
+<tr><th>transmission</th><td>Transmission weight 0.0-1.0, default 0.0.</td></tr>
+<tr><th>ior</th><td>Index of refraction, default 1.45.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with material name and all set properties.</p></article><article class="tool" id="create_procedural_material" data-search="create_procedural_material build a complete procedural texture as a material, in one call.
+
+prefer this over hand-wiring texture nodes. it creates the full graph —
+coordinates, mapping, the pattern&#x27;s texture nodes, a tuned colour ramp,
+and the principled bsdf — and returns the node names so you can adjust
+anything afterwards with set_shader_node_input or the colour ramp tools.
+
+procedural beats image textures here: no files, no uv unwrap needed, and
+it stays sharp at any camera distance.
+
+call list_procedural_patterns() to see what each pattern looks like."><h3><a href="#create_procedural_material">create_procedural_material</a></h3><pre class="sig"><code>create_procedural_material(name: str, pattern: str, scale: float = 5.0, detail: float = 2.0, distortion: float = 0.0, roughness: float = 0.5, metallic: float = 0.0, colors: list | None = None, banded: bool = False, connect_to_bsdf: bool = True)</code></pre><p>Build a complete procedural texture as a material, in one call.
+
+Prefer this over hand-wiring texture nodes. It creates the full graph —
+coordinates, mapping, the pattern&#x27;s texture nodes, a tuned colour ramp,
+and the Principled BSDF — and returns the node names so you can adjust
+anything afterwards with set_shader_node_input or the colour ramp tools.
+
+Procedural beats image textures here: no files, no UV unwrap needed, and
+it stays sharp at any camera distance.
+
+Call list_procedural_patterns() to see what each pattern looks like.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new material.</td></tr>
+<tr><th>pattern</th><td>One of the supported patterns, e.g. &#x27;fire&#x27;, &#x27;wood&#x27;, &#x27;veins&#x27;.</td></tr>
+<tr><th>scale</th><td>Feature size. Lower is bigger and broader, higher is finer and busier. 5.0 is a sensible default; try 1-3 for large forms and 20+ for fine detail.</td></tr>
+<tr><th>detail</th><td>Fractal octaves, 0-15. Higher adds finer sub-detail at the cost of render time. Applies to noise, cloud, wood, marble, plasma and fire. The cellular patterns (voronoi, veins, scales, sparks), stripes, weave and gradient have no detail socket and ignore it.</td></tr>
+<tr><th>distortion</th><td>Warps the pattern. Small values (0.5-2.0) make wood and marble look organic rather than machine-perfect. Applies to noise, cloud, stripes, wood, marble, plasma and fire. The cellular patterns, weave and gradient ignore it.</td></tr>
+<tr><th>roughness</th><td>Surface roughness 0-1 for the Principled BSDF.</td></tr>
+<tr><th>metallic</th><td>Metallic 0-1 for the Principled BSDF.</td></tr>
+<tr><th>colors</th><td>Optional list of RGB or RGBA colours for the ramp, in order. Omit to use the pattern&#x27;s own tuned palette.</td></tr>
+<tr><th>banded</th><td>Use CONSTANT ramp interpolation, giving hard-edged bands instead of smooth blending. Turns noise into discrete regions: scale plates, cracked mud, cel shading.</td></tr>
+<tr><th>connect_to_bsdf</th><td>Wire the result into the Principled BSDF base colour so the material renders immediately. Set False to leave the pattern subtree unconnected for manual wiring.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the material name, the created node names, and ignored_params listing any arguments this pattern could not use.</p></article><article class="tool" id="create_raster_texture" data-search="create_raster_texture generate an image texture for patterns shader nodes cannot express.
+
+use this only for patterns that place discrete marks. shader nodes
+evaluate a function per point and have no way to say &quot;draw a glyph here,
+then another over there&quot;, so runes need real pixels. everything else
+should go through create_procedural_material, which stays sharp at any
+resolution.
+
+the image is packed into the blend file. no file is written to disk."><h3><a href="#create_raster_texture">create_raster_texture</a></h3><pre class="sig"><code>create_raster_texture(name: str, pattern: str, size: int = 512, count: int = 12, seed: int = 0, foreground: list | None = None, background: list | None = None)</code></pre><p>Generate an image texture for patterns shader nodes cannot express.
+
+Use this only for patterns that place discrete marks. Shader nodes
+evaluate a function per point and have no way to say &quot;draw a glyph here,
+then another over there&quot;, so runes need real pixels. Everything else
+should go through create_procedural_material, which stays sharp at any
+resolution.
+
+The image is packed into the blend file. No file is written to disk.</p><table class="args"><tbody><tr><th>name</th><td>Name for the generated image datablock.</td></tr>
+<tr><th>pattern</th><td>A raster pattern. Currently &#x27;runes&#x27;.</td></tr>
+<tr><th>size</th><td>Pixel width and height, up to 2048. Cost grows with the square.</td></tr>
+<tr><th>count</th><td>How many marks to stamp. 0 leaves a blank field.</td></tr>
+<tr><th>seed</th><td>Change for a different arrangement; the same seed always reproduces the same image.</td></tr>
+<tr><th>foreground</th><td>RGB or RGBA colour of the marks.</td></tr>
+<tr><th>background</th><td>RGB or RGBA colour behind them.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the image name, size, and mark count.</p></article><article class="tool" id="delete_material" data-search="delete_material delete a material by name."><h3><a href="#delete_material">delete_material</a></h3><pre class="sig"><code>delete_material(material_name: str)</code></pre><p>Delete a material by name.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material to delete.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="disconnect_shader_nodes" data-search="disconnect_shader_nodes disconnect all links from a specific socket on a shader node."><h3><a href="#disconnect_shader_nodes">disconnect_shader_nodes</a></h3><pre class="sig"><code>disconnect_shader_nodes(material_name: str, node_name: str, socket_name: str, is_input: bool = True)</code></pre><p>Disconnect all links from a specific socket on a shader node.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the node.</td></tr>
+<tr><th>socket_name</th><td>Name of the socket to disconnect.</td></tr>
+<tr><th>is_input</th><td>If True, disconnect an input socket; otherwise an output socket.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="duplicate_material" data-search="duplicate_material duplicate a material with a new name."><h3><a href="#duplicate_material">duplicate_material</a></h3><pre class="sig"><code>duplicate_material(material_name: str, new_name: str)</code></pre><p>Duplicate a material with a new name.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material to duplicate.</td></tr>
+<tr><th>new_name</th><td>Name for the duplicated material.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new material name.</p></article><article class="tool" id="get_color_ramp" data-search="get_color_ramp read every stop on a colorramp node.
+
+use this before editing to learn the current indices and positions, since
+add and move operations reorder stops."><h3><a href="#get_color_ramp">get_color_ramp</a></h3><pre class="sig"><code>get_color_ramp(material_name: str, node_name: str)</code></pre><p>Read every stop on a ColorRamp node.
+
+Use this before editing to learn the current indices and positions, since
+add and move operations reorder stops.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the ColorRamp node.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with elements (index, position, color), interpolation, color_mode.</p></article><article class="tool" id="get_node_tree" data-search="get_node_tree get the full node tree of a material (all nodes and links)."><h3><a href="#get_node_tree">get_node_tree</a></h3><pre class="sig"><code>get_node_tree(material_name: str)</code></pre><p>Get the full node tree of a material (all nodes and links).</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with nodes list and links list.</p></article><article class="tool" id="list_materials" data-search="list_materials list all materials in the current blender file."><h3><a href="#list_materials">list_materials</a></h3><pre class="sig"><code>list_materials()</code></pre><p>List all materials in the current Blender file.</p><p class="ret"><span>Returns</span> List of dicts with material name and user count.</p></article><article class="tool" id="list_procedural_patterns" data-search="list_procedural_patterns list every procedural pattern with a description of what it looks like.
+
+read this before calling create_procedural_material so you pick a pattern
+that matches the surface you are trying to make."><h3><a href="#list_procedural_patterns">list_procedural_patterns</a></h3><pre class="sig"><code>list_procedural_patterns()</code></pre><p>List every procedural pattern with a description of what it looks like.
+
+Read this before calling create_procedural_material so you pick a pattern
+that matches the surface you are trying to make.</p><p class="ret"><span>Returns</span> Dict with the sorted pattern names and a description of each.</p></article><article class="tool" id="remove_color_ramp_element" data-search="remove_color_ramp_element remove a colour stop from a colorramp node.
+
+blender requires at least one stop to remain; removing the last one fails."><h3><a href="#remove_color_ramp_element">remove_color_ramp_element</a></h3><pre class="sig"><code>remove_color_ramp_element(material_name: str, node_name: str, index: int)</code></pre><p>Remove a colour stop from a ColorRamp node.
+
+Blender requires at least one stop to remain; removing the last one fails.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the ColorRamp node.</td></tr>
+<tr><th>index</th><td>Zero-based index of the stop to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the removed index and the remaining element count.</p></article><article class="tool" id="remove_shader_node" data-search="remove_shader_node remove a shader node from a material&#x27;s node tree."><h3><a href="#remove_shader_node">remove_shader_node</a></h3><pre class="sig"><code>remove_shader_node(material_name: str, node_name: str)</code></pre><p>Remove a shader node from a material&#x27;s node tree.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the node to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_color_ramp_element" data-search="set_color_ramp_element move or recolor an existing colorramp stop.
+
+at least one of position or color must be given. moving a stop past a
+neighbour reorders the ramp, so indices may shift after this call — read
+the ramp back with get_color_ramp if you need certainty."><h3><a href="#set_color_ramp_element">set_color_ramp_element</a></h3><pre class="sig"><code>set_color_ramp_element(material_name: str, node_name: str, index: int, position: float | None = None, color: list | None = None)</code></pre><p>Move or recolor an existing ColorRamp stop.
+
+At least one of position or color must be given. Moving a stop past a
+neighbour reorders the ramp, so indices may shift after this call — read
+the ramp back with get_color_ramp if you need certainty.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the ColorRamp node.</td></tr>
+<tr><th>index</th><td>Zero-based index of the stop to edit.</td></tr>
+<tr><th>position</th><td>New position, 0.0 to 1.0. Omit to leave unchanged.</td></tr>
+<tr><th>color</th><td>New RGB or RGBA color. Omit to leave unchanged.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the element&#x27;s resulting position and color.</p></article><article class="tool" id="set_color_ramp_interpolation" data-search="set_color_ramp_interpolation set how a colorramp blends between its stops.
+
+&#x27;constant&#x27; gives hard-edged bands with no blending, which is what turns a
+noise or voronoi texture into discrete regions: scale plates, cracked mud,
+stylised cel shading. &#x27;ease&#x27; and &#x27;b_spline&#x27; give softer falloff than
+&#x27;linear&#x27;. set color_mode to &#x27;hsv&#x27; to sweep through hues between two stops
+rather than blending through grey."><h3><a href="#set_color_ramp_interpolation">set_color_ramp_interpolation</a></h3><pre class="sig"><code>set_color_ramp_interpolation(material_name: str, node_name: str, interpolation: str, color_mode: str = &#x27;&#x27;)</code></pre><p>Set how a ColorRamp blends between its stops.
+
+&#x27;CONSTANT&#x27; gives hard-edged bands with no blending, which is what turns a
+noise or voronoi texture into discrete regions: scale plates, cracked mud,
+stylised cel shading. &#x27;EASE&#x27; and &#x27;B_SPLINE&#x27; give softer falloff than
+&#x27;LINEAR&#x27;. Set color_mode to &#x27;HSV&#x27; to sweep through hues between two stops
+rather than blending through grey.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the ColorRamp node.</td></tr>
+<tr><th>interpolation</th><td>One of EASE, CARDINAL, LINEAR, B_SPLINE, CONSTANT.</td></tr>
+<tr><th>color_mode</th><td>Optional. One of RGB, HSV, HSL. Omit to leave unchanged.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the applied interpolation and color mode.</p></article><article class="tool" id="set_material_blend_mode" data-search="set_material_blend_mode set the blend mode of a material (eevee)."><h3><a href="#set_material_blend_mode">set_material_blend_mode</a></h3><pre class="sig"><code>set_material_blend_mode(material_name: str, mode: str)</code></pre><p>Set the blend mode of a material (EEVEE).</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>mode</th><td>Blend mode. One of: OPAQUE, CLIP, HASHED, BLEND.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_material_color" data-search="set_material_color set the base color of a material&#x27;s principled bsdf node."><h3><a href="#set_material_color">set_material_color</a></h3><pre class="sig"><code>set_material_color(material_name: str, color: list)</code></pre><p>Set the base color of a material&#x27;s Principled BSDF node.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>color</th><td>RGBA color as a list of 4 floats (0.0-1.0). e.g. [1.0, 0.0, 0.0, 1.0] for red.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_material_property" data-search="set_material_property set a property on a material&#x27;s principled bsdf node."><h3><a href="#set_material_property">set_material_property</a></h3><pre class="sig"><code>set_material_property(material_name: str, property: str, value: Any)</code></pre><p>Set a property on a material&#x27;s Principled BSDF node.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>property</th><td>Property to set. One of: metallic, roughness, specular_ior_level, emission_strength, alpha, transmission_weight, ior, coat_weight, coat_roughness, sheen_weight, sheen_roughness, anisotropic, anisotropic_rotation, subsurface_weight, emission_color.</td></tr>
+<tr><th>value</th><td>The value to set. Float for most properties, list for color properties.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_shader_node_input" data-search="set_shader_node_input set the default value of an unconnected input socket on a shader node.
+
+this is how you dial in a procedural texture: noise &#x27;scale&#x27; and &#x27;detail&#x27;,
+mapping &#x27;scale&#x27; and &#x27;rotation&#x27;, a principled bsdf &#x27;roughness&#x27;, and so on.
+a socket that has a link into it ignores its default value, so disconnect
+it first if you want the default to take effect."><h3><a href="#set_shader_node_input">set_shader_node_input</a></h3><pre class="sig"><code>set_shader_node_input(material_name: str, node_name: str, socket: str | int, value: float | bool | list)</code></pre><p>Set the default value of an unconnected input socket on a shader node.
+
+This is how you dial in a procedural texture: Noise &#x27;Scale&#x27; and &#x27;Detail&#x27;,
+Mapping &#x27;Scale&#x27; and &#x27;Rotation&#x27;, a Principled BSDF &#x27;Roughness&#x27;, and so on.
+A socket that has a link into it ignores its default value, so disconnect
+it first if you want the default to take effect.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the node.</td></tr>
+<tr><th>socket</th><td>Socket name, or a zero-based index. Use the index when names are ambiguous — a Math node has two inputs both called &#x27;Value&#x27;.</td></tr>
+<tr><th>value</th><td>A number, a boolean, or a 2-4 component list for vectors and colors (colors are RGBA).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the node, socket, and the value that was applied.</p></article><article class="tool" id="set_shader_node_property" data-search="set_shader_node_property set a node-level property (not a socket) on a shader node.
+
+these are the dropdowns and checkboxes on the node body rather than its
+input sockets: math &#x27;operation&#x27;, mix &#x27;blend_type&#x27;, voronoi &#x27;feature&#x27;
+(use &#x27;distance_to_edge&#x27; for vein and crack patterns), wave &#x27;wave_type&#x27;
+and &#x27;bands_direction&#x27;, noise &#x27;noise_dimensions&#x27;."><h3><a href="#set_shader_node_property">set_shader_node_property</a></h3><pre class="sig"><code>set_shader_node_property(material_name: str, node_name: str, property: str, value: str | float | bool)</code></pre><p>Set a node-level property (not a socket) on a shader node.
+
+These are the dropdowns and checkboxes on the node body rather than its
+input sockets: Math &#x27;operation&#x27;, Mix &#x27;blend_type&#x27;, Voronoi &#x27;feature&#x27;
+(use &#x27;DISTANCE_TO_EDGE&#x27; for vein and crack patterns), Wave &#x27;wave_type&#x27;
+and &#x27;bands_direction&#x27;, Noise &#x27;noise_dimensions&#x27;.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
+<tr><th>node_name</th><td>Name of the node.</td></tr>
+<tr><th>property</th><td>Property name. Must be one of the allowed node properties.</td></tr>
+<tr><th>value</th><td>String enum identifier, number, or boolean.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the node, property, and the value that was applied.</p></article></section>
+<section class="module" id="mesh_editing" data-module="mesh editing"><h2>Mesh Editing <span class="n">16</span></h2><article class="tool" id="dissolve_edges" data-search="dissolve_edges dissolve all edges, merging adjacent faces.
+
+simplifies topology by removing unnecessary edge loops while
+preserving the overall shape."><h3><a href="#dissolve_edges">dissolve_edges</a></h3><pre class="sig"><code>dissolve_edges(object_name: str)</code></pre><p>Dissolve all edges, merging adjacent faces.
+
+Simplifies topology by removing unnecessary edge loops while
+preserving the overall shape.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="dissolve_faces" data-search="dissolve_faces dissolve all faces, merging them into surrounding geometry.
+
+removes faces while keeping the surrounding mesh structure intact.
+cleaner than deleting faces which leaves holes."><h3><a href="#dissolve_faces">dissolve_faces</a></h3><pre class="sig"><code>dissolve_faces(object_name: str)</code></pre><p>Dissolve all faces, merging them into surrounding geometry.
+
+Removes faces while keeping the surrounding mesh structure intact.
+Cleaner than deleting faces which leaves holes.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="dissolve_verts" data-search="dissolve_verts dissolve all vertices, merging connected edges and faces.
+
+removes vertices while preserving surrounding geometry."><h3><a href="#dissolve_verts">dissolve_verts</a></h3><pre class="sig"><code>dissolve_verts(object_name: str)</code></pre><p>Dissolve all vertices, merging connected edges and faces.
+
+Removes vertices while preserving surrounding geometry.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="fill_faces" data-search="fill_faces fill selected edges with a face.
+
+creates faces from a closed edge loop. useful for closing gaps in meshes
+or capping open ends."><h3><a href="#fill_faces">fill_faces</a></h3><pre class="sig"><code>fill_faces(object_name: str)</code></pre><p>Fill selected edges with a face.
+
+Creates faces from a closed edge loop. Useful for closing gaps in meshes
+or capping open ends.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="flip_normals" data-search="flip_normals flip the direction of all face normals on a mesh.
+
+reverses inside/outside of all faces. use recalculate_normals instead
+if normals are inconsistent rather than uniformly wrong."><h3><a href="#flip_normals">flip_normals</a></h3><pre class="sig"><code>flip_normals(object_name: str)</code></pre><p>Flip the direction of all face normals on a mesh.
+
+Reverses inside/outside of all faces. Use recalculate_normals instead
+if normals are inconsistent rather than uniformly wrong.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="grid_fill" data-search="grid_fill fill a closed edge loop with a grid of quads.
+
+creates a clean quad grid between edge loops. better than fill_faces
+for maintaining good topology."><h3><a href="#grid_fill">grid_fill</a></h3><pre class="sig"><code>grid_fill(object_name: str, span: int = 1, offset: int = 0)</code></pre><p>Fill a closed edge loop with a grid of quads.
+
+Creates a clean quad grid between edge loops. Better than fill_faces
+for maintaining good topology.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>span</th><td>Number of grid columns. Range: 1-1000.</td></tr>
+<tr><th>offset</th><td>Offset for the grid alignment. Range: 0-1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="inset_faces" data-search="inset_faces inset all faces of a mesh, creating a border/frame around each face.
+
+core hard-surface modeling operation for adding detail, panel lines, or
+preparing faces for extrusion."><h3><a href="#inset_faces">inset_faces</a></h3><pre class="sig"><code>inset_faces(object_name: str, thickness: float = 0.1, depth: float = 0.0)</code></pre><p>Inset all faces of a mesh, creating a border/frame around each face.
+
+Core hard-surface modeling operation for adding detail, panel lines, or
+preparing faces for extrusion.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>thickness</th><td>Inset thickness (border width). Range: 0.0-10.0.</td></tr>
+<tr><th>depth</th><td>Inset depth (positive=outward, negative=inward). Range: -10.0 to 10.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="knife_project" data-search="knife_project project a cutter object&#x27;s outline onto a mesh to cut it.
+
+the cutter object (curve or mesh) is projected from the viewport onto
+the target mesh, cutting new edges into it."><h3><a href="#knife_project">knife_project</a></h3><pre class="sig"><code>knife_project(object_name: str, cutter_name: str)</code></pre><p>Project a cutter object&#x27;s outline onto a mesh to cut it.
+
+The cutter object (curve or mesh) is projected from the viewport onto
+the target mesh, cutting new edges into it.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh to cut into.</td></tr>
+<tr><th>cutter_name</th><td>Name of the cutter object (curve or mesh) to project.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="mark_seam" data-search="mark_seam mark or clear uv seams on all edges of a mesh.
+
+uv seams guide the uv unwrapping process. edges marked as seams define
+where the mesh is &quot;cut&quot; when unwrapped to 2d."><h3><a href="#mark_seam">mark_seam</a></h3><pre class="sig"><code>mark_seam(object_name: str, clear: bool = False)</code></pre><p>Mark or clear UV seams on all edges of a mesh.
+
+UV seams guide the UV unwrapping process. Edges marked as seams define
+where the mesh is &quot;cut&quot; when unwrapped to 2D.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>clear</th><td>If True, clear seams instead of marking them.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="mark_sharp" data-search="mark_sharp mark or clear sharp edges on a mesh.
+
+sharp edges control auto-smooth shading. edges marked as sharp will have
+a hard edge in the shading even with smooth shading enabled."><h3><a href="#mark_sharp">mark_sharp</a></h3><pre class="sig"><code>mark_sharp(object_name: str, clear: bool = False)</code></pre><p>Mark or clear sharp edges on a mesh.
+
+Sharp edges control auto-smooth shading. Edges marked as sharp will have
+a hard edge in the shading even with smooth shading enabled.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>clear</th><td>If True, clear sharp marks instead of setting them.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="quads_to_tris" data-search="quads_to_tris convert all quad faces to triangles.
+
+useful for game engine export or when triangulated geometry is required."><h3><a href="#quads_to_tris">quads_to_tris</a></h3><pre class="sig"><code>quads_to_tris(object_name: str)</code></pre><p>Convert all quad faces to triangles.
+
+Useful for game engine export or when triangulated geometry is required.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="recalculate_normals" data-search="recalculate_normals recalculate face normals to be consistent (all pointing outward or inward).
+
+fixes meshes with flipped or inconsistent normals that cause shading artifacts."><h3><a href="#recalculate_normals">recalculate_normals</a></h3><pre class="sig"><code>recalculate_normals(object_name: str, inside: bool = False)</code></pre><p>Recalculate face normals to be consistent (all pointing outward or inward).
+
+Fixes meshes with flipped or inconsistent normals that cause shading artifacts.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>inside</th><td>If True, normals point inward instead of outward.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="select_linked" data-search="select_linked select all geometry linked to the current selection.
+
+expands selection to include all connected vertices, edges, and faces.
+useful for isolating mesh islands or selecting connected components."><h3><a href="#select_linked">select_linked</a></h3><pre class="sig"><code>select_linked(object_name: str)</code></pre><p>Select all geometry linked to the current selection.
+
+Expands selection to include all connected vertices, edges, and faces.
+Useful for isolating mesh islands or selecting connected components.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_edge_crease" data-search="set_edge_crease set edge crease value on all edges for subdivision surface control.
+
+crease values control how sharp edges remain when a subdivision surface
+modifier is applied. 0 = fully smooth, 1 = fully sharp."><h3><a href="#set_edge_crease">set_edge_crease</a></h3><pre class="sig"><code>set_edge_crease(object_name: str, value: float = 1.0)</code></pre><p>Set edge crease value on all edges for subdivision surface control.
+
+Crease values control how sharp edges remain when a Subdivision Surface
+modifier is applied. 0 = fully smooth, 1 = fully sharp.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>value</th><td>Crease value. Range: -1.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="spin_mesh" data-search="spin_mesh spin (lathe) mesh geometry around an axis.
+
+creates rotational geometry by duplicating and rotating the selected
+geometry around a center point. great for creating round shapes like
+vases, columns, or wheels."><h3><a href="#spin_mesh">spin_mesh</a></h3><pre class="sig"><code>spin_mesh(object_name: str, angle: float = math.tau, steps: int = 12, axis: list[float] | tuple[float, ...] = (0, 0, 1), center: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Spin (lathe) mesh geometry around an axis.
+
+Creates rotational geometry by duplicating and rotating the selected
+geometry around a center point. Great for creating round shapes like
+vases, columns, or wheels.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>angle</th><td>Total spin angle in radians. Range: -6.283 to 6.283 (full circle).</td></tr>
+<tr><th>steps</th><td>Number of steps in the spin. Range: 1-1000.</td></tr>
+<tr><th>axis</th><td>Spin axis as XYZ vector. Defaults to Z-up (0, 0, 1).</td></tr>
+<tr><th>center</th><td>Center point for the spin as XYZ. Defaults to origin.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="tris_to_quads" data-search="tris_to_quads convert adjacent triangle pairs to quad faces where possible.
+
+improves topology for subdivision and deformation. not all triangles
+can be merged — only adjacent pairs with compatible angles."><h3><a href="#tris_to_quads">tris_to_quads</a></h3><pre class="sig"><code>tris_to_quads(object_name: str)</code></pre><p>Convert adjacent triangle pairs to quad faces where possible.
+
+Improves topology for subdivision and deformation. Not all triangles
+can be merged — only adjacent pairs with compatible angles.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<section class="module" id="mesh_quality" data-module="mesh quality"><h2>Mesh Quality <span class="n">1</span></h2><article class="tool" id="analyze_mesh_quality" data-search="analyze_mesh_quality analyze mesh topology quality and return a structured defect report.
+
+checks for non-manifold edges, loose vertices, zero-area faces,
+duplicate vertices, and wire edges. returns counts and sample indices
+(capped at 50 per category) for each defect type."><h3><a href="#analyze_mesh_quality">analyze_mesh_quality</a></h3><pre class="sig"><code>analyze_mesh_quality(object_name: str)</code></pre><p>Analyze mesh topology quality and return a structured defect report.
+
+Checks for non-manifold edges, loose vertices, zero-area faces,
+duplicate vertices, and wire edges. Returns counts and sample indices
+(capped at 50 per category) for each defect type.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to analyze.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with vertex/edge/face counts, defect counts and sample indices, and an issues_found boolean.</p></article></section>
+<section class="module" id="modeling" data-module="modeling"><h2>Modeling <span class="n">13</span></h2><article class="tool" id="add_modifier" data-search="add_modifier add a modifier to a mesh object (non-destructive workflow).
+
+tip: for boolean type, consider using booltool_auto_union/difference/intersect/slice
+instead — they apply the boolean immediately and handle cutter cleanup automatically.
+only use add_modifier with boolean when you want a non-destructive modifier stack."><h3><a href="#add_modifier">add_modifier</a></h3><pre class="sig"><code>add_modifier(object_name: str, modifier_type: str, name: str = &#x27;&#x27;)</code></pre><p>Add a modifier to a mesh object (non-destructive workflow).
+
+TIP: For BOOLEAN type, consider using booltool_auto_union/difference/intersect/slice
+instead — they apply the boolean immediately and handle cutter cleanup automatically.
+Only use add_modifier with BOOLEAN when you want a non-destructive modifier stack.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to add the modifier to.</td></tr>
+<tr><th>modifier_type</th><td>Type of modifier. Must be one of: SUBSURF, MIRROR, ARRAY, BEVEL, BOOLEAN, SOLIDIFY, DECIMATE, REMESH, WIREFRAME, SHRINKWRAP, SMOOTH, EDGE_SPLIT, TRIANGULATE, WEIGHTED_NORMAL, SIMPLE_DEFORM, LATTICE, CURVE, CAST, WAVE, DISPLACE, SCREW, SKIN, MASK, WELD, CORRECTIVE_SMOOTH, LAPLACIAN_SMOOTH, SURFACE_DEFORM, MESH_DEFORM, HOOK.</td></tr>
+<tr><th>name</th><td>Optional custom name for the modifier.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with modifier details.</p></article><article class="tool" id="apply_modifier" data-search="apply_modifier apply a modifier to an object, making its effect permanent."><h3><a href="#apply_modifier">apply_modifier</a></h3><pre class="sig"><code>apply_modifier(object_name: str, modifier_name: str)</code></pre><p>Apply a modifier to an object, making its effect permanent.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>modifier_name</th><td>Name of the modifier to apply.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="bevel_edges" data-search="bevel_edges bevel all edges of a mesh."><h3><a href="#bevel_edges">bevel_edges</a></h3><pre class="sig"><code>bevel_edges(object_name: str, width: float = 0.1, segments: int = 1)</code></pre><p>Bevel all edges of a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>width</th><td>Bevel width.</td></tr>
+<tr><th>segments</th><td>Number of bevel segments. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="boolean_operation" data-search="boolean_operation perform a boolean operation between two objects using a modifier.
+
+note: for destructive booleans, prefer the booltool_auto_* tools instead
+(booltool_auto_union, booltool_auto_difference, booltool_auto_intersect,
+booltool_auto_slice). they handle selection and cutter cleanup automatically.
+use this tool only when you need a non-destructive boolean modifier workflow."><h3><a href="#boolean_operation">boolean_operation</a></h3><pre class="sig"><code>boolean_operation(object_name: str, target_name: str, operation: str = &#x27;DIFFERENCE&#x27;)</code></pre><p>Perform a boolean operation between two objects using a modifier.
+
+NOTE: For destructive booleans, prefer the booltool_auto_* tools instead
+(booltool_auto_union, booltool_auto_difference, booltool_auto_intersect,
+booltool_auto_slice). They handle selection and cutter cleanup automatically.
+Use this tool only when you need a non-destructive boolean modifier workflow.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to apply the boolean to.</td></tr>
+<tr><th>target_name</th><td>Name of the target/cutter object.</td></tr>
+<tr><th>operation</th><td>Boolean operation type. One of: UNION, DIFFERENCE, INTERSECT.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with operation details.</p></article><article class="tool" id="bridge_edge_loops" data-search="bridge_edge_loops bridge two edge loops to create connecting geometry.
+
+select two edge loops on a mesh before calling this. the operation creates
+faces connecting the two loops, useful for connecting separate mesh parts,
+creating holes between surfaces, or building tube-like geometry."><h3><a href="#bridge_edge_loops">bridge_edge_loops</a></h3><pre class="sig"><code>bridge_edge_loops(object_name: str, segments: int = 1, profile_shape_factor: float = 0.0)</code></pre><p>Bridge two edge loops to create connecting geometry.
+
+Select two edge loops on a mesh before calling this. The operation creates
+faces connecting the two loops, useful for connecting separate mesh parts,
+creating holes between surfaces, or building tube-like geometry.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object with selected edge loops.</td></tr>
+<tr><th>segments</th><td>Number of segments in the bridge. Range: 1-1000.</td></tr>
+<tr><th>profile_shape_factor</th><td>Shape of the bridge profile. Range: -1.0 to 1.0. 0.0 is straight, positive values bulge outward, negative inward.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with bridge details.</p></article><article class="tool" id="extrude_faces" data-search="extrude_faces extrude all faces of a mesh along their normals."><h3><a href="#extrude_faces">extrude_faces</a></h3><pre class="sig"><code>extrude_faces(object_name: str, offset: float = 1.0)</code></pre><p>Extrude all faces of a mesh along their normals.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>offset</th><td>Extrusion distance along face normals.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="loop_cut" data-search="loop_cut add loop cuts to a mesh object."><h3><a href="#loop_cut">loop_cut</a></h3><pre class="sig"><code>loop_cut(object_name: str, cuts: int = 1)</code></pre><p>Add loop cuts to a mesh object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>cuts</th><td>Number of loop cuts. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="merge_vertices" data-search="merge_vertices merge vertices by distance."><h3><a href="#merge_vertices">merge_vertices</a></h3><pre class="sig"><code>merge_vertices(object_name: str, threshold: float = 0.0001)</code></pre><p>Merge vertices by distance.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>threshold</th><td>Maximum distance between vertices to merge. Range: 0.0-10.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with number of removed vertices.</p></article><article class="tool" id="remove_modifier" data-search="remove_modifier remove a modifier from an object."><h3><a href="#remove_modifier">remove_modifier</a></h3><pre class="sig"><code>remove_modifier(object_name: str, modifier_name: str)</code></pre><p>Remove a modifier from an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>modifier_name</th><td>Name of the modifier to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="separate_mesh" data-search="separate_mesh separate a mesh into parts."><h3><a href="#separate_mesh">separate_mesh</a></h3><pre class="sig"><code>separate_mesh(object_name: str, type: str = &#x27;SELECTED&#x27;)</code></pre><p>Separate a mesh into parts.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>type</th><td>Separation method. One of: SELECTED, MATERIAL, LOOSE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_modifier_property" data-search="set_modifier_property set a property on a modifier (e.g., levels, count, offset, angle)."><h3><a href="#set_modifier_property">set_modifier_property</a></h3><pre class="sig"><code>set_modifier_property(object_name: str, modifier_name: str, property: str, value: Any)</code></pre><p>Set a property on a modifier (e.g., levels, count, offset, angle).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>modifier_name</th><td>Name of the modifier.</td></tr>
+<tr><th>property</th><td>The modifier property to set (e.g., &#x27;levels&#x27;, &#x27;count&#x27;, &#x27;width&#x27;, &#x27;segments&#x27;, &#x27;angle&#x27;, &#x27;offset&#x27;, &#x27;ratio&#x27;, &#x27;iterations&#x27;).</td></tr>
+<tr><th>value</th><td>The value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with updated property.</p></article><article class="tool" id="set_smooth_shading" data-search="set_smooth_shading set smooth or flat shading on an object.
+
+tip: for production use, prefer shade_auto_smooth which provides angle-based
+auto-smooth shading — it gives better results on hard-surface models by only
+smoothing faces within the angle threshold."><h3><a href="#set_smooth_shading">set_smooth_shading</a></h3><pre class="sig"><code>set_smooth_shading(object_name: str, smooth: bool = True)</code></pre><p>Set smooth or flat shading on an object.
+
+TIP: For production use, prefer shade_auto_smooth which provides angle-based
+auto-smooth shading — it gives better results on hard-surface models by only
+smoothing faces within the angle threshold.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>smooth</th><td>True for smooth shading, False for flat shading.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="subdivide_mesh" data-search="subdivide_mesh subdivide a mesh."><h3><a href="#subdivide_mesh">subdivide_mesh</a></h3><pre class="sig"><code>subdivide_mesh(object_name: str, cuts: int = 1)</code></pre><p>Subdivide a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to subdivide.</td></tr>
+<tr><th>cuts</th><td>Number of cuts per edge. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<section class="module" id="objects" data-module="objects"><h2>Objects <span class="n">15</span></h2><article class="tool" id="convert_object" data-search="convert_object convert an object to a different type."><h3><a href="#convert_object">convert_object</a></h3><pre class="sig"><code>convert_object(object_name: str, target: str = &#x27;MESH&#x27;)</code></pre><p>Convert an object to a different type.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to convert.</td></tr>
+<tr><th>target</th><td>Target type. One of: MESH, CURVE, SURFACE, META, FONT, CURVES, POINTCLOUD, GPENCIL.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="create_object" data-search="create_object create a primitive object in the scene."><h3><a href="#create_object">create_object</a></h3><pre class="sig"><code>create_object(type: str, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), rotation: list[float] | tuple[float, ...] = (0, 0, 0), scale: list[float] | tuple[float, ...] = (1, 1, 1))</code></pre><p>Create a primitive object in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Primitive type. One of: CUBE, SPHERE, UV_SPHERE, ICO_SPHERE, CYLINDER, CONE, TORUS, PLANE, CIRCLE, MONKEY, EMPTY.</td></tr>
+<tr><th>name</th><td>Optional name for the object. Auto-generated if empty.</td></tr>
+<tr><th>location</th><td>XYZ position as a 3-element list/tuple. Defaults to origin.</td></tr>
+<tr><th>rotation</th><td>XYZ Euler rotation in radians as a 3-element list/tuple.</td></tr>
+<tr><th>scale</th><td>XYZ scale as a 3-element list/tuple. Defaults to (1,1,1).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created object&#x27;s name, type, and location.</p></article><article class="tool" id="create_polygon_prism" data-search="create_polygon_prism create an n-sided regular prism (polygon-based cylinder).
+
+useful for hex sockets, octagonal columns, triangular prisms, or any
+straight-sided geometry where a 32-sided round cylinder is the wrong
+primitive. for a hex socket cutter on an m3 button-head screw, use
+sides=6."><h3><a href="#create_polygon_prism">create_polygon_prism</a></h3><pre class="sig"><code>create_polygon_prism(sides: int, radius: float = 1.0, depth: float = 2.0, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), rotation: list[float] | tuple[float, ...] = (0, 0, 0), scale: list[float] | tuple[float, ...] = (1, 1, 1))</code></pre><p>Create an N-sided regular prism (polygon-based cylinder).
+
+Useful for hex sockets, octagonal columns, triangular prisms, or any
+straight-sided geometry where a 32-sided round cylinder is the wrong
+primitive. For a hex socket cutter on an M3 button-head screw, use
+sides=6.</p><table class="args"><tbody><tr><th>sides</th><td>Number of sides for the polygon base. Range: 3-64.</td></tr>
+<tr><th>radius</th><td>Circumscribed radius (center to vertex). Must be &gt; 0.</td></tr>
+<tr><th>depth</th><td>Height of the prism along its Z axis. Must be &gt; 0.</td></tr>
+<tr><th>name</th><td>Optional name for the object. Auto-generated if empty.</td></tr>
+<tr><th>location</th><td>XYZ position as a 3-element list/tuple. Defaults to origin.</td></tr>
+<tr><th>rotation</th><td>XYZ Euler rotation in radians as a 3-element list/tuple.</td></tr>
+<tr><th>scale</th><td>XYZ scale as a 3-element list/tuple. Defaults to (1,1,1).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created object&#x27;s name, type, location, and sides.</p></article><article class="tool" id="create_threaded_shaft" data-search="create_threaded_shaft create a cylindrical shaft with helical external threads.
+
+produces a single mesh object — a threaded rod at the given diameter and
+length, with helical thread ridges following the specified pitch. suitable
+for boolean-union onto a screw-head or direct use as a threaded fastener.
+
+thread geometry: a 60-degree v profile swept along a z-axis helix via
+the screw modifier."><h3><a href="#create_threaded_shaft">create_threaded_shaft</a></h3><pre class="sig"><code>create_threaded_shaft(diameter: float, length: float, pitch: float, thread_depth: float = 0.0, segments: int = 32, thread_runout: float = -1.0, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Create a cylindrical shaft with helical external threads.
+
+Produces a single mesh object — a threaded rod at the given diameter and
+length, with helical thread ridges following the specified pitch. Suitable
+for boolean-union onto a screw-head or direct use as a threaded fastener.
+
+Thread geometry: a 60-degree V profile swept along a Z-axis helix via
+the Screw modifier.</p><table class="args"><tbody><tr><th>diameter</th><td>Major diameter of the shaft (outer thread peaks). Must be &gt; 0.</td></tr>
+<tr><th>length</th><td>Axial length of the shaft (under-head length, like real fastener spec). Must be &gt; 0.</td></tr>
+<tr><th>pitch</th><td>Distance between thread peaks along the axis. Must be &gt; 0 and &lt;= length.</td></tr>
+<tr><th>thread_depth</th><td>Radial depth of the thread (major radius - minor radius). If 0 (default), auto-computed as pitch * 0.54.</td></tr>
+<tr><th>segments</th><td>Rotational resolution of the helix (steps per revolution). Range: 3-256. Higher = smoother helix, more geometry.</td></tr>
+<tr><th>thread_runout</th><td>Smooth (unthreaded) region at the top of the shaft. Defaults to 0 (full-length threads) — gives the strongest print because threads under the head form a continuous stress path. Leaving a smooth runout creates a thin-walled neck at minor_r that snaps under torque in FDM prints. Pass a positive value only if a head&#x27;s deep hex socket would otherwise reach thread peaks.</td></tr>
+<tr><th>name</th><td>Optional name for the object. Auto-generated if empty.</td></tr>
+<tr><th>location</th><td>XYZ position of the shaft base as a 3-element list/tuple.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created object&#x27;s name, diameter, length, pitch, and the number of thread iterations actually generated.</p></article><article class="tool" id="delete_object" data-search="delete_object delete an object from the scene by name."><h3><a href="#delete_object">delete_object</a></h3><pre class="sig"><code>delete_object(name: str)</code></pre><p>Delete an object from the scene by name.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object to delete.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="duplicate_object" data-search="duplicate_object duplicate an object."><h3><a href="#duplicate_object">duplicate_object</a></h3><pre class="sig"><code>duplicate_object(name: str, linked: bool = False)</code></pre><p>Duplicate an object.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object to duplicate.</td></tr>
+<tr><th>linked</th><td>If True, create a linked duplicate (shares mesh data). Defaults to False.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the new object&#x27;s name.</p></article><article class="tool" id="get_object_info" data-search="get_object_info get detailed information about an object."><h3><a href="#get_object_info">get_object_info</a></h3><pre class="sig"><code>get_object_info(name: str)</code></pre><p>Get detailed information about an object.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with type, location, rotation, scale, modifiers, materials, parent, children, and visibility info.</p></article><article class="tool" id="join_objects" data-search="join_objects join multiple mesh objects into one (keeps all geometry as-is).
+
+this merges objects into a single datablock without modifying geometry.
+the meshes remain separate inside the object (no boolean merge).
+
+tip: if you want to truly fuse overlapping meshes into one solid shape,
+use booltool_auto_union instead — it performs a boolean union that merges
+the geometry and removes internal faces."><h3><a href="#join_objects">join_objects</a></h3><pre class="sig"><code>join_objects(names: list[str])</code></pre><p>Join multiple mesh objects into one (keeps all geometry as-is).
+
+This merges objects into a single datablock without modifying geometry.
+The meshes remain separate inside the object (no boolean merge).
+
+TIP: If you want to truly fuse overlapping meshes into one solid shape,
+use booltool_auto_union instead — it performs a boolean union that merges
+the geometry and removes internal faces.</p><table class="args"><tbody><tr><th>names</th><td>List of object names to join. The first name becomes the active object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the resulting joined object name.</p></article><article class="tool" id="list_objects" data-search="list_objects list all objects in the scene, optionally filtered by type."><h3><a href="#list_objects">list_objects</a></h3><pre class="sig"><code>list_objects(type_filter: str = &#x27;&#x27;)</code></pre><p>List all objects in the scene, optionally filtered by type.</p><table class="args"><tbody><tr><th>type_filter</th><td>Filter by object type (e.g., MESH, LIGHT, CAMERA, EMPTY). Empty string returns all objects.</td></tr></tbody></table><p class="ret"><span>Returns</span> List of dicts with object name, type, and location.</p></article><article class="tool" id="make_single_user" data-search="make_single_user make an object&#x27;s data single-user (unlink shared datablocks)."><h3><a href="#make_single_user">make_single_user</a></h3><pre class="sig"><code>make_single_user(object_name: str, object: bool = True, data: bool = True)</code></pre><p>Make an object&#x27;s data single-user (unlink shared datablocks).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>object</th><td>Make the object single-user. Defaults to True.</td></tr>
+<tr><th>data</th><td>Make the object data (e.g., mesh) single-user. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="parent_objects" data-search="parent_objects set parent-child relationship between two objects."><h3><a href="#parent_objects">parent_objects</a></h3><pre class="sig"><code>parent_objects(child: str, parent: str)</code></pre><p>Set parent-child relationship between two objects.</p><table class="args"><tbody><tr><th>child</th><td>Name of the child object.</td></tr>
+<tr><th>parent</th><td>Name of the parent object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="rename_object" data-search="rename_object rename an object."><h3><a href="#rename_object">rename_object</a></h3><pre class="sig"><code>rename_object(old_name: str, new_name: str)</code></pre><p>Rename an object.</p><table class="args"><tbody><tr><th>old_name</th><td>Current name of the object.</td></tr>
+<tr><th>new_name</th><td>New name for the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with old and new names.</p></article><article class="tool" id="select_objects" data-search="select_objects select objects by name."><h3><a href="#select_objects">select_objects</a></h3><pre class="sig"><code>select_objects(names: list[str], deselect_others: bool = True)</code></pre><p>Select objects by name.</p><table class="args"><tbody><tr><th>names</th><td>List of object names to select.</td></tr>
+<tr><th>deselect_others</th><td>If True, deselect all other objects first. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with list of selected object names.</p></article><article class="tool" id="set_object_visibility" data-search="set_object_visibility set object visibility in viewport and/or render."><h3><a href="#set_object_visibility">set_object_visibility</a></h3><pre class="sig"><code>set_object_visibility(name: str, visible: bool, viewport: bool = True, render: bool = True)</code></pre><p>Set object visibility in viewport and/or render.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
+<tr><th>visible</th><td>Whether the object should be visible.</td></tr>
+<tr><th>viewport</th><td>Apply visibility change to viewport. Defaults to True.</td></tr>
+<tr><th>render</th><td>Apply visibility change to render. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with visibility state.</p></article><article class="tool" id="shade_auto_smooth" data-search="shade_auto_smooth apply angle-based auto-smooth shading to an object.
+
+smooths faces only where the angle between adjacent face normals is
+below the given threshold, giving clean results on hard-surface models."><h3><a href="#shade_auto_smooth">shade_auto_smooth</a></h3><pre class="sig"><code>shade_auto_smooth(object_name: str, angle: float = 0.523599)</code></pre><p>Apply angle-based auto-smooth shading to an object.
+
+Smooths faces only where the angle between adjacent face normals is
+below the given threshold, giving clean results on hard-surface models.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>angle</th><td>Auto-smooth angle threshold in radians (0.0 to pi). Defaults to ~30 degrees (0.523599 rad).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<section class="module" id="physics" data-module="physics"><h2>Physics <span class="n">9</span></h2><article class="tool" id="add_cloth_sim" data-search="add_cloth_sim add a cloth physics simulation to an object."><h3><a href="#add_cloth_sim">add_cloth_sim</a></h3><pre class="sig"><code>add_cloth_sim(object_name: str, quality: int = 5, mass: float = 0.3)</code></pre><p>Add a cloth physics simulation to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>quality</th><td>Simulation quality steps (1-80).</td></tr>
+<tr><th>mass</th><td>Mass of the cloth in kg.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with cloth settings.</p></article><article class="tool" id="add_fluid_sim" data-search="add_fluid_sim add a fluid physics simulation to an object."><h3><a href="#add_fluid_sim">add_fluid_sim</a></h3><pre class="sig"><code>add_fluid_sim(object_name: str, type: str = &#x27;DOMAIN&#x27;, domain_type: str = &#x27;GAS&#x27;)</code></pre><p>Add a fluid physics simulation to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>type</th><td>Fluid type - DOMAIN (container), FLOW (emitter), or EFFECTOR (obstacle).</td></tr>
+<tr><th>domain_type</th><td>Domain simulation type - GAS (smoke/fire) or LIQUID. Only used when type is DOMAIN.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with fluid settings.</p></article><article class="tool" id="add_particle_system" data-search="add_particle_system add a particle system to an object."><h3><a href="#add_particle_system">add_particle_system</a></h3><pre class="sig"><code>add_particle_system(object_name: str, count: int = 1000, lifetime: float = 50.0, emit_from: str = &#x27;FACE&#x27;)</code></pre><p>Add a particle system to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>count</th><td>Number of particles (max 1000000).</td></tr>
+<tr><th>lifetime</th><td>Particle lifetime in frames.</td></tr>
+<tr><th>emit_from</th><td>Emission source - VERT, FACE, or VOLUME.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with particle system settings.</p></article><article class="tool" id="add_rigid_body" data-search="add_rigid_body add a rigid body physics simulation to an object."><h3><a href="#add_rigid_body">add_rigid_body</a></h3><pre class="sig"><code>add_rigid_body(object_name: str, type: str = &#x27;ACTIVE&#x27;, mass: float = 1.0, friction: float = 0.5, restitution: float = 0.0)</code></pre><p>Add a rigid body physics simulation to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>type</th><td>Rigid body type - ACTIVE (affected by physics) or PASSIVE (static collider).</td></tr>
+<tr><th>mass</th><td>Mass of the object in kg.</td></tr>
+<tr><th>friction</th><td>Surface friction coefficient (0.0-1.0).</td></tr>
+<tr><th>restitution</th><td>Bounciness (0.0-1.0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with rigid body settings.</p></article><article class="tool" id="bake_physics" data-search="bake_physics bake a physics simulation for an object."><h3><a href="#bake_physics">bake_physics</a></h3><pre class="sig"><code>bake_physics(object_name: str, physics_type: str = &#x27;&#x27;)</code></pre><p>Bake a physics simulation for an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with physics.</td></tr>
+<tr><th>physics_type</th><td>Optional physics type to bake. If empty, bakes all physics on the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="delete_particle_system" data-search="delete_particle_system remove a particle system from an object."><h3><a href="#delete_particle_system">delete_particle_system</a></h3><pre class="sig"><code>delete_particle_system(object_name: str, particle_system_name: str = &#x27;&#x27;)</code></pre><p>Remove a particle system from an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>particle_system_name</th><td>Name of the particle system to remove. If empty, removes the first particle system.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_particle_rendering" data-search="set_particle_rendering set rendering mode for an object&#x27;s particle system."><h3><a href="#set_particle_rendering">set_particle_rendering</a></h3><pre class="sig"><code>set_particle_rendering(object_name: str, render_type: str = &#x27;PATH&#x27;, instance_object: str = &#x27;&#x27;, instance_collection: str = &#x27;&#x27;)</code></pre><p>Set rendering mode for an object&#x27;s particle system.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with a particle system.</td></tr>
+<tr><th>render_type</th><td>Render type. One of: NONE, PATH, OBJECT, COLLECTION.</td></tr>
+<tr><th>instance_object</th><td>Object to instance (when render_type is OBJECT).</td></tr>
+<tr><th>instance_collection</th><td>Collection to instance (when render_type is COLLECTION).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_particle_velocity" data-search="set_particle_velocity set velocity settings for an object&#x27;s particle system."><h3><a href="#set_particle_velocity">set_particle_velocity</a></h3><pre class="sig"><code>set_particle_velocity(object_name: str, normal: float = 1.0, tangent: float = 0.0, object_align_factor: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Set velocity settings for an object&#x27;s particle system.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with a particle system.</td></tr>
+<tr><th>normal</th><td>Velocity along face normals.</td></tr>
+<tr><th>tangent</th><td>Velocity along face tangents.</td></tr>
+<tr><th>object_align_factor</th><td>XYZ velocity factors relative to the object. 3-element vector.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_physics_property" data-search="set_physics_property set a property on an existing physics simulation."><h3><a href="#set_physics_property">set_physics_property</a></h3><pre class="sig"><code>set_physics_property(object_name: str, physics_type: str, property: str, value: Any)</code></pre><p>Set a property on an existing physics simulation.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with the physics simulation.</td></tr>
+<tr><th>physics_type</th><td>Physics type - RIGID_BODY, CLOTH, FLUID, or PARTICLE_SYSTEM.</td></tr>
+<tr><th>property</th><td>Property name to set (depends on physics type).</td></tr>
+<tr><th>value</th><td>Value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with property name and new value.</p></article></section>
+<section class="module" id="rendering" data-module="rendering"><h2>Rendering <span class="n">7</span></h2><article class="tool" id="render_animation" data-search="render_animation render the animation sequence to image files."><h3><a href="#render_animation">render_animation</a></h3><pre class="sig"><code>render_animation(filepath: str = &#x27;/tmp/render_&#x27;, format: str = &#x27;PNG&#x27;)</code></pre><p>Render the animation sequence to image files.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path prefix for the rendered frames. Each frame will be saved with a frame number suffix.</td></tr>
+<tr><th>format</th><td>Output format. One of: PNG, JPEG, OPEN_EXR, TIFF, BMP.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with output details.</p></article><article class="tool" id="render_image" data-search="render_image render the current scene to an image file."><h3><a href="#render_image">render_image</a></h3><pre class="sig"><code>render_image(filepath: str = &#x27;/tmp/render.png&#x27;)</code></pre><p>Render the current scene to an image file.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path for the rendered image. Must be an absolute path with a valid image extension (.png, .jpg, .exr, .tiff, .bmp).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the output file path.</p></article><article class="tool" id="set_eevee_light_path" data-search="set_eevee_light_path set eevee light path intensity controls (blender 5.1+).
+
+controls how strongly different light bounce types contribute to the final image.
+only applies when render engine is blender_eevee."><h3><a href="#set_eevee_light_path">set_eevee_light_path</a></h3><pre class="sig"><code>set_eevee_light_path(diffuse_intensity: float | None = None, glossy_intensity: float | None = None, transmission_intensity: float | None = None)</code></pre><p>Set EEVEE light path intensity controls (Blender 5.1+).
+
+Controls how strongly different light bounce types contribute to the final image.
+Only applies when render engine is BLENDER_EEVEE.</p><table class="args"><tbody><tr><th>diffuse_intensity</th><td>Intensity multiplier for diffuse bounces. Range: 0.0-10.0.</td></tr>
+<tr><th>glossy_intensity</th><td>Intensity multiplier for glossy/specular bounces. Range: 0.0-10.0.</td></tr>
+<tr><th>transmission_intensity</th><td>Intensity multiplier for transmission bounces. Range: 0.0-10.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the current light path intensity values.</p></article><article class="tool" id="set_output_format" data-search="set_output_format set the render output format and optionally the output file path."><h3><a href="#set_output_format">set_output_format</a></h3><pre class="sig"><code>set_output_format(format: str, filepath: str = &#x27;&#x27;)</code></pre><p>Set the render output format and optionally the output file path.</p><table class="args"><tbody><tr><th>format</th><td>Output format. One of: PNG, JPEG, OPEN_EXR, TIFF, BMP.</td></tr>
+<tr><th>filepath</th><td>Optional output file path. Must be an absolute path.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new output settings.</p></article><article class="tool" id="set_render_engine" data-search="set_render_engine set the render engine."><h3><a href="#set_render_engine">set_render_engine</a></h3><pre class="sig"><code>set_render_engine(engine: str)</code></pre><p>Set the render engine.</p><table class="args"><tbody><tr><th>engine</th><td>Render engine to use. One of: BLENDER_EEVEE, CYCLES, BLENDER_WORKBENCH.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the active render engine.</p></article><article class="tool" id="set_render_resolution" data-search="set_render_resolution set the render resolution."><h3><a href="#set_render_resolution">set_render_resolution</a></h3><pre class="sig"><code>set_render_resolution(width: int, height: int, percentage: int = 100)</code></pre><p>Set the render resolution.</p><table class="args"><tbody><tr><th>width</th><td>Render width in pixels. Range: 1-8192.</td></tr>
+<tr><th>height</th><td>Render height in pixels. Range: 1-8192.</td></tr>
+<tr><th>percentage</th><td>Resolution percentage scale. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new resolution settings.</p></article><article class="tool" id="set_render_samples" data-search="set_render_samples set the number of render samples."><h3><a href="#set_render_samples">set_render_samples</a></h3><pre class="sig"><code>set_render_samples(samples: int)</code></pre><p>Set the number of render samples.</p><table class="args"><tbody><tr><th>samples</th><td>Number of samples. Range: 1-10000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new sample count.</p></article></section>
+<section class="module" id="scene" data-module="scene"><h2>Scene <span class="n">6</span></h2><article class="tool" id="create_scene" data-search="create_scene create a new scene."><h3><a href="#create_scene">create_scene</a></h3><pre class="sig"><code>create_scene(name: str)</code></pre><p>Create a new scene.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the created scene name.</p></article><article class="tool" id="delete_scene" data-search="delete_scene delete a scene by name."><h3><a href="#delete_scene">delete_scene</a></h3><pre class="sig"><code>delete_scene(name: str)</code></pre><p>Delete a scene by name.</p><table class="args"><tbody><tr><th>name</th><td>Name of the scene to delete. Cannot delete the last remaining scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="get_scene_info" data-search="get_scene_info get full scene information including object tree, hierarchy, counts, frame range, fps, and render engine.
+
+returns a dict with scene name, object list with hierarchy, object type counts,
+frame range (start, end, current), fps, and active render engine."><h3><a href="#get_scene_info">get_scene_info</a></h3><pre class="sig"><code>get_scene_info()</code></pre><p>Get full scene information including object tree, hierarchy, counts, frame range, fps, and render engine.
+
+Returns a dict with scene name, object list with hierarchy, object type counts,
+frame range (start, end, current), fps, and active render engine.</p></article><article class="tool" id="list_scenes" data-search="list_scenes list all scenes in the current blender file.
+
+returns a list of dicts, each containing the scene name and object count."><h3><a href="#list_scenes">list_scenes</a></h3><pre class="sig"><code>list_scenes()</code></pre><p>List all scenes in the current Blender file.
+
+Returns a list of dicts, each containing the scene name and object count.</p></article><article class="tool" id="set_scene_property" data-search="set_scene_property set a scene property such as frame_start, frame_end, frame_current, fps, unit_system, or render_engine."><h3><a href="#set_scene_property">set_scene_property</a></h3><pre class="sig"><code>set_scene_property(property: str, value: Any)</code></pre><p>Set a scene property such as frame_start, frame_end, frame_current, fps, unit_system, or render_engine.</p><table class="args"><tbody><tr><th>property</th><td>The scene property to set. Must be one of: frame_start, frame_end, frame_current, frame_step, fps, unit_system, render_engine, use_gravity, gravity.</td></tr>
+<tr><th>value</th><td>The value to set the property to. Type depends on the property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the property name and new value.</p></article><article class="tool" id="suggest_extensions" data-search="suggest_extensions suggest helpful blender extensions for a planned task.
+
+analyzes the task description and recommends free blender extensions
+that could improve the workflow. already-installed extensions are excluded."><h3><a href="#suggest_extensions">suggest_extensions</a></h3><pre class="sig"><code>suggest_extensions(task_description: str = &#x27;&#x27;)</code></pre><p>Suggest helpful Blender extensions for a planned task.
+
+Analyzes the task description and recommends free Blender extensions
+that could improve the workflow. Already-installed extensions are excluded.</p><table class="args"><tbody><tr><th>task_description</th><td>Description of the planned task. If empty, returns all extensions not currently installed.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with &#x27;suggestions&#x27; list of recommended extensions and &#x27;installed&#x27; list of already-installed extension IDs.</p></article></section>
+<section class="module" id="sculpting" data-module="sculpting"><h2>Sculpting <span class="n">8</span></h2><article class="tool" id="add_multires_modifier" data-search="add_multires_modifier add a multiresolution modifier for sculpting detail."><h3><a href="#add_multires_modifier">add_multires_modifier</a></h3><pre class="sig"><code>add_multires_modifier(object_name: str, levels: int = 2)</code></pre><p>Add a Multiresolution modifier for sculpting detail.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>levels</th><td>Number of subdivision levels to add (1-6).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with object name and modifier info.</p></article><article class="tool" id="enable_dyntopo" data-search="enable_dyntopo enable dynamic topology (dyntopo) for adaptive sculpting resolution.
+
+dyntopo adds and removes mesh detail dynamically as you sculpt,
+allowing unlimited detail where needed without uniform subdivision."><h3><a href="#enable_dyntopo">enable_dyntopo</a></h3><pre class="sig"><code>enable_dyntopo(object_name: str, detail_size: float = 12.0, detail_mode: str = &#x27;RELATIVE&#x27;)</code></pre><p>Enable dynamic topology (dyntopo) for adaptive sculpting resolution.
+
+Dyntopo adds and removes mesh detail dynamically as you sculpt,
+allowing unlimited detail where needed without uniform subdivision.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object (must be in sculpt mode or will enter it).</td></tr>
+<tr><th>detail_size</th><td>Detail level (smaller = more detail). Range: 0.1-500.0.</td></tr>
+<tr><th>detail_mode</th><td>Detail mode. One of: RELATIVE, CONSTANT, BRUSH, MANUAL.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with dyntopo settings.</p></article><article class="tool" id="enter_sculpt_mode" data-search="enter_sculpt_mode enter sculpt mode for a mesh object."><h3><a href="#enter_sculpt_mode">enter_sculpt_mode</a></h3><pre class="sig"><code>enter_sculpt_mode(object_name: str)</code></pre><p>Enter sculpt mode for a mesh object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to sculpt.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name and mode.</p></article><article class="tool" id="exit_sculpt_mode" data-search="exit_sculpt_mode exit sculpt mode and return to object mode."><h3><a href="#exit_sculpt_mode">exit_sculpt_mode</a></h3><pre class="sig"><code>exit_sculpt_mode()</code></pre><p>Exit sculpt mode and return to object mode.</p><p class="ret"><span>Returns</span> Confirmation dict with current mode.</p></article><article class="tool" id="remesh" data-search="remesh remesh an object to create a clean topology."><h3><a href="#remesh">remesh</a></h3><pre class="sig"><code>remesh(object_name: str, voxel_size: float = 0.1, mode: str = &#x27;VOXEL&#x27;)</code></pre><p>Remesh an object to create a clean topology.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to remesh.</td></tr>
+<tr><th>voxel_size</th><td>Voxel size for remeshing (smaller = more detail). Only used in VOXEL mode.</td></tr>
+<tr><th>mode</th><td>Remesh mode - VOXEL, SHARP, SMOOTH, or BLOCKS.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with object name and new vertex count.</p></article><article class="tool" id="set_brush_property" data-search="set_brush_property set a property on the active sculpt brush."><h3><a href="#set_brush_property">set_brush_property</a></h3><pre class="sig"><code>set_brush_property(property: str, value: Any)</code></pre><p>Set a property on the active sculpt brush.</p><table class="args"><tbody><tr><th>property</th><td>Property to set - size, strength, auto_smooth_factor, or use_frontface.</td></tr>
+<tr><th>value</th><td>Value to set. size is int (1-500), strength is float (0.0-1.0), auto_smooth_factor is float (0.0-1.0), use_frontface is bool.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with property name and new value.</p></article><article class="tool" id="set_sculpt_brush" data-search="set_sculpt_brush set the active sculpt brush."><h3><a href="#set_sculpt_brush">set_sculpt_brush</a></h3><pre class="sig"><code>set_sculpt_brush(brush_type: str)</code></pre><p>Set the active sculpt brush.</p><table class="args"><tbody><tr><th>brush_type</th><td>Brush type - DRAW, CLAY, CLAY_STRIPS, INFLATE, GRAB, SMOOTH, FLATTEN, FILL, SCRAPE, PINCH, CREASE, BLOB, MASK, MULTIRES_DISPLACEMENT_SMEAR.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with active brush type.</p></article><article class="tool" id="set_sculpt_symmetry" data-search="set_sculpt_symmetry set sculpt symmetry axes.
+
+enables symmetrical sculpting across the specified axes. x-axis symmetry
+is the most common for character modeling."><h3><a href="#set_sculpt_symmetry">set_sculpt_symmetry</a></h3><pre class="sig"><code>set_sculpt_symmetry(use_x: bool = True, use_y: bool = False, use_z: bool = False)</code></pre><p>Set sculpt symmetry axes.
+
+Enables symmetrical sculpting across the specified axes. X-axis symmetry
+is the most common for character modeling.</p><table class="args"><tbody><tr><th>use_x</th><td>Enable X-axis symmetry. Defaults to True.</td></tr>
+<tr><th>use_y</th><td>Enable Y-axis symmetry. Defaults to False.</td></tr>
+<tr><th>use_z</th><td>Enable Z-axis symmetry. Defaults to False.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with symmetry settings.</p></article></section>
+<section class="module" id="transforms" data-module="transforms"><h2>Transforms <span class="n">6</span></h2><article class="tool" id="apply_transforms" data-search="apply_transforms apply (freeze) transforms on an object, making current transforms the new basis."><h3><a href="#apply_transforms">apply_transforms</a></h3><pre class="sig"><code>apply_transforms(name: str, location: bool = True, rotation: bool = True, scale: bool = True)</code></pre><p>Apply (freeze) transforms on an object, making current transforms the new basis.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
+<tr><th>location</th><td>Apply location transform. Defaults to True.</td></tr>
+<tr><th>rotation</th><td>Apply rotation transform. Defaults to True.</td></tr>
+<tr><th>scale</th><td>Apply scale transform. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_location" data-search="set_location set the position of an object."><h3><a href="#set_location">set_location</a></h3><pre class="sig"><code>set_location(name: str, location: list[float] | tuple[float, ...])</code></pre><p>Set the position of an object.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
+<tr><th>location</th><td>XYZ position as a 3-element list/tuple.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and new location.</p></article><article class="tool" id="set_origin" data-search="set_origin set the origin point of an object."><h3><a href="#set_origin">set_origin</a></h3><pre class="sig"><code>set_origin(name: str, type: str = &#x27;GEOMETRY&#x27;)</code></pre><p>Set the origin point of an object.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
+<tr><th>type</th><td>Origin type. One of: GEOMETRY (origin to geometry center), CURSOR (origin to 3D cursor), CENTER_OF_MASS (origin to center of mass), CENTER_OF_VOLUME (origin to center of volume). Defaults to GEOMETRY.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with new origin location.</p></article><article class="tool" id="set_rotation" data-search="set_rotation set the rotation of an object."><h3><a href="#set_rotation">set_rotation</a></h3><pre class="sig"><code>set_rotation(name: str, rotation: list[float] | tuple[float, ...], mode: str = &#x27;EULER&#x27;)</code></pre><p>Set the rotation of an object.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
+<tr><th>rotation</th><td>Rotation values. For EULER mode, XYZ angles in radians (3 elements). For QUATERNION mode, WXYZ values (4 elements).</td></tr>
+<tr><th>mode</th><td>Rotation mode, either EULER or QUATERNION. Defaults to EULER.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and new rotation.</p></article><article class="tool" id="set_scale" data-search="set_scale set the scale of an object."><h3><a href="#set_scale">set_scale</a></h3><pre class="sig"><code>set_scale(name: str, scale: list[float] | tuple[float, ...])</code></pre><p>Set the scale of an object.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
+<tr><th>scale</th><td>XYZ scale as a 3-element list/tuple.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and new scale.</p></article><article class="tool" id="snap_to_grid" data-search="snap_to_grid snap an object&#x27;s location to the nearest grid point."><h3><a href="#snap_to_grid">snap_to_grid</a></h3><pre class="sig"><code>snap_to_grid(name: str, grid_size: float = 1.0)</code></pre><p>Snap an object&#x27;s location to the nearest grid point.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
+<tr><th>grid_size</th><td>Size of the grid cells. Defaults to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and snapped location.</p></article></section>
+<section class="module" id="uv" data-module="uv mapping"><h2>UV Mapping <span class="n">4</span></h2><article class="tool" id="pack_uv_islands" data-search="pack_uv_islands pack uv islands to fit efficiently within the uv space."><h3><a href="#pack_uv_islands">pack_uv_islands</a></h3><pre class="sig"><code>pack_uv_islands(object_name: str, margin: float = 0.001)</code></pre><p>Pack UV islands to fit efficiently within the UV space.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>margin</th><td>Margin between packed islands (0.0-1.0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name.</p></article><article class="tool" id="set_uv_projection" data-search="set_uv_projection apply a projection-based uv mapping to a mesh object."><h3><a href="#set_uv_projection">set_uv_projection</a></h3><pre class="sig"><code>set_uv_projection(object_name: str, projection: str)</code></pre><p>Apply a projection-based UV mapping to a mesh object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>projection</th><td>Projection type - CUBE, CYLINDER, or SPHERE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name and projection type.</p></article><article class="tool" id="smart_uv_project" data-search="smart_uv_project apply smart uv project to a mesh object.
+
+automatically unwraps the mesh using angle-based projection."><h3><a href="#smart_uv_project">smart_uv_project</a></h3><pre class="sig"><code>smart_uv_project(object_name: str, angle_limit: float = 66.0, island_margin: float = 0.0, area_weight: float = 0.0)</code></pre><p>Apply Smart UV Project to a mesh object.
+
+Automatically unwraps the mesh using angle-based projection.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>angle_limit</th><td>Angle limit in degrees for splitting faces (0.0-89.0).</td></tr>
+<tr><th>island_margin</th><td>Margin between UV islands (0.0-1.0).</td></tr>
+<tr><th>area_weight</th><td>Weight given to face area for island arrangement (0.0-1.0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name and UV map info.</p></article><article class="tool" id="uv_unwrap" data-search="uv_unwrap unwrap a mesh object&#x27;s uvs using standard unwrap.
+
+requires seams to be marked for best results."><h3><a href="#uv_unwrap">uv_unwrap</a></h3><pre class="sig"><code>uv_unwrap(object_name: str, method: str = &#x27;ANGLE_BASED&#x27;)</code></pre><p>Unwrap a mesh object&#x27;s UVs using standard unwrap.
+
+Requires seams to be marked for best results.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>method</th><td>Unwrap method - ANGLE_BASED or CONFORMAL.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name.</p></article></section>
+<section class="module" id="viewport" data-module="viewport"><h2>Viewport <span class="n">3</span></h2><article class="tool" id="focus_on_object" data-search="focus_on_object frame/focus the viewport on a specific object.
+
+selects the object and uses view selected to center the viewport on it."><h3><a href="#focus_on_object">focus_on_object</a></h3><pre class="sig"><code>focus_on_object(object_name: str)</code></pre><p>Frame/focus the viewport on a specific object.
+
+Selects the object and uses View Selected to center the viewport on it.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to focus on.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_viewport_overlay" data-search="set_viewport_overlay toggle a viewport overlay setting."><h3><a href="#set_viewport_overlay">set_viewport_overlay</a></h3><pre class="sig"><code>set_viewport_overlay(overlay: str, enabled: bool)</code></pre><p>Toggle a viewport overlay setting.</p><table class="args"><tbody><tr><th>overlay</th><td>Overlay property name. One of: show_wireframes, show_face_orientation, show_floor, show_axis_x, show_axis_y, show_axis_z, show_cursor, show_object_origins, show_relationship_lines, show_stats.</td></tr>
+<tr><th>enabled</th><td>Whether the overlay should be enabled.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the overlay name and state.</p></article><article class="tool" id="set_viewport_shading" data-search="set_viewport_shading set the viewport shading mode."><h3><a href="#set_viewport_shading">set_viewport_shading</a></h3><pre class="sig"><code>set_viewport_shading(mode: str)</code></pre><p>Set the viewport shading mode.</p><table class="args"><tbody><tr><th>mode</th><td>Shading mode. One of: WIREFRAME, SOLID, MATERIAL, RENDERED.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new shading mode.</p></article></section>
+<section class="module" id="screenshot" data-module="viewport capture"><h2>Viewport Capture <span class="n">1</span></h2><article class="tool" id="get_viewport_screenshot" data-search="get_viewport_screenshot capture a screenshot of the current blender 3d viewport."><h3><a href="#get_viewport_screenshot">get_viewport_screenshot</a></h3><pre class="sig"><code>get_viewport_screenshot(max_size: int = 1000, mode: str = &#x27;fast&#x27;)</code></pre><p>Capture a screenshot of the current Blender 3D viewport.</p><table class="args"><tbody><tr><th>max_size</th><td>Maximum size in pixels for the largest dimension (default: 1000).</td></tr>
+<tr><th>mode</th><td>Capture mode - &#x27;fast&#x27; for instant viewport capture using OpenGL (default), &#x27;full&#x27; for a complete render through the active render engine.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with base64-encoded PNG image data, width, height, format, and mode.</p></article></section>
+    <p id="empty" class="hidden">No tools match that filter.</p>
+  </main>
+</div>
+<footer>
+  <p>Generated from the blend-ai source tree.
+  <a href="https://github.com/HoldMyBeer-gg/blend-ai">github.com/HoldMyBeer-gg/blend-ai</a></p>
+</footer>
+</div>
+<script>
+(function () {
+  var q = document.getElementById('q');
+  var tools = Array.prototype.slice.call(document.querySelectorAll('.tool'));
+  var modules = Array.prototype.slice.call(document.querySelectorAll('.module'));
+  var empty = document.getElementById('empty');
+  function apply() {
+    var term = q.value.trim().toLowerCase();
+    var hits = 0;
+    tools.forEach(function (el) {
+      var match = !term || el.dataset.search.indexOf(term) !== -1;
+      el.classList.toggle('hidden', !match);
+      if (match) hits++;
+    });
+    modules.forEach(function (sec) {
+      var any = sec.querySelector('.tool:not(.hidden)');
+      var self = !term || sec.dataset.module.indexOf(term) !== -1;
+      if (self && !any) {
+        sec.querySelectorAll('.tool').forEach(function (t) {
+          t.classList.remove('hidden');
+        });
+        hits++;
+        any = true;
+      }
+      sec.classList.toggle('hidden', !any);
+    });
+    empty.classList.toggle('hidden', hits > 0);
+  }
+  q.addEventListener('input', apply);
+})();
+</script>
+</body>
+</html>
