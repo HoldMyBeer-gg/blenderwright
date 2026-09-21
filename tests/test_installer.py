@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import os
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -694,6 +695,7 @@ class TestValidateBlenderPath:
             installer.validate_blender_path(tmp_path / "nope")
         assert "not found" in str(exc.value).lower()
 
+    @pytest.mark.skipif(os.name == "nt", reason="Windows has no executable bit")
     def test_non_executable_file_is_rejected(self, tmp_path):
         f = tmp_path / "blender"
         f.write_text("")

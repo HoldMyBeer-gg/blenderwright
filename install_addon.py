@@ -53,14 +53,18 @@ def validate_blender_path(blender: str | Path) -> str | Path:
 
     if path.is_dir():
         if path.suffix == ".app":
-            inner = path / "Contents" / "MacOS" / "Blender"
+            # macOS advice, so spell the path with forward slashes whatever
+            # platform we happen to be running on.
+            inner = f"{path.as_posix()}/Contents/MacOS/Blender"
             raise BlenderPathError(
                 f"{path} is an application bundle, not the executable. "
                 f"Use the binary inside it:\n  {inner}"
             )
         raise BlenderPathError(f"{path} is a directory, not the Blender executable.")
 
-    if not os.access(path, os.X_OK):
+    # Windows has no executable bit; os.access(X_OK) is true for any file
+    # that exists, so the check only means something on POSIX.
+    if os.name != "nt" and not os.access(path, os.X_OK):
         raise BlenderPathError(f"{path} is not executable.")
 
     return blender
