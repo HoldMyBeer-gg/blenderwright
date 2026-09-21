@@ -26,6 +26,7 @@
   --line: #2b2e37; --accent: #e08a52; --code-bg: #22252e;
 }
 * { box-sizing: border-box; }
+html { overflow-x: hidden; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -45,7 +46,9 @@ h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 4vw, 2.4rem); letter-spacing: -0.
   border: 1px solid var(--line); border-radius: 9px;
 }
 #q:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.layout { display: grid; grid-template-columns: 210px 1fr; gap: 34px; padding: 30px 0 70px; }
+.layout { display: grid; grid-template-columns: 210px minmax(0, 1fr);
+          gap: 34px; padding: 30px 0 70px; }
+main { min-width: 0; }
 nav { position: sticky; top: 16px; align-self: start; max-height: 92vh; overflow: auto; }
 nav a {
   display: flex; justify-content: space-between; gap: 8px;
@@ -78,10 +81,12 @@ h2 {
   font-size: .82rem; color: var(--muted);
 }
 .args { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.args { table-layout: auto; }
 .args th {
-  text-align: left; vertical-align: top; white-space: nowrap;
-  padding: 4px 12px 4px 0; color: var(--accent); font-weight: 600;
+  width: 1%; text-align: left; vertical-align: top; white-space: nowrap;
+  padding: 4px 18px 4px 0; color: var(--accent); font-weight: 600;
 }
+.args td { overflow-wrap: anywhere; }
 .args td { padding: 4px 0; color: var(--muted); }
 .ret { margin: 10px 0 0 !important; font-size: .88rem; color: var(--muted); }
 .ret span { color: var(--accent); font-weight: 600; margin-right: 6px; }
