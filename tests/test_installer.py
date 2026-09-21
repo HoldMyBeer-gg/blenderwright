@@ -1,38 +1,31 @@
-"""Tests for the blend-ai addon installer TUI (install_addon.py)."""
+"""Tests for the blend-ai addon installer (install_addon.py)."""
 
 from __future__ import annotations
 
 import importlib
 import importlib.util
+import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# Skip entire module if textual is not installed
-pytest.importorskip("textual", reason="textual not installed — skipping installer tests")
-
 # ---------------------------------------------------------------------------
-# Helpers — import install_addon without triggering sys.exit on missing textual
+# Helpers
 # ---------------------------------------------------------------------------
 
 def _import_installer():
-    """Import install_addon, skipping the sys.exit guard."""
-    with patch("sys.exit"):
-        spec = importlib.util.spec_from_file_location(
-            "install_addon",
-            Path(__file__).parent.parent / "install_addon.py",
-        )
-        mod = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(mod)
-        except SystemExit:
-            pytest.skip("textual not installed")
+    """Import install_addon by path; it is a script, not a package module."""
+    spec = importlib.util.spec_from_file_location(
+        "install_addon",
+        Path(__file__).parent.parent / "install_addon.py",
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
     return mod
 
 
 installer = _import_installer()
-InstallerApp = installer.InstallerApp
 
 
 # ---------------------------------------------------------------------------
@@ -267,92 +260,6 @@ class TestInstall:
 
 # ---------------------------------------------------------------------------
 # TUI tests — Textual Pilot
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-class TestInstallerAppUI:
-    async def test_initial_state_shows_searching(self):
-        with patch.object(installer, "_blender_candidates", return_value=[]):
-            async with InstallerApp().run_test(size=(120, 40)) as pilot:
-                await pilot.pause()
-                label = pilot.app.query_one("#searching", installer.Label)
-                # Textual 8.x: render the label to get its text content
-                text = label.render().plain if hasattr(label.render(), "plain") else str(label.render())
-                assert "Searching" in text or "found" in text
-
-    async def test_preselected_path_populates_input(self):
-        async with InstallerApp(preselected="/custom/blender").run_test(size=(120, 40)) as pilot:
-            await pilot.pause()
-            inp = pilot.app.query_one("#path-input", installer.Input)
-            assert inp.value == "/custom/blender"
-
-    async def test_install_button_present(self):
-        async with InstallerApp().run_test(size=(120, 40)) as pilot:
-            btn = pilot.app.query_one("#install-btn", installer.Button)
-            assert btn is not None
-            assert not btn.disabled
-
-    async def test_found_blender_populates_list_and_input(self):
-        async def fake_get_version(path):
-            return "Blender 4.3.2"
-
-        with patch.object(installer, "_blender_candidates", return_value=[Path("/fake/blender")]), \
-             patch.object(installer, "_get_blender_version", side_effect=fake_get_version):
-            async with InstallerApp().run_test(size=(120, 40)) as pilot:
-                await pilot.pause(delay=0.5)
-                found_list = pilot.app.query_one("#found-list", installer.ListView)
-                assert len(found_list) == 1
-                inp = pilot.app.query_one("#path-input", installer.Input)
-                assert "fake" in inp.value and "blender" in inp.value
-
-    async def test_input_change_updates_selected(self):
-        with patch.object(installer, "_blender_candidates", return_value=[]):
-            async with InstallerApp().run_test(size=(120, 40)) as pilot:
-                await pilot.pause()
-                inp = pilot.app.query_one("#path-input", installer.Input)
-                inp.value = "/new/path/blender"
-                await pilot.pause()
-                assert pilot.app._selected == "/new/path/blender"
-
-    async def test_install_with_no_path_logs_error(self):
-        async with InstallerApp().run_test(size=(120, 40)) as pilot:
-            await pilot.pause()
-            pilot.app._selected = None
-            pilot.app.query_one("#path-input", installer.Input).clear()
-            await pilot.click("#install-btn")
-            await pilot.pause(delay=0.3)
-            log = pilot.app.query_one("#log", installer.RichLog)
-            assert log is not None  # log widget exists; content written without error
-
-    async def test_successful_install_updates_button_label(self):
-        fake_zip = Path("/tmp/blend-ai-v1.0.0.zip")
-
-        with patch.object(installer, "_blender_candidates", return_value=[]), \
-             patch.object(installer, "build_zip", return_value=fake_zip), \
-             patch.object(installer, "install", return_value=True):
-            async with InstallerApp(preselected="/fake/blender").run_test(size=(120, 40)) as pilot:
-                await pilot.pause(delay=0.3)  # let search worker finish (no candidates)
-                await pilot.click("#install-btn")
-                await pilot.pause(delay=2.0)
-                btn = pilot.app.query_one("#install-btn", installer.Button)
-                assert str(btn.label) == "Done"
-
-    async def test_failed_install_updates_button_to_retry(self):
-        fake_zip = Path("/tmp/blend-ai-v1.0.0.zip")
-
-        with patch.object(installer, "_blender_candidates", return_value=[]), \
-             patch.object(installer, "build_zip", return_value=fake_zip), \
-             patch.object(installer, "install", return_value=False):
-            async with InstallerApp(preselected="/fake/blender").run_test(size=(120, 40)) as pilot:
-                await pilot.pause(delay=0.3)
-                await pilot.click("#install-btn")
-                await pilot.pause(delay=2.0)
-                btn = pilot.app.query_one("#install-btn", installer.Button)
-                assert str(btn.label) == "Retry"
-
-
-# ---------------------------------------------------------------------------
-# Phase 2 — Extensions system (Blender 4.2+) doctor/uninstall/upgrade
 # ---------------------------------------------------------------------------
 
 class TestBlenderUserConfigDirs:
@@ -650,3 +557,99 @@ class TestCliSubcommands:
              patch.object(installer, "is_blender_running", return_value=False):
             installer.main(["uninstall"])
         assert mock_u.call_args.kwargs.get("dry_run") is True
+
+
+# ---------------------------------------------------------------------------
+# Plain-text Blender picker (replaces the former textual TUI)
+# ---------------------------------------------------------------------------
+
+class TestChooseBlender:
+    def test_preselected_path_short_circuits_discovery(self):
+        with patch.object(installer, "_discover_blender") as discover:
+            assert installer._choose_blender("/given/blender") == "/given/blender"
+        discover.assert_not_called()
+
+    def test_numeric_choice_selects_from_the_list(self):
+        found = [(Path("/a/blender"), "Blender 4.2.0"), (Path("/b/blender"), "Blender 5.1.0")]
+        with patch.object(installer.asyncio, "run", return_value=found), \
+             patch("builtins.input", return_value="2"):
+            assert installer._choose_blender() == Path("/b/blender")
+
+    def test_pasted_path_is_accepted_over_the_list(self):
+        found = [(Path("/a/blender"), "Blender 4.2.0")]
+        with patch.object(installer.asyncio, "run", return_value=found), \
+             patch("builtins.input", return_value="/elsewhere/blender"):
+            assert installer._choose_blender() == "/elsewhere/blender"
+
+    def test_blank_answer_cancels(self):
+        found = [(Path("/a/blender"), "Blender 4.2.0")]
+        with patch.object(installer.asyncio, "run", return_value=found), \
+             patch("builtins.input", return_value=""):
+            assert installer._choose_blender() is None
+
+    def test_out_of_range_number_is_treated_as_a_path(self):
+        """9 with one result is not a selection; don't silently install the wrong one."""
+        found = [(Path("/a/blender"), "Blender 4.2.0")]
+        with patch.object(installer.asyncio, "run", return_value=found), \
+             patch("builtins.input", return_value="9"):
+            assert installer._choose_blender() == "9"
+
+    def test_no_blender_found_prompts_for_a_path(self):
+        with patch.object(installer.asyncio, "run", return_value=[]), \
+             patch("builtins.input", return_value="/typed/blender"):
+            assert installer._choose_blender() == "/typed/blender"
+
+    def test_no_blender_found_and_blank_cancels(self):
+        with patch.object(installer.asyncio, "run", return_value=[]), \
+             patch("builtins.input", return_value=""):
+            assert installer._choose_blender() is None
+
+
+class TestCmdInstall:
+    def test_cancelled_choice_does_not_install(self):
+        args = MagicMock(blender=None)
+        with patch.object(installer, "_choose_blender", return_value=None), \
+             patch.object(installer, "install") as inst:
+            assert installer._cmd_install(args) == 1
+        inst.assert_not_called()
+
+    def test_missing_zip_is_reported(self):
+        args = MagicMock(blender="/b")
+        with patch.object(installer, "_choose_blender", return_value="/b"), \
+             patch.object(installer, "build_zip", return_value=None), \
+             patch.object(installer, "find_zip", return_value=None), \
+             patch.object(installer, "install") as inst:
+            assert installer._cmd_install(args) == 1
+        inst.assert_not_called()
+
+    def test_successful_install_returns_zero(self):
+        args = MagicMock(blender="/b")
+        with patch.object(installer, "_choose_blender", return_value="/b"), \
+             patch.object(installer, "build_zip", return_value=Path("/tmp/x.zip")), \
+             patch.object(installer, "install", return_value=True):
+            assert installer._cmd_install(args) == 0
+
+    def test_failed_install_returns_nonzero(self):
+        args = MagicMock(blender="/b")
+        with patch.object(installer, "_choose_blender", return_value="/b"), \
+             patch.object(installer, "build_zip", return_value=Path("/tmp/x.zip")), \
+             patch.object(installer, "install", return_value=False):
+            assert installer._cmd_install(args) == 1
+
+
+class TestNoThirdPartyDependencies:
+    def test_installer_imports_only_stdlib(self):
+        """The installer must run on a bare interpreter."""
+        import ast
+        source = (Path(__file__).parent.parent / "install_addon.py").read_text()
+        roots = set()
+        for node in ast.walk(ast.parse(source)):
+            if isinstance(node, ast.Import):
+                roots.update(a.name.split(".")[0] for a in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                roots.add(node.module.split(".")[0])
+        assert "textual" not in roots
+        assert roots <= set(sys.stdlib_module_names), (
+            f"non-stdlib imports in install_addon.py: "
+            f"{sorted(roots - set(sys.stdlib_module_names))}"
+        )

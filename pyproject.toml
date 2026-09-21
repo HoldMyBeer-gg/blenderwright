@@ -29,9 +29,6 @@ target-version = "py310"
 line-length = 100
 
 [project.optional-dependencies]
-installer = [
-    "textual>=0.50.0",
-]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",

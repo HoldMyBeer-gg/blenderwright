@@ -36,7 +36,7 @@ jobs:
       - name: bandit
         run: bandit -r src/ -ll  # low severity threshold; skip install_addon.py (subprocess by design)
       - name: Install project dependencies
-        run: pip install -e ".[dev,installer]"
+        run: pip install -e ".[dev]"
       - name: pip-audit
         # Audits the environment, which now contains this project's declared
         # dependencies. The upgrade step above keeps the runner's own build
@@ -57,7 +57,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install -e ".[dev,installer]"
+        run: pip install -e ".[dev]"
       - name: Run tests
         run: pytest tests/ -v --tb=short --ignore=tests/test_addon
 
@@ -70,6 +70,6 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install -e ".[dev,installer]"
+        run: pip install -e ".[dev]"
       - name: Run tests with coverage
         run: pytest tests/ --cov=src/blend_ai --cov-report=term-missing --ignore=tests/test_addon
