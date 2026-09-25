@@ -1,12 +1,6 @@
 """Unit tests for auto-critique workflow prompt."""
 
-import sys
-
-# Ensure mcp.prompt() works as identity decorator
-_server = sys.modules["blend_ai.server"]
-_server.mcp.prompt.return_value = lambda fn: fn
-
-from blend_ai.prompts.workflows import auto_critique_workflow  # noqa: E402
+from blend_ai.prompts.workflows import auto_critique_workflow
 
 
 

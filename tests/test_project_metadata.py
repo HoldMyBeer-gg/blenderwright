@@ -284,3 +284,27 @@ def test_the_two_dev_lists_agree():
     assert extra == group, (
         f"the dev extra and the dev group differ: {set(extra) ^ set(group)}"
     )
+
+
+def test_no_conftest_permanently_fakes_the_server_module():
+    """A fake blend_ai.server in sys.modules makes results depend on import order.
+
+    tests/test_tools/conftest.py used sys.modules.setdefault and never cleaned
+    up, so the real registry was visible to some tests and not others, and
+    fifteen collection errors in test_ollama_chat.py went unexplained for
+    months. Nothing needs the fake; keep it that way.
+    """
+    import re
+    for dirpath, _, filenames in os.walk(os.path.join(ROOT, "tests")):
+        for filename in filenames:
+            if filename != "conftest.py":
+                continue
+            path = os.path.join(dirpath, filename)
+            with open(path, encoding="utf-8") as f:
+                body = f.read()
+            offending = re.findall(
+                r"sys\.modules(?:\.setdefault\(|\[)\s*[\"']blend_ai\.server[\"']", body)
+            assert not offending, (
+                f"{os.path.relpath(path, ROOT)} installs a fake blend_ai.server "
+                f"at collection; that makes test results depend on import order."
+            )
