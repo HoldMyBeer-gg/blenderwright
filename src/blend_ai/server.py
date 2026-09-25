@@ -55,6 +55,11 @@ from blend_ai.resources import scene_info  # noqa: E402, F401
 from blend_ai.prompts import workflows  # noqa: E402, F401
 
 
+from blend_ai.strict import forbid_unknown_parameters  # noqa: E402
+
+forbid_unknown_parameters(mcp)
+
+
 def main():
     """Run the MCP server."""
     mcp.run(transport="stdio")
