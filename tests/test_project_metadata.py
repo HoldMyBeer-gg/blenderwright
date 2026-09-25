@@ -200,3 +200,18 @@ def test_mcp_dependency_excludes_the_breaking_major():
 def test_server_still_imports_fastmcp_from_the_pinned_path():
     """If this import ever moves, the pin above can be relaxed deliberately."""
     assert "from mcp.server.fastmcp import FastMCP" in _read("src", "blend_ai", "server.py")
+
+
+def test_ollama_chat_dependency_is_declared():
+    """blend_ai.ollama_chat needs the ollama package; say so.
+
+    The import is guarded and main() prints an install hint, but nothing in
+    the project metadata asks for it, so a fresh checkout has no way to
+    install it except by being told.
+    """
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        extras = tomllib.load(f)["project"].get("optional-dependencies", {})
+    declared = [d for group in extras.values() for d in group]
+    assert any(d.replace(" ", "").startswith("ollama") for d in declared), (
+        "src/blend_ai/ollama_chat.py imports ollama, but no extra provides it."
+    )
