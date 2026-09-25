@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blend-ai tool reference: 175 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 175 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blend-ai tool reference: 177 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 177 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blend-ai.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blend-ai tool reference">
-<meta property="og:description" content="Complete reference for all 175 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 177 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blend-ai.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blend-ai MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>175</b> tools</span>
+    <span><b>177</b> tools</span>
     <span><b>24</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blend-ai">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blend-ai/releases/latest">Download</a></span>
@@ -132,7 +132,7 @@ footer a { color: var(--accent); }
 <a href="#lighting">Lighting <span class="n">7</span></a>
 <a href="#materials">Materials &amp; Shaders <span class="n">25</span></a>
 <a href="#mesh_editing">Mesh Editing <span class="n">16</span></a>
-<a href="#mesh_quality">Mesh Quality <span class="n">1</span></a>
+<a href="#mesh_quality">Mesh Quality <span class="n">3</span></a>
 <a href="#modeling">Modeling <span class="n">13</span></a>
 <a href="#objects">Objects <span class="n">15</span></a>
 <a href="#physics">Physics <span class="n">9</span></a>
@@ -605,7 +605,7 @@ can be merged — only adjacent pairs with compatible angles."><h3><a href="#tri
 
 Improves topology for subdivision and deformation. Not all triangles
 can be merged — only adjacent pairs with compatible angles.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
-<section class="module" id="mesh_quality" data-module="mesh quality"><h2>Mesh Quality <span class="n">1</span></h2><article class="tool" id="analyze_mesh_quality" data-search="analyze_mesh_quality analyze mesh topology quality and return a structured defect report.
+<section class="module" id="mesh_quality" data-module="mesh quality"><h2>Mesh Quality <span class="n">3</span></h2><article class="tool" id="analyze_mesh_quality" data-search="analyze_mesh_quality analyze mesh topology quality and return a structured defect report.
 
 checks for non-manifold edges, loose vertices, zero-area faces,
 duplicate vertices, and wire edges. returns counts and sample indices
@@ -613,7 +613,29 @@ duplicate vertices, and wire edges. returns counts and sample indices
 
 Checks for non-manifold edges, loose vertices, zero-area faces,
 duplicate vertices, and wire edges. Returns counts and sample indices
-(capped at 50 per category) for each defect type.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to analyze.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with vertex/edge/face counts, defect counts and sample indices, and an issues_found boolean.</p></article></section>
+(capped at 50 per category) for each defect type.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to analyze.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with vertex/edge/face counts, defect counts and sample indices, and an issues_found boolean.</p></article><article class="tool" id="decimate_mesh" data-search="decimate_mesh reduce a mesh&#x27;s polygon count, collapsing edges to hit a target.
+
+the counterpart to subdivision: an agent that has stacked subdivision
+modifiers has otherwise no way back down, and a dense mesh slows every
+later operation."><h3><a href="#decimate_mesh">decimate_mesh</a></h3><pre class="sig"><code>decimate_mesh(object_name: str, ratio: float = 0.5)</code></pre><p>Reduce a mesh&#x27;s polygon count, collapsing edges to hit a target.
+
+The counterpart to subdivision: an agent that has stacked Subdivision
+modifiers has otherwise no way back down, and a dense mesh slows every
+later operation.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to simplify.</td></tr>
+<tr><th>ratio</th><td>Fraction of faces to keep, between 0 and 1. 0.5 halves the face count. 1.0 keeps everything and is refused as a no-op.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the face count before and after.</p></article><article class="tool" id="repair_mesh" data-search="repair_mesh repair the defects analyze_mesh_quality reports.
+
+pairs with analyze_mesh_quality: run that first, then call this with the
+repairs the report calls for. removing loose geometry and dissolving
+degenerate faces cannot change a well-formed mesh, so both are on by
+default. filling holes creates new geometry and is opt-in."><h3><a href="#repair_mesh">repair_mesh</a></h3><pre class="sig"><code>repair_mesh(object_name: str, remove_loose: bool = True, dissolve_degenerate: bool = True, fill_holes: bool = False)</code></pre><p>Repair the defects analyze_mesh_quality reports.
+
+Pairs with analyze_mesh_quality: run that first, then call this with the
+repairs the report calls for. Removing loose geometry and dissolving
+degenerate faces cannot change a well-formed mesh, so both are on by
+default. Filling holes creates new geometry and is opt-in.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to repair.</td></tr>
+<tr><th>remove_loose</th><td>Delete loose vertices and wire edges, the ones reported as loose_vertex_count and wire_edge_count.</td></tr>
+<tr><th>dissolve_degenerate</th><td>Dissolve zero-area faces and zero-length edges, reported as zero_area_face_count.</td></tr>
+<tr><th>fill_holes</th><td>Close boundary loops, which reduces non_manifold_edge_count but invents geometry to do it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the counts before and after, so the effect is visible.</p></article></section>
 <section class="module" id="modeling" data-module="modeling"><h2>Modeling <span class="n">13</span></h2><article class="tool" id="add_modifier" data-search="add_modifier add a modifier to a mesh object (non-destructive workflow).
 
 tip: for boolean type, consider using booltool_auto_union/difference/intersect/slice
