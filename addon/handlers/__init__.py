@@ -3,6 +3,7 @@
 from . import (
     scene,
     objects,
+    selection,
     transforms,
     modeling,
     materials,
@@ -31,6 +32,7 @@ from . import (
 _modules = [
     scene,
     objects,
+    selection,
     transforms,
     modeling,
     mesh_editing,

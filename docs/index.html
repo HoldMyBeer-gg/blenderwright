@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blend-ai tool reference: 177 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 177 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blend-ai tool reference: 183 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 183 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blend-ai.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blend-ai tool reference">
-<meta property="og:description" content="Complete reference for all 177 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 183 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blend-ai.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,8 +110,8 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blend-ai MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>177</b> tools</span>
-    <span><b>24</b> modules</span>
+    <span><b>183</b> tools</span>
+    <span><b>25</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blend-ai">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blend-ai/releases/latest">Download</a></span>
   </div>
@@ -139,6 +139,7 @@ footer a { color: var(--accent); }
 <a href="#rendering">Rendering <span class="n">7</span></a>
 <a href="#scene">Scene <span class="n">6</span></a>
 <a href="#sculpting">Sculpting <span class="n">8</span></a>
+<a href="#selection">Selection <span class="n">6</span></a>
 <a href="#transforms">Transforms <span class="n">6</span></a>
 <a href="#uv">UV Mapping <span class="n">4</span></a>
 <a href="#viewport">Viewport <span class="n">3</span></a>
@@ -837,6 +838,47 @@ Enables symmetrical sculpting across the specified axes. X-axis symmetry
 is the most common for character modeling.</p><table class="args"><tbody><tr><th>use_x</th><td>Enable X-axis symmetry. Defaults to True.</td></tr>
 <tr><th>use_y</th><td>Enable Y-axis symmetry. Defaults to False.</td></tr>
 <tr><th>use_z</th><td>Enable Z-axis symmetry. Defaults to False.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with symmetry settings.</p></article></section>
+<section class="module" id="selection" data-module="selection"><h2>Selection <span class="n">6</span></h2><article class="tool" id="get_selection" data-search="get_selection report what is currently selected on a mesh.
+
+without this a caller cannot see the result of its own selection, and the
+mesh tools that act on the current selection would be operating blind."><h3><a href="#get_selection">get_selection</a></h3><pre class="sig"><code>get_selection(object_name: str)</code></pre><p>Report what is currently selected on a mesh.
+
+Without this a caller cannot see the result of its own selection, and the
+mesh tools that act on the current selection would be operating blind.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with selected and total counts per element type, and the first 50 selected indices of each, so a caller can confirm before acting.</p></article><article class="tool" id="select_all_geometry" data-search="select_all_geometry select, deselect or invert all geometry on a mesh."><h3><a href="#select_all_geometry">select_all_geometry</a></h3><pre class="sig"><code>select_all_geometry(object_name: str, action: str = &#x27;SELECT&#x27;)</code></pre><p>Select, deselect or invert all geometry on a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>action</th><td>One of: SELECT, DESELECT, INVERT, TOGGLE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the counts selected afterwards.</p></article><article class="tool" id="select_by_axis" data-search="select_by_axis select geometry on one side of the object along an axis.
+
+the usual way to say &quot;the top&quot;, &quot;the front&quot; or &quot;the left half&quot;."><h3><a href="#select_by_axis">select_by_axis</a></h3><pre class="sig"><code>select_by_axis(object_name: str, axis: str = &#x27;Z&#x27;, sign: str = &#x27;POS&#x27;, extend: bool = False)</code></pre><p>Select geometry on one side of the object along an axis.
+
+The usual way to say &quot;the top&quot;, &quot;the front&quot; or &quot;the left half&quot;.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>axis</th><td>One of: X, Y, Z.</td></tr>
+<tr><th>sign</th><td>POS for the positive side, NEG for the negative side, ALIGN for geometry lying in the plane.</td></tr>
+<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected.</p></article><article class="tool" id="select_by_index" data-search="select_by_index select specific vertices, edges or faces by index.
+
+the deterministic way to select: no operator, no viewport, no guessing.
+analyze_mesh_quality reports sample indices for each defect it finds, so
+this is how to act on them."><h3><a href="#select_by_index">select_by_index</a></h3><pre class="sig"><code>select_by_index(object_name: str, element: str, indices: list[int], extend: bool = False)</code></pre><p>Select specific vertices, edges or faces by index.
+
+The deterministic way to select: no operator, no viewport, no guessing.
+analyze_mesh_quality reports sample indices for each defect it finds, so
+this is how to act on them.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>element</th><td>One of: VERTEX, EDGE, FACE.</td></tr>
+<tr><th>indices</th><td>Indices to select. Must be non-negative and within the mesh.</td></tr>
+<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected and the mesh&#x27;s totals.</p></article><article class="tool" id="select_faces_by_sides" data-search="select_faces_by_sides select faces by how many sides they have.
+
+the direct way to find ngons (greater than 4) or triangles (equal to 3),
+which is what topology cleanup usually needs."><h3><a href="#select_faces_by_sides">select_faces_by_sides</a></h3><pre class="sig"><code>select_faces_by_sides(object_name: str, number: int = 4, comparison: str = &#x27;EQUAL&#x27;, extend: bool = False)</code></pre><p>Select faces by how many sides they have.
+
+The direct way to find ngons (GREATER than 4) or triangles (EQUAL to 3),
+which is what topology cleanup usually needs.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>number</th><td>Number of sides to compare against. A face has at least 3.</td></tr>
+<tr><th>comparison</th><td>One of: LESS, EQUAL, GREATER, NOTEQUAL.</td></tr>
+<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many faces were selected.</p></article><article class="tool" id="select_similar" data-search="select_similar grow the current selection to geometry that resembles it.
+
+requires something to already be selected: it compares against that."><h3><a href="#select_similar">select_similar</a></h3><pre class="sig"><code>select_similar(object_name: str, type: str = &#x27;FACE_AREA&#x27;, threshold: float = 0.0)</code></pre><p>Grow the current selection to geometry that resembles it.
+
+Requires something to already be selected: it compares against that.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>type</th><td>What to compare. Face options: FACE_MATERIAL, FACE_AREA, FACE_SIDES, FACE_PERIMETER, FACE_NORMAL, FACE_COPLANAR, FACE_SMOOTH, FACE_FREESTYLE. Edge options: EDGE_LENGTH, EDGE_DIR, EDGE_FACES, EDGE_FACE_ANGLE, EDGE_CREASE, EDGE_BEVEL, EDGE_SEAM, EDGE_SHARP, EDGE_FREESTYLE. Vertex options: VERT_NORMAL, VERT_FACES, VERT_GROUPS, VERT_EDGES, VERT_CREASE.</td></tr>
+<tr><th>threshold</th><td>How close a match must be, 0.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected.</p></article></section>
 <section class="module" id="transforms" data-module="transforms"><h2>Transforms <span class="n">6</span></h2><article class="tool" id="apply_transforms" data-search="apply_transforms apply (freeze) transforms on an object, making current transforms the new basis."><h3><a href="#apply_transforms">apply_transforms</a></h3><pre class="sig"><code>apply_transforms(name: str, location: bool = True, rotation: bool = True, scale: bool = True)</code></pre><p>Apply (freeze) transforms on an object, making current transforms the new basis.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
 <tr><th>location</th><td>Apply location transform. Defaults to True.</td></tr>
 <tr><th>rotation</th><td>Apply rotation transform. Defaults to True.</td></tr>

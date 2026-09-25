@@ -48,6 +48,7 @@ MODULE_TITLES = {
     "physics": "Physics",
     "rendering": "Rendering",
     "scene": "Scene",
+    "selection": "Selection",
     "screenshot": "Viewport Capture",
     "sculpting": "Sculpting",
     "transforms": "Transforms",
