@@ -28,7 +28,10 @@ ALLOWED_SCENE_PROPERTIES = {
 ALLOWED_UNIT_SYSTEMS = {"NONE", "METRIC", "IMPERIAL"}
 
 # Allowed render engines
-ALLOWED_RENDER_ENGINES = {"BLENDER_EEVEE", "BLENDER_WORKBENCH", "CYCLES"}
+# See tools/rendering.py: 4.2-4.4 use BLENDER_EEVEE_NEXT, 5.x uses BLENDER_EEVEE.
+ALLOWED_RENDER_ENGINES = {
+    "BLENDER_EEVEE", "BLENDER_EEVEE_NEXT", "BLENDER_WORKBENCH", "CYCLES",
+}
 
 # Extension catalog with keyword matching for proactive suggestions
 EXTENSION_CATALOG = {
@@ -80,9 +83,9 @@ def set_scene_property(property: str, value: Any) -> dict[str, Any]:
 
     # Validate specific property values
     if property in ("frame_start", "frame_end", "frame_current", "frame_step"):
-        validate_numeric_range(value, min_val=0, max_val=1048574, name=property)
+        value = validate_numeric_range(value, min_val=0, max_val=1048574, name=property)
     elif property == "fps":
-        validate_numeric_range(value, min_val=1, max_val=240, name="fps")
+        value = validate_numeric_range(value, min_val=1, max_val=240, name="fps")
     elif property == "unit_system":
         validate_enum(value, ALLOWED_UNIT_SYSTEMS, name="unit_system")
     elif property == "render_engine":

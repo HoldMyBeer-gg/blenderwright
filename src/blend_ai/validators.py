@@ -1,5 +1,6 @@
 """Input validation and security utilities for blend-ai."""
 
+import math
 import re
 import os
 from pathlib import Path
@@ -95,6 +96,16 @@ def validate_numeric_range(value: float | int | str, min_val: float | int | None
     if min_val is not None and value < min_val:
         raise ValidationError(f"{name} must be >= {min_val}, got {value}")
     if max_val is not None and value > max_val:
+        # Every angle in this API is radians, and a caller reaching for 30 or
+        # 90 is thinking in degrees. Saying only "must be <= 3.14159" is true
+        # and useless; offer the conversion.
+        if "angle" in name.lower() and max_val <= math.tau:
+            radians = math.radians(value)
+            if radians <= max_val:
+                raise ValidationError(
+                    f"{name} must be <= {max_val}, got {value}. Angles are in "
+                    f"radians: {value:g} degrees is {radians:.2f}."
+                )
         raise ValidationError(f"{name} must be <= {max_val}, got {value}")
     return value
 
@@ -162,3 +173,45 @@ def validate_enum(value: str, allowed: set[str], name: str = "value") -> str:
     if value not in allowed:
         raise ValidationError(f"{name} must be one of {sorted(allowed)}, got '{value}'")
     return value
+
+
+# Per-modifier numeric ceilings. Blender accepts far higher values and then
+# grinds: a Subdivision at level 11 is 4^11 faces per original face, and the
+# socket's retry budget expires long before it returns. Keyed on modifier type
+# so an unrelated property of the same name is not caught by accident.
+MODIFIER_PROPERTY_LIMITS: dict[str, dict[str, tuple[float, float]]] = {
+    "SUBSURF": {
+        "levels": (0, MAX_SUBDIVISION_LEVEL),
+        "render_levels": (0, MAX_SUBDIVISION_LEVEL),
+    },
+    "MULTIRES": {
+        "levels": (0, MAX_SUBDIVISION_LEVEL),
+        "render_levels": (0, MAX_SUBDIVISION_LEVEL),
+        "sculpt_levels": (0, MAX_SUBDIVISION_LEVEL),
+    },
+    "ARRAY": {"count": (1, MAX_ARRAY_COUNT)},
+    "BEVEL": {"segments": (1, 100)},
+    "SCREW": {"steps": (1, 1000), "render_steps": (1, 1000), "iterations": (1, 100)},
+    "REMESH": {"octree_depth": (1, 12)},
+}
+
+
+def validate_modifier_property_value(modifier_type: str, prop: str, value):
+    """Bound a modifier property that can hang Blender if set too high.
+
+    Args:
+        modifier_type: The modifier's type, e.g. "SUBSURF".
+        prop: The property being set.
+        value: The value requested.
+
+    Returns:
+        The validated value, coerced from a numeric string where applicable,
+        or the value untouched if no limit is known for it.
+    """
+    limits = MODIFIER_PROPERTY_LIMITS.get(modifier_type, {})
+    if prop not in limits:
+        return value
+    low, high = limits[prop]
+    value = validate_numeric_range(value, min_val=low, max_val=high,
+                                   name=f"{modifier_type}.{prop}")
+    return int(value) if float(value).is_integer() else value

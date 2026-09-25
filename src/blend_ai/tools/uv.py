@@ -34,9 +34,9 @@ def smart_uv_project(
         Confirmation dict with object name and UV map info.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(angle_limit, min_val=0.0, max_val=89.0, name="angle_limit")
-    validate_numeric_range(island_margin, min_val=0.0, max_val=1.0, name="island_margin")
-    validate_numeric_range(area_weight, min_val=0.0, max_val=1.0, name="area_weight")
+    angle_limit = validate_numeric_range(angle_limit, min_val=0.0, max_val=89.0, name="angle_limit")
+    island_margin = validate_numeric_range(island_margin, min_val=0.0, max_val=1.0, name="island_margin")
+    area_weight = validate_numeric_range(area_weight, min_val=0.0, max_val=1.0, name="area_weight")
 
     conn = get_connection()
     response = conn.send_command("smart_uv_project", {
@@ -121,7 +121,7 @@ def pack_uv_islands(
         Confirmation dict with object name.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(margin, min_val=0.0, max_val=1.0, name="margin")
+    margin = validate_numeric_range(margin, min_val=0.0, max_val=1.0, name="margin")
 
     conn = get_connection()
     response = conn.send_command("pack_uv_islands", {

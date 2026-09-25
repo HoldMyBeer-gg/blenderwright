@@ -37,7 +37,7 @@ def inset_faces(
             "thickness of 0 inserts faces on top of the originals and "
             "reports success, leaving a non-manifold mesh."
         )
-    validate_numeric_range(depth, min_val=-10.0, max_val=10.0, name="depth")
+    depth = validate_numeric_range(depth, min_val=-10.0, max_val=10.0, name="depth")
 
     conn = get_connection()
     response = conn.send_command("inset_faces", {
@@ -90,8 +90,8 @@ def grid_fill(
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(span, min_val=1, max_val=1000, name="span")
-    validate_numeric_range(offset, min_val=0, max_val=1000, name="offset")
+    span = validate_numeric_range(span, min_val=1, max_val=1000, name="span")
+    offset = validate_numeric_range(offset, min_val=0, max_val=1000, name="offset")
 
     conn = get_connection()
     response = conn.send_command("grid_fill", {
@@ -363,8 +363,8 @@ def spin_mesh(
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(angle, min_val=-math.tau, max_val=math.tau, name="angle")
-    validate_numeric_range(steps, min_val=1, max_val=1000, name="steps")
+    angle = validate_numeric_range(angle, min_val=-math.tau, max_val=math.tau, name="angle")
+    steps = validate_numeric_range(steps, min_val=1, max_val=1000, name="steps")
     axis = validate_vector(axis, size=3, name="axis")
     if not any(axis):
         raise ValidationError(
@@ -401,7 +401,7 @@ def set_edge_crease(object_name: str, value: float = 1.0) -> dict[str, Any]:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(value, min_val=-1.0, max_val=1.0, name="value")
+    value = validate_numeric_range(value, min_val=-1.0, max_val=1.0, name="value")
 
     conn = get_connection()
     response = conn.send_command("set_edge_crease", {

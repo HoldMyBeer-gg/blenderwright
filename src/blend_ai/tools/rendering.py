@@ -13,7 +13,11 @@ from blend_ai.validators import (
 )
 
 # Allowed render engines
-ALLOWED_RENDER_ENGINES = {"BLENDER_EEVEE", "CYCLES", "BLENDER_WORKBENCH"}
+# Blender 4.2-4.4 name the EEVEE engine BLENDER_EEVEE_NEXT; 5.x renamed it back
+# to BLENDER_EEVEE. Accept both so the tool spans the supported range.
+ALLOWED_RENDER_ENGINES = {
+    "BLENDER_EEVEE", "BLENDER_EEVEE_NEXT", "CYCLES", "BLENDER_WORKBENCH",
+}
 
 # Allowed output formats
 ALLOWED_OUTPUT_FORMATS = {"PNG", "JPEG", "OPEN_EXR", "TIFF", "BMP"}
@@ -55,9 +59,9 @@ def set_render_resolution(
     Returns:
         Confirmation dict with the new resolution settings.
     """
-    validate_numeric_range(width, min_val=1, max_val=MAX_RENDER_RESOLUTION, name="width")
-    validate_numeric_range(height, min_val=1, max_val=MAX_RENDER_RESOLUTION, name="height")
-    validate_numeric_range(percentage, min_val=1, max_val=100, name="percentage")
+    width = validate_numeric_range(width, min_val=1, max_val=MAX_RENDER_RESOLUTION, name="width")
+    height = validate_numeric_range(height, min_val=1, max_val=MAX_RENDER_RESOLUTION, name="height")
+    percentage = validate_numeric_range(percentage, min_val=1, max_val=100, name="percentage")
 
     conn = get_connection()
     response = conn.send_command("set_render_resolution", {
@@ -80,7 +84,7 @@ def set_render_samples(samples: int) -> dict[str, Any]:
     Returns:
         Confirmation dict with the new sample count.
     """
-    validate_numeric_range(samples, min_val=1, max_val=MAX_RENDER_SAMPLES, name="samples")
+    samples = validate_numeric_range(samples, min_val=1, max_val=MAX_RENDER_SAMPLES, name="samples")
 
     conn = get_connection()
     response = conn.send_command("set_render_samples", {"samples": samples})
@@ -168,40 +172,31 @@ def render_animation(filepath: str = "/tmp/render_", format: str = "PNG") -> dic
 
 @mcp.tool()
 def set_eevee_light_path(
-    diffuse_intensity: float | None = None,
-    glossy_intensity: float | None = None,
-    transmission_intensity: float | None = None,
+    direct_intensity: float | None = None,
+    indirect_intensity: float | None = None,
 ) -> dict[str, Any]:
-    """Set EEVEE light path intensity controls (Blender 5.1+).
+    """Set EEVEE light intensity controls (Blender 5.1+).
 
-    Controls how strongly different light bounce types contribute to the final image.
-    Only applies when render engine is BLENDER_EEVEE.
+    Scales how strongly direct and indirect lighting contribute. Only applies
+    when the render engine is EEVEE.
 
     Args:
-        diffuse_intensity: Intensity multiplier for diffuse bounces. Range: 0.0-10.0.
-        glossy_intensity: Intensity multiplier for glossy/specular bounces. Range: 0.0-10.0.
-        transmission_intensity: Intensity multiplier for transmission bounces. Range: 0.0-10.0.
+        direct_intensity: Multiplier for light arriving straight from a lamp.
+            Range 0.0-10.0, 1.0 is unchanged. Leave unset to keep the current
+            value.
+        indirect_intensity: Multiplier for bounced light. Range 0.0-10.0, 1.0
+            is unchanged. Leave unset to keep the current value.
 
     Returns:
-        Dict with the current light path intensity values.
+        Dict with both intensities after the change.
     """
-    params = {}
-    if diffuse_intensity is not None:
-        validate_numeric_range(
-            diffuse_intensity, min_val=0.0, max_val=10.0, name="diffuse_intensity"
-        )
-        params["diffuse_intensity"] = diffuse_intensity
-    if glossy_intensity is not None:
-        validate_numeric_range(
-            glossy_intensity, min_val=0.0, max_val=10.0, name="glossy_intensity"
-        )
-        params["glossy_intensity"] = glossy_intensity
-    if transmission_intensity is not None:
-        validate_numeric_range(
-            transmission_intensity, min_val=0.0, max_val=10.0,
-            name="transmission_intensity",
-        )
-        params["transmission_intensity"] = transmission_intensity
+    params: dict[str, Any] = {}
+    if direct_intensity is not None:
+        params["direct_intensity"] = validate_numeric_range(
+            direct_intensity, min_val=0.0, max_val=10.0, name="direct_intensity")
+    if indirect_intensity is not None:
+        params["indirect_intensity"] = validate_numeric_range(
+            indirect_intensity, min_val=0.0, max_val=10.0, name="indirect_intensity")
 
     conn = get_connection()
     response = conn.send_command("set_eevee_light_path", params)

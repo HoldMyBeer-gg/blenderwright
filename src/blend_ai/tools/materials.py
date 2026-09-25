@@ -240,13 +240,13 @@ def set_material_property(material_name: str, property: str, value: Any) -> dict
                      "coat_weight", "coat_roughness", "sheen_weight",
                      "sheen_roughness", "anisotropic", "subsurface_weight",
                      "specular_ior_level"):
-        validate_numeric_range(value, min_val=0.0, max_val=1.0, name=property)
+        value = validate_numeric_range(value, min_val=0.0, max_val=1.0, name=property)
     elif property == "ior":
-        validate_numeric_range(value, min_val=0.0, max_val=100.0, name="ior")
+        value = validate_numeric_range(value, min_val=0.0, max_val=100.0, name="ior")
     elif property == "emission_strength":
-        validate_numeric_range(value, min_val=0.0, max_val=1000000.0, name="emission_strength")
+        value = validate_numeric_range(value, min_val=0.0, max_val=1000000.0, name="emission_strength")
     elif property == "anisotropic_rotation":
-        validate_numeric_range(value, min_val=0.0, max_val=1.0, name="anisotropic_rotation")
+        value = validate_numeric_range(value, min_val=0.0, max_val=1.0, name="anisotropic_rotation")
     elif property == "emission_color":
         value = list(validate_color(value))
 
@@ -294,13 +294,13 @@ def create_principled_material(
     emission_color = list(validate_color(emission_color))
     if len(emission_color) == 3:
         emission_color = emission_color + [1.0]
-    validate_numeric_range(metallic, min_val=0.0, max_val=1.0, name="metallic")
-    validate_numeric_range(roughness, min_val=0.0, max_val=1.0, name="roughness")
-    validate_numeric_range(specular, min_val=0.0, max_val=1.0, name="specular")
-    validate_numeric_range(emission_strength, min_val=0.0, max_val=1000000.0, name="emission_strength")
-    validate_numeric_range(alpha, min_val=0.0, max_val=1.0, name="alpha")
-    validate_numeric_range(transmission, min_val=0.0, max_val=1.0, name="transmission")
-    validate_numeric_range(ior, min_val=0.0, max_val=100.0, name="ior")
+    metallic = validate_numeric_range(metallic, min_val=0.0, max_val=1.0, name="metallic")
+    roughness = validate_numeric_range(roughness, min_val=0.0, max_val=1.0, name="roughness")
+    specular = validate_numeric_range(specular, min_val=0.0, max_val=1.0, name="specular")
+    emission_strength = validate_numeric_range(emission_strength, min_val=0.0, max_val=1000000.0, name="emission_strength")
+    alpha = validate_numeric_range(alpha, min_val=0.0, max_val=1.0, name="alpha")
+    transmission = validate_numeric_range(transmission, min_val=0.0, max_val=1.0, name="transmission")
+    ior = validate_numeric_range(ior, min_val=0.0, max_val=100.0, name="ior")
 
     return _send_material_command("create_principled_material", {
         "name": name,
@@ -712,7 +712,7 @@ def add_color_ramp_element(
     """
     material_name = validate_object_name(material_name)
     node_name = validate_object_name(node_name)
-    validate_numeric_range(position, min_val=0.0, max_val=1.0, name="position")
+    position = validate_numeric_range(position, min_val=0.0, max_val=1.0, name="position")
     color = _validate_ramp_color(color)
 
     return _send_material_command("add_color_ramp_element", {
@@ -789,7 +789,7 @@ def set_color_ramp_element(
         "index": index,
     }
     if position is not None:
-        validate_numeric_range(position, min_val=0.0, max_val=1.0, name="position")
+        position = validate_numeric_range(position, min_val=0.0, max_val=1.0, name="position")
         params["position"] = position
     if color is not None:
         params["color"] = _validate_ramp_color(color)
@@ -921,15 +921,15 @@ def create_procedural_material(
     """
     name = validate_object_name(name)
     validate_enum(pattern, PROCEDURAL_PATTERNS, name="pattern")
-    validate_numeric_range(
+    scale = validate_numeric_range(
         scale, min_val=0.0001, max_val=MAX_PROCEDURAL_SCALE, name="scale"
     )
-    validate_numeric_range(
+    detail = validate_numeric_range(
         detail, min_val=0.0, max_val=MAX_PROCEDURAL_DETAIL, name="detail"
     )
-    validate_numeric_range(distortion, min_val=0.0, max_val=1000.0, name="distortion")
-    validate_numeric_range(roughness, min_val=0.0, max_val=1.0, name="roughness")
-    validate_numeric_range(metallic, min_val=0.0, max_val=1.0, name="metallic")
+    distortion = validate_numeric_range(distortion, min_val=0.0, max_val=1000.0, name="distortion")
+    roughness = validate_numeric_range(roughness, min_val=0.0, max_val=1.0, name="roughness")
+    metallic = validate_numeric_range(metallic, min_val=0.0, max_val=1.0, name="metallic")
 
     params: dict[str, Any] = {
         "name": name,
@@ -993,15 +993,15 @@ def create_raster_texture(
 
     if isinstance(size, bool) or not isinstance(size, int):
         raise ValidationError("size must be an integer")
-    validate_numeric_range(size, min_val=1, max_val=MAX_RASTER_SIZE, name="size")
+    size = validate_numeric_range(size, min_val=1, max_val=MAX_RASTER_SIZE, name="size")
 
     if isinstance(count, bool) or not isinstance(count, int):
         raise ValidationError("count must be an integer")
-    validate_numeric_range(count, min_val=0, max_val=MAX_RASTER_COUNT, name="count")
+    count = validate_numeric_range(count, min_val=0, max_val=MAX_RASTER_COUNT, name="count")
 
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise ValidationError("seed must be an integer")
-    validate_numeric_range(seed, min_val=0, max_val=2**31 - 1, name="seed")
+    seed = validate_numeric_range(seed, min_val=0, max_val=2**31 - 1, name="seed")
 
     if foreground is None:
         foreground = [0.4, 0.8, 1.0, 1.0]

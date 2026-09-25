@@ -25,7 +25,7 @@ def get_viewport_screenshot(
     Returns:
         Dict with base64-encoded PNG image data, width, height, format, and mode.
     """
-    validate_numeric_range(max_size, min_val=64, max_val=4096, name="max_size")
+    max_size = validate_numeric_range(max_size, min_val=64, max_val=4096, name="max_size")
     validate_enum(mode, ALLOWED_SCREENSHOT_MODES, name="mode")
 
     # Calculate dimensions maintaining roughly 16:9 aspect

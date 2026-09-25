@@ -89,11 +89,11 @@ def set_brush_property(property: str, value: Any) -> dict[str, Any]:
     validate_enum(property, ALLOWED_BRUSH_PROPERTIES, name="property")
 
     if property == "size":
-        validate_numeric_range(value, min_val=1, max_val=500, name="size")
+        value = validate_numeric_range(value, min_val=1, max_val=500, name="size")
     elif property == "strength":
-        validate_numeric_range(value, min_val=0.0, max_val=1.0, name="strength")
+        value = validate_numeric_range(value, min_val=0.0, max_val=1.0, name="strength")
     elif property == "auto_smooth_factor":
-        validate_numeric_range(value, min_val=0.0, max_val=1.0, name="auto_smooth_factor")
+        value = validate_numeric_range(value, min_val=0.0, max_val=1.0, name="auto_smooth_factor")
     elif property == "use_frontface":
         if not isinstance(value, bool):
             raise ValidationError("use_frontface must be a boolean")
@@ -131,7 +131,7 @@ def remesh(
         Dict with object name and new vertex count.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(voxel_size, min_val=0.001, max_val=10.0, name="voxel_size")
+    voxel_size = validate_numeric_range(voxel_size, min_val=0.001, max_val=10.0, name="voxel_size")
     validate_enum(mode, ALLOWED_REMESH_MODES, name="mode")
 
     conn = get_connection()
@@ -160,7 +160,7 @@ def add_multires_modifier(
         Dict with object name and modifier info.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(levels, min_val=1, max_val=6, name="levels")
+    levels = validate_numeric_range(levels, min_val=1, max_val=6, name="levels")
 
     conn = get_connection()
     response = conn.send_command("add_multires_modifier", {
@@ -220,7 +220,7 @@ def enable_dyntopo(
         Confirmation dict with dyntopo settings.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(detail_size, min_val=0.1, max_val=500.0, name="detail_size")
+    detail_size = validate_numeric_range(detail_size, min_val=0.1, max_val=500.0, name="detail_size")
     validate_enum(detail_mode, ALLOWED_DYNTOPO_DETAIL_MODES, name="detail_mode")
 
     conn = get_connection()

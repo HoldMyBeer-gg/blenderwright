@@ -215,3 +215,34 @@ def test_ollama_chat_dependency_is_declared():
     assert any(d.replace(" ", "").startswith("ollama") for d in declared), (
         "src/blend_ai/ollama_chat.py imports ollama, but no extra provides it."
     )
+
+
+def test_numeric_validation_results_are_not_discarded():
+    """validate_numeric_range coerces, so throwing away its result loses that.
+
+    A model sent value='0.85'. The validator accepted and converted it, the
+    caller ignored the return, and the original string reached Blender:
+    "NodeSocketFloatFactor.default_value expected a float type, not str".
+    Calling it as a bare statement is now always a bug.
+    """
+    offenders = []
+    for root, _, files in os.walk(os.path.join(ROOT, "src", "blend_ai")):
+        for filename in sorted(files):
+            if not filename.endswith(".py"):
+                continue
+            path = os.path.join(root, filename)
+            with open(path, encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)):
+                    continue
+                func = node.value.func
+                name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+                if name == "validate_numeric_range":
+                    rel = os.path.relpath(path, ROOT)
+                    offenders.append(f"{rel}:{node.lineno}")
+    assert not offenders, (
+        f"{len(offenders)} call(s) discard the coerced value, so a numeric "
+        f"string is validated and then passed on unconverted: "
+        f"{offenders[:5]}{'...' if len(offenders) > 5 else ''}"
+    )

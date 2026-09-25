@@ -160,3 +160,34 @@ class TestAllowlists:
         for prop in materials_handler.ALLOWED_NODE_PROPERTIES:
             assert not prop.startswith("__"), prop
             assert not prop.startswith("bl_"), prop
+
+
+class TestModifierLimitsMatchAcrossLayers:
+    """The caps are duplicated on purpose; they must not drift.
+
+    The addon socket is reachable by any local process, so the handler cannot
+    trust the tool layer. But set_modifier_property does not receive the
+    modifier's type, only its name, so only the handler knows whether "levels"
+    belongs to a Subdivision or something else. The table therefore lives in
+    both places, like the node-property allowlist and the size caps above.
+    """
+
+    @pytest.fixture(scope="class")
+    def handler(self):
+        return _load_handler("modeling")
+
+    def test_tables_cover_the_same_modifiers(self, handler):
+        from blend_ai.validators import MODIFIER_PROPERTY_LIMITS
+        assert set(handler.MODIFIER_PROPERTY_LIMITS) == set(MODIFIER_PROPERTY_LIMITS)
+
+    def test_tables_agree_on_every_bound(self, handler):
+        from blend_ai.validators import MODIFIER_PROPERTY_LIMITS
+        for mod_type, props in MODIFIER_PROPERTY_LIMITS.items():
+            assert handler.MODIFIER_PROPERTY_LIMITS[mod_type] == props, (
+                f"{mod_type} limits differ between the tool and addon layers"
+            )
+
+    def test_subdivision_cap_is_the_shared_constant(self, handler):
+        from blend_ai.validators import MAX_SUBDIVISION_LEVEL
+        assert handler.MODIFIER_PROPERTY_LIMITS["SUBSURF"]["levels"][1] == \
+            MAX_SUBDIVISION_LEVEL
