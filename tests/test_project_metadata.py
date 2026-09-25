@@ -308,3 +308,22 @@ def test_no_conftest_permanently_fakes_the_server_module():
                 f"{os.path.relpath(path, ROOT)} installs a fake blend_ai.server "
                 f"at collection; that makes test results depend on import order."
             )
+
+
+def test_readme_domain_table_adds_up():
+    """The per-domain table drifted to 172 while the code had 183.
+
+    The headline count was already guarded, so it stayed right while the
+    table under it quietly went wrong. Any number a human maintains by hand
+    will do this; pin the total to the code.
+    """
+    import re
+    readme = _read("README.md")
+    block = re.search(r"All (\d+) tools.*?</details>", readme, re.S)
+    assert block, "the tool table is gone"
+    rows = [int(n) for n in re.findall(r"^\| [^|]+ \| (\d+) \|", block.group(0), re.M)]
+    assert sum(rows) == _tool_count(), (
+        f"the domain table sums to {sum(rows)}, but the code defines "
+        f"{_tool_count()} tools"
+    )
+    assert int(block.group(1)) == _tool_count()

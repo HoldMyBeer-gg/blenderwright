@@ -226,13 +226,14 @@ Full reference with every parameter: **[blend-ai.holdmybeer.gg](https://blend-ai
 | Domain | Tools | Highlights |
 |--------|-------|-----------|
 | Scene | 6 | Get scene info, set frame range, manage scenes, suggest helpful extensions |
-| Objects | 14 | Create primitives, duplicate, parent, join, visibility, origin, convert, auto-smooth |
+| Objects | 15 | Create primitives, duplicate, parent, join, visibility, origin, convert, auto-smooth |
 | Transforms | 6 | Position, rotation (euler/quat), scale, apply, snap |
 | Modeling | 13 | Modifiers, booleans, subdivide, extrude, bevel, loop cut, bridge edge loops |
 | Mesh Editing | 16 | Inset, fill, grid fill, mark seam/sharp, normals, dissolve, knife project, spin, crease |
-| Mesh Quality | 1 | Analyze mesh defects: non-manifold, loose verts, zero-area faces, duplicates |
+| Selection | 6 | Select by index, by axis, by face sides, by similarity; invert; report what is selected |
+| Mesh Quality | 3 | Analyze mesh defects: non-manifold, loose verts, zero-area faces, duplicates and repair them; decimate to reduce polycount |
 | Bool Tool | 4 | Auto union, difference, intersect, slice (via Blender's Bool Tool addon) |
-| Materials | 15 | Principled BSDF, textures, blend modes, shader node graph (add/connect/remove nodes, including 5.1 Raycast node) |
+| Materials | 25 | Principled BSDF, procedural and raster textures, textures, blend modes, shader node graph (add/connect/remove nodes, including 5.1 Raycast node) |
 | Lighting | 7 | Point/sun/spot/area lights, HDRIs, light rigs, shadows |
 | Camera | 6 | Create, aim, DOF, viewport capture, active camera |
 | Animation | 8 | Keyframes, interpolation, frame range, follow path |
@@ -298,7 +299,7 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 
 - **Blender must be running**: The MCP server communicates with Blender over TCP. Blender must be open with the addon enabled and server started.
 - **Single connection**: The addon accepts one client connection at a time. Multiple AI assistants cannot control the same Blender instance simultaneously.
-- **Selection is all-or-nothing**: Most mesh editing tools operate on all geometry. Fine-grained vertex/edge/face selection by index is not yet exposed, though `select_linked` is available.
+- **Selection is persistent, not per-call**: Selection lives on the mesh in Blender, so it stays set between calls. Choose geometry with the `select_*` tools, then pass `selection="CURRENT"` to a mesh tool. The default is still `"ALL"`. Because the selection is shared state, two assistants working on the same mesh would step on each other.
 - **Sculpt strokes cannot be simulated**: You can configure brushes, symmetry, dyntopo, and remeshing, but actual brush strokes are not yet exposed.
 - **Node graphs require sequential calls**: Both shader node trees and geometry node trees must be built one node/connection at a time.
 - **No undo integration**: Operations appear in Blender's undo history individually but there's no MCP-level undo/redo or transaction grouping.
