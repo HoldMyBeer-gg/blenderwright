@@ -38,11 +38,22 @@ def handle_create_camera(params: dict) -> dict:
         # Link to active collection
         bpy.context.collection.objects.link(cam_obj)
 
+        # A scene with no camera cannot render at all, so the first camera
+        # created becomes the active one. Without this, create_camera appears
+        # to succeed and the next render fails with "Cannot render, no
+        # camera", which costs two calls to discover. An existing camera is
+        # never displaced: that would silently change what renders.
+        became_active = False
+        if bpy.context.scene.camera is None:
+            bpy.context.scene.camera = cam_obj
+            became_active = True
+
         return {
             "name": cam_obj.name,
             "lens": cam_data.lens,
             "location": list(cam_obj.location),
             "rotation": list(cam_obj.rotation_euler),
+            "active": became_active,
         }
     except Exception as e:
         raise RuntimeError(f"Failed to create camera: {e}")

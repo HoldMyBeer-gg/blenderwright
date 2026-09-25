@@ -83,8 +83,16 @@ def handle_set_modifier_property(params):
         raise ValueError(f"Modifier '{modifier_name}' not found on '{obj.name}'")
 
     if not hasattr(mod, prop):
+        # Saying only what is wrong makes the caller guess again. Blender
+        # exposes the valid names, so offer them: a model asked a Subdivision
+        # modifier for "subdivisions" when it wanted "levels".
+        available = sorted(
+            p.identifier for p in mod.bl_rna.properties
+            if not p.is_readonly and p.identifier != "rna_type"
+        )
         raise ValueError(
-            f"Modifier '{modifier_name}' has no property '{prop}'"
+            f"Modifier '{modifier_name}' has no property '{prop}'. "
+            f"Available: {', '.join(available)}"
         )
 
     # Coerce value to match the property's current type.

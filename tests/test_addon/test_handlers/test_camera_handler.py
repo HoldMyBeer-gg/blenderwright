@@ -255,3 +255,44 @@ class TestFastViewportCapture:
 
         with pytest.raises(RuntimeError, match="No render result"):
             camera_handler.handle_fast_viewport_capture({})
+
+
+class TestCreateCameraBecomesActive:
+    """A new camera in an empty scene should be the one that renders.
+
+    Both a human and a local model hit the same wall: create_camera,
+    point_camera_at, then render_image failing with "Cannot render, no
+    camera", because nothing set scene.camera. Two failed calls before
+    anyone reaches set_active_camera.
+    """
+
+    def _handler(self):
+        mod, _ = _load_camera_handler()
+        return mod
+
+    def test_first_camera_becomes_the_scene_camera(self):
+        mod = self._handler()
+        bpy = sys.modules["bpy"]
+        bpy.context.scene.camera = None
+        mod.handle_create_camera({"name": "Camera_1"})
+        assert bpy.context.scene.camera is not None, (
+            "A camera created into a scene with none must become active, or "
+            "the next render fails with 'Cannot render, no camera'."
+        )
+
+    def test_existing_scene_camera_is_not_stolen(self):
+        mod = self._handler()
+        bpy = sys.modules["bpy"]
+        existing = MagicMock(name="ExistingCamera")
+        bpy.context.scene.camera = existing
+        mod.handle_create_camera({"name": "Camera_2"})
+        assert bpy.context.scene.camera is existing, (
+            "Creating a second camera must not silently hijack the render."
+        )
+
+    def test_result_reports_whether_it_became_active(self):
+        mod = self._handler()
+        bpy = sys.modules["bpy"]
+        bpy.context.scene.camera = None
+        result = mod.handle_create_camera({"name": "Camera_1"})
+        assert "active" in result

@@ -329,3 +329,42 @@ class TestValidateScale:
         from blend_ai.validators import ValidationError, validate_scale
         with pytest.raises(ValidationError):
             validate_scale([0.3, 0.25])
+
+
+class TestNumericStringCoercion:
+    """Local models send numbers as strings: value='0.55', value='2'.
+
+    The modifier handler already coerces them, with a comment saying LLMs do
+    this, but the tool-layer validators rejected them outright, so
+    set_material_property(property='roughness', value='0.55') failed with
+    "roughness must be a number" and cost a round trip.
+    """
+
+    def test_accepts_a_numeric_string(self):
+        from blend_ai.validators import validate_numeric_range
+        assert validate_numeric_range("0.55", min_val=0.0, max_val=1.0) == 0.55
+
+    def test_accepts_an_integer_string(self):
+        from blend_ai.validators import validate_numeric_range
+        assert validate_numeric_range("2", min_val=0, max_val=10) == 2.0
+
+    def test_coerced_value_is_still_range_checked(self):
+        from blend_ai.validators import ValidationError, validate_numeric_range
+        with pytest.raises(ValidationError):
+            validate_numeric_range("5.0", min_val=0.0, max_val=1.0)
+
+    def test_rejects_a_non_numeric_string(self):
+        from blend_ai.validators import ValidationError, validate_numeric_range
+        with pytest.raises(ValidationError) as exc:
+            validate_numeric_range("high", min_val=0.0, max_val=1.0)
+        assert "number" in str(exc.value).lower()
+
+    def test_rejects_booleans_which_are_technically_ints(self):
+        from blend_ai.validators import ValidationError, validate_numeric_range
+        with pytest.raises(ValidationError):
+            validate_numeric_range(True, min_val=0.0, max_val=1.0)
+
+    def test_plain_numbers_are_unchanged(self):
+        from blend_ai.validators import validate_numeric_range
+        assert validate_numeric_range(0.5, min_val=0.0, max_val=1.0) == 0.5
+        assert validate_numeric_range(3, min_val=0, max_val=10) == 3

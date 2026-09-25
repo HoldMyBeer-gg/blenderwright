@@ -72,8 +72,22 @@ def validate_file_path(path: str, allowed_extensions: set[str] | None = None, mu
     return resolved
 
 
-def validate_numeric_range(value: float | int, min_val: float | int | None = None, max_val: float | int | None = None, name: str = "value") -> float | int:
-    """Validate a numeric value is within range."""
+def validate_numeric_range(value: float | int | str, min_val: float | int | None = None, max_val: float | int | None = None, name: str = "value") -> float | int:
+    """Validate a numeric value is within range.
+
+    Numeric strings are accepted and converted. Callers driving this through a
+    language model routinely send "0.55" rather than 0.55, and the modifier
+    handler already coerces for the same reason; rejecting here only cost a
+    round trip before the caller sent the identical value unquoted.
+    """
+    if isinstance(value, bool):
+        # bool is a subclass of int, and True is not a brightness.
+        raise ValidationError(f"{name} must be a number")
+    if isinstance(value, str):
+        try:
+            value = float(value)
+        except ValueError:
+            raise ValidationError(f"{name} must be a number, got '{value}'") from None
     if not isinstance(value, (int, float)):
         raise ValidationError(f"{name} must be a number")
     if min_val is not None and value < min_val:
