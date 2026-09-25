@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blend-ai tool reference: 183 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 183 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blend-ai tool reference: 186 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 186 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blend-ai.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blend-ai tool reference">
-<meta property="og:description" content="Complete reference for all 183 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 186 tools in blend-ai, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blend-ai.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,8 +110,8 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blend-ai MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>183</b> tools</span>
-    <span><b>25</b> modules</span>
+    <span><b>186</b> tools</span>
+    <span><b>27</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blend-ai">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blend-ai/releases/latest">Download</a></span>
   </div>
@@ -136,10 +136,12 @@ footer a { color: var(--accent); }
 <a href="#modeling">Modeling <span class="n">13</span></a>
 <a href="#objects">Objects <span class="n">15</span></a>
 <a href="#physics">Physics <span class="n">9</span></a>
+<a href="#print3d">print3d <span class="n">1</span></a>
 <a href="#rendering">Rendering <span class="n">7</span></a>
 <a href="#scene">Scene <span class="n">6</span></a>
 <a href="#sculpting">Sculpting <span class="n">8</span></a>
 <a href="#selection">Selection <span class="n">6</span></a>
+<a href="#sweep">sweep <span class="n">2</span></a>
 <a href="#transforms">Transforms <span class="n">6</span></a>
 <a href="#uv">UV Mapping <span class="n">4</span></a>
 <a href="#viewport">Viewport <span class="n">3</span></a>
@@ -818,6 +820,49 @@ below the given threshold, giving clean results on hard-surface models.</p><tabl
 <tr><th>physics_type</th><td>Physics type - RIGID_BODY, CLOTH, FLUID, or PARTICLE_SYSTEM.</td></tr>
 <tr><th>property</th><td>Property name to set (depends on physics type).</td></tr>
 <tr><th>value</th><td>Value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with property name and new value.</p></article></section>
+<section class="module" id="print3d" data-module="print3d"><h2>print3d <span class="n">1</span></h2><article class="tool" id="check_3d_printability" data-search="check_3d_printability check whether a mesh will 3d print, using blender&#x27;s 3d print toolbox.
+
+catches three defects a mesh can carry while still passing
+analyze_mesh_quality, because each one leaves the mesh manifold,
+watertight and free of degenerate faces:
+
+- bad contiguous edges: a shell whose normals agree with each other but
+  collectively face inward. recalculating normals reports nothing to fix,
+  and the slicer rejects the file as having reversed faces.
+- intersect faces: the surface passing through itself.
+- thin faces: walls thinner than the nozzle, which slice away to nothing.
+
+it also reports shell count, zero-area faces and edges, non-flat faces,
+sharp edges and overhanging faces. index lists are capped at 50 samples
+and can be fed straight to select_by_index to see the problem in blender.
+
+requires the 3d print toolbox extension, which ships with blender but is
+off by default. if it is disabled this returns an error saying how to
+enable it; suggest_extensions also reports whether it is on."><h3><a href="#check_3d_printability">check_3d_printability</a></h3><pre class="sig"><code>check_3d_printability(object_name: str, checks: list[str] | None = None, overhang_angle: float | None = None, min_thickness: float | None = None, sharp_angle: float | None = None, nonplanar_angle: float | None = None, zero_threshold: float | None = None)</code></pre><p>Check whether a mesh will 3D print, using Blender&#x27;s 3D Print Toolbox.
+
+Catches three defects a mesh can carry while still passing
+analyze_mesh_quality, because each one leaves the mesh manifold,
+watertight and free of degenerate faces:
+
+- Bad contiguous edges: a shell whose normals agree with each other but
+  collectively face inward. Recalculating normals reports nothing to fix,
+  and the slicer rejects the file as having reversed faces.
+- Intersect faces: the surface passing through itself.
+- Thin faces: walls thinner than the nozzle, which slice away to nothing.
+
+It also reports shell count, zero-area faces and edges, non-flat faces,
+sharp edges and overhanging faces. Index lists are capped at 50 samples
+and can be fed straight to select_by_index to see the problem in Blender.
+
+Requires the 3D Print Toolbox extension, which ships with Blender but is
+off by default. If it is disabled this returns an error saying how to
+enable it; suggest_extensions also reports whether it is on.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to check.</td></tr>
+<tr><th>checks</th><td>Which checks to run - any of SOLID (non-manifold and bad contiguous edges), INTERSECT, DEGENERATE (zero faces and edges), THICKNESS, SHARP, OVERHANG, NONPLANAR. Omit or pass an empty list to run everything, which also reports shell count. Counts are only returned for checks that actually ran.</td></tr>
+<tr><th>overhang_angle</th><td>Overhang threshold in RADIANS. Faces steeper than this need support. 0.785 (45 degrees) is the usual FDM limit. Leave unset to keep the toolbox&#x27;s current setting.</td></tr>
+<tr><th>min_thickness</th><td>Minimum wall thickness in Blender units. Set it to your nozzle width. Leave unset to keep the current setting.</td></tr>
+<tr><th>sharp_angle</th><td>Sharp-edge threshold in RADIANS.</td></tr>
+<tr><th>nonplanar_angle</th><td>Non-flat face threshold in RADIANS.</td></tr>
+<tr><th>zero_threshold</th><td>Area below which a face counts as zero-area.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with a count (and sample indices) per check that ran, plus checks_run, issues_found, and print_blocking: the defects that stop a print, as opposed to overhangs and sharp edges which are advisory.</p></article></section>
 <section class="module" id="rendering" data-module="rendering"><h2>Rendering <span class="n">7</span></h2><article class="tool" id="render_animation" data-search="render_animation render the animation sequence to image files."><h3><a href="#render_animation">render_animation</a></h3><pre class="sig"><code>render_animation(filepath: str = &#x27;/tmp/render_&#x27;, format: str = &#x27;PNG&#x27;)</code></pre><p>Render the animation sequence to image files.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path prefix for the rendered frames. Each frame will be saved with a frame number suffix.</td></tr>
 <tr><th>format</th><td>Output format. One of: PNG, JPEG, OPEN_EXR, TIFF, BMP.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with output details.</p></article><article class="tool" id="render_image" data-search="render_image render the current scene to an image file."><h3><a href="#render_image">render_image</a></h3><pre class="sig"><code>render_image(filepath: str = &#x27;/tmp/render.png&#x27;)</code></pre><p>Render the current scene to an image file.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path for the rendered image. Must be an absolute path with a valid image extension (.png, .jpg, .exr, .tiff, .bmp).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the output file path.</p></article><article class="tool" id="set_eevee_light_path" data-search="set_eevee_light_path set eevee light intensity controls (blender 5.1+).
 
@@ -910,6 +955,38 @@ requires something to already be selected: it compares against that."><h3><a hre
 Requires something to already be selected: it compares against that.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>type</th><td>What to compare. Face options: FACE_MATERIAL, FACE_AREA, FACE_SIDES, FACE_PERIMETER, FACE_NORMAL, FACE_COPLANAR, FACE_SMOOTH, FACE_FREESTYLE. Edge options: EDGE_LENGTH, EDGE_DIR, EDGE_FACES, EDGE_FACE_ANGLE, EDGE_CREASE, EDGE_BEVEL, EDGE_SEAM, EDGE_SHARP, EDGE_FREESTYLE. Vertex options: VERT_NORMAL, VERT_FACES, VERT_GROUPS, VERT_EDGES, VERT_CREASE.</td></tr>
 <tr><th>threshold</th><td>How close a match must be, 0.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected.</p></article></section>
+<section class="module" id="sweep" data-module="sweep"><h2>sweep <span class="n">2</span></h2><article class="tool" id="analyze_sweep_path" data-search="analyze_sweep_path check whether a path can carry a profile of a given radius, without building it.
+
+where a path&#x27;s radius of curvature falls below the profile radius, the
+swept rings pass through each other on the inside of the bend. the result
+still reports as watertight and manifold with no degenerate faces, so no
+ordinary mesh check catches it. call this before sweeping, or to find
+where an existing path needs widening."><h3><a href="#analyze_sweep_path">analyze_sweep_path</a></h3><pre class="sig"><code>analyze_sweep_path(path_points: list[list[float]], radius: float = 1.0, resolution: int = 0)</code></pre><p>Check whether a path can carry a profile of a given radius, without building it.
+
+Where a path&#x27;s radius of curvature falls below the profile radius, the
+swept rings pass through each other on the inside of the bend. The result
+still reports as watertight and manifold with no degenerate faces, so no
+ordinary mesh check catches it. Call this before sweeping, or to find
+where an existing path needs widening.</p><table class="args"><tbody><tr><th>path_points</th><td>Centreline as a list of [x, y, z] points, in order.</td></tr>
+<tr><th>radius</th><td>Outer radius of the profile you intend to sweep.</td></tr>
+<tr><th>resolution</th><td>Samples between path points, matching what you will pass to sweep_profile_along_path so the check covers the same curve.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with min_clearance_ratio (curvature radius over profile radius at the tightest station; below 1.0 self-intersects), tightest_index, tightest_point, self_intersects, and counts of stations below 1.0 and below 1.5. Aim for 1.5 or more for a clean surface.</p></article><article class="tool" id="sweep_profile_along_path" data-search="sweep_profile_along_path sweep a closed profile along a 3d path to make a solid tube, pipe, cable or rope.
+
+use this for anything that follows a route: hoses, handrails, wires, vines,
+tentacles, roads. it orients the profile with parallel transport, so the
+tube never creases or folds where the path turns vertical, and it reports
+whether any bend is too tight for the profile to fit around."><h3><a href="#sweep_profile_along_path">sweep_profile_along_path</a></h3><pre class="sig"><code>sweep_profile_along_path(path_points: list[list[float]], profile: str = &#x27;CIRCLE&#x27;, radius: float = 1.0, sides: int = 16, resolution: int = 0, twist: float = 0.0, caps: bool = True, name: str = &#x27;Sweep&#x27;)</code></pre><p>Sweep a closed profile along a 3D path to make a solid tube, pipe, cable or rope.
+
+Use this for anything that follows a route: hoses, handrails, wires, vines,
+tentacles, roads. It orients the profile with parallel transport, so the
+tube never creases or folds where the path turns vertical, and it reports
+whether any bend is too tight for the profile to fit around.</p><table class="args"><tbody><tr><th>path_points</th><td>Centreline as a list of [x, y, z] points, in order. At least 2, at most 2000. Consecutive points must differ.</td></tr>
+<tr><th>profile</th><td>Cross-section shape - CIRCLE, SQUARE, HEXAGON, or TRIANGLE.</td></tr>
+<tr><th>radius</th><td>Distance from the centreline to the furthest point of the profile, in Blender units. Must be positive.</td></tr>
+<tr><th>sides</th><td>Number of sides for a CIRCLE profile (3-1024). Ignored by the fixed-sided profiles.</td></tr>
+<tr><th>resolution</th><td>Samples generated between each pair of path points, which smooths the path with a centripetal Catmull-Rom spline. 0 uses the points exactly as given. 8-16 gives a smooth curve.</td></tr>
+<tr><th>twist</th><td>Total rotation of the profile about the path from start to end, in radians. Spreads evenly along the path.</td></tr>
+<tr><th>caps</th><td>Close both ends. Leave True for a printable solid.</td></tr>
+<tr><th>name</th><td>Name for the created object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name, vertex and face counts, and a validity report: min_clearance_ratio (path curvature radius over profile radius at the tightest point), tightest_point, and self_intersects. A ratio below 1.0 means rings overlap inside the bend, so the result is watertight but is not a solid.</p></article></section>
 <section class="module" id="transforms" data-module="transforms"><h2>Transforms <span class="n">6</span></h2><article class="tool" id="apply_transforms" data-search="apply_transforms apply (freeze) transforms on an object, making current transforms the new basis."><h3><a href="#apply_transforms">apply_transforms</a></h3><pre class="sig"><code>apply_transforms(name: str, location: bool = True, rotation: bool = True, scale: bool = True)</code></pre><p>Apply (freeze) transforms on an object, making current transforms the new basis.</p><table class="args"><tbody><tr><th>name</th><td>Name of the object.</td></tr>
 <tr><th>location</th><td>Apply location transform. Defaults to True.</td></tr>
 <tr><th>rotation</th><td>Apply rotation transform. Defaults to True.</td></tr>

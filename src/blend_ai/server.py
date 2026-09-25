@@ -49,6 +49,8 @@ from blend_ai.tools import (  # noqa: E402, F401
     mesh_editing,
     mesh_quality,
     gpencil,
+    sweep,
+    print3d,
 )
 
 # Import resources and prompts

@@ -97,10 +97,15 @@ class TestInstalledSkipped:
         assert "bool_tool" not in ext_ids
 
     def test_all_installed_returns_empty_suggestions(self, mock_conn):
-        """Empty suggestions list when all matching extensions are already installed."""
+        """Empty suggestions list when all matching extensions are already installed.
+
+        Taken from the catalog rather than written out, so adding an extension
+        cannot silently leave this test asserting over a stale subset.
+        """
+        from blend_ai.tools.scene import EXTENSION_CATALOG
         mock_conn.send_command.return_value = {
             "status": "ok",
-            "result": {"installed": ["bool_tool", "looptools", "node_wrangler"]},
+            "result": {"installed": list(EXTENSION_CATALOG)},
         }
 
         result = suggest_extensions(task_description="")

@@ -27,6 +27,8 @@ from . import (
     mesh_editing,
     mesh_quality,
     gpencil,
+    sweep,
+    print3d,
 )
 
 _modules = [
@@ -56,6 +58,8 @@ _modules = [
     code_exec,
     booltool,
     gpencil,
+    sweep,
+    print3d,
 ]
 
 

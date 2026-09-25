@@ -50,6 +50,12 @@ EXTENSION_CATALOG = {
         "description": "Shader and geometry node editing shortcuts (lazy connect, preview, switch)",
         "keywords": ["shader", "node", "material", "texture", "geometry nodes", "compositor", "nodes"],
     },
+    "print3d_toolbox": {
+        "name": "3D Print Toolbox",
+        "description": "Print checks that no ordinary mesh check catches: reversed normals, self-intersection, thin walls, overhangs. Needed by check_3d_printability",
+        "keywords": ["3d print", "print", "printable", "printability", "stl", "slicer",
+                     "manifold", "overhang", "wall thickness", "watertight", "solid"],
+    },
 }
 
 

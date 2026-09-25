@@ -21,6 +21,11 @@ KNOWN_EXTENSIONS = {
         "ext_key": "bl_ext.blender_org.node_wrangler",
         "name": "Node Wrangler",
     },
+    "print3d_toolbox": {
+        "legacy_key": "object_print3d_utils",
+        "ext_key": "bl_ext.blender_org.print3d_toolbox",
+        "name": "3D Print Toolbox",
+    },
 }
 
 # Properties that can be set on bpy.context.scene
