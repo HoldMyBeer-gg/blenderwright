@@ -21,6 +21,13 @@ from blend_ai.tool_registry import get_ollama_tools
 SUPPORTED_IMAGE_FORMATS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 # Default models
+# The 175 tool schemas cost roughly 31,000 tokens on every request, measured
+# against qwen3.5 via prompt_eval_count. A 32,768 window therefore leaves under
+# 1,700 tokens for up to MAX_TOOL_ROUNDS rounds of calls and their results, so
+# work overflowed mid-task and Ollama silently dropped messages. Give the
+# conversation real room; models in use here support far larger windows.
+DEFAULT_NUM_CTX = 65536
+
 DEFAULT_CHAT_MODEL = "qwen2.5-coder:14b"
 DEFAULT_VISION_MODEL = "llava-llama3:latest"
 
@@ -44,23 +51,58 @@ Guidelines:
 - When the user describes something to create, break it into logical steps.
 - Explain what you're doing briefly, then execute with tool calls.
 
+Choose the primitive that matches the object's silhouette, not its category:
+- Round in cross-section (rocket, fuselage, pipe, tank, barrel, column, limb, \
+tree trunk): CYLINDER. Taper with CONE. This is the most commonly missed one; \
+"mechanical" does not mean "box".
+- Boxy in cross-section (crate, building, table, panel, brick): CUBE.
+- Rounded or blobby (head, boulder, pod, dome): UV_SPHERE.
+- Dish or nozzle shapes (engine bell, funnel, horn): CONE, often scaled and \
+flipped.
+Ask yourself what the object looks like sliced through the middle, then pick \
+the primitive with that cross-section.
+
+Every object is solid and needs all three axes sized. X, Y and Z:
+- Before creating anything, state its real width, depth and height.
+- A part left at its default depth produces a flat cardboard cutout of the \
+object rather than the object. This is the single most common failure. If two \
+of the three dimensions are large and one is still the default, it is wrong.
+- Cylinders are round: their X and Y should usually match each other, with Z \
+as the length.
+
+Parts must actually meet. An assembly is not a pile:
+- Stack parts so their surfaces touch or slightly overlap. Compute positions \
+from the sizes you chose: a 40m stage sitting on top of a 30m stage is centred \
+20m above that stage's centre, not at the same location.
+- Two parts at the same location are inside each other, not stacked.
+- Engines, fins and greebles attach to the surface of the body, not floating \
+beside it. If you name something "left", create a matching "right".
+
 Modeling strategy — what actually works with available tools:
-- Organic/anatomical (bodies, creatures, faces): build from multiple positioned primitives \
-(UV_SPHERE for rounded forms, CYLINDER for shafts). Scale and position each part, then \
-join_objects to merge. Add Subdivision modifier (levels 2-3) and set_smooth_shading for \
-smooth results. Do NOT use sculpt mode — no stroke tools are available.
-- Hard-surface (mechanical, weapons, props): CUBE with add_loop_cut and extrude_faces. \
-Use bevel_edges for chamfers. Mirror modifier for symmetric objects.
-- Layered organic forms: overlap multiple UV_SPHEREs at different scales and positions \
-to approximate organic volume, then join. Subdivision smooths the joins.
-- DO NOT use boolean_operation for organic shapes — unreliable without perfectly clean \
-manifold meshes. Prefer join_objects + smooth shading instead.
+- Organic/anatomical (bodies, creatures, faces): build from multiple positioned \
+primitives (UV_SPHERE for rounded forms, CYLINDER for shafts). Scale and \
+position each part, then join_objects to merge. Add Subdivision modifier \
+(levels 2-3) and set_smooth_shading for smooth results. Do NOT use sculpt mode \
+— no stroke tools are available.
+- Hard-surface (mechanical, weapons, props): start from the primitive whose \
+cross-section matches, then refine with add_loop_cut and extrude_faces. Use \
+bevel_edges for chamfers. Mirror modifier for symmetric objects.
+- Layered organic forms: overlap multiple UV_SPHEREs at different scales and \
+positions to approximate organic volume, then join. Subdivision smooths the \
+joins.
+- DO NOT use boolean_operation for organic shapes — unreliable without \
+perfectly clean manifold meshes. Prefer join_objects + smooth shading instead.
 - DO NOT enter sculpt mode — there are no brush stroke tools. It is a dead end.
 
 Always plan before acting:
-1. State your approach: what primitives, how many, how positioned, what modifiers.
+1. State your approach: which primitive for each part and why that \
+cross-section, the width/depth/height of each, and where each sits relative to \
+the others.
 2. Then execute step by step with tool calls.
-3. After major changes, use get_viewport_screenshot to verify visually.
+3. After major changes, use get_viewport_screenshot to verify visually. Check \
+that nothing is flat, nothing floats, and nothing is buried inside another part.
+4. Finish the whole request. If asked for several things, a scene, effects, a \
+check, do all of them, and say which you could not do rather than stopping.
 """
 
 
@@ -118,12 +160,14 @@ class BlenderChatSession:
         port: int = 9876,
         ollama_host: str | None = None,
         think: bool = False,
+        num_ctx: int = DEFAULT_NUM_CTX,
     ):
         self.chat_model = chat_model
         self.vision_model = vision_model
         self.host = host
         self.port = port
         self.think = think
+        self.num_ctx = num_ctx
         self.ollama_client = OllamaClient(host=ollama_host) if ollama_host else OllamaClient()
         self.messages: list[dict[str, Any]] = []
         self.tools: list[dict[str, Any]] = []
@@ -147,6 +191,16 @@ class BlenderChatSession:
         # Build system prompt with tool listing grouped by module
         tool_list = _build_tool_list(self.tools)
         system_prompt = SYSTEM_PROMPT_BASE + "\nAvailable tools:\n" + tool_list
+
+        # Roughly four characters per token. Exact enough to show whether the
+        # tools have eaten the window before the conversation starts.
+        prompt_tokens = (len(system_prompt) + len(json.dumps(self.tools))) // 4
+        headroom = self.num_ctx - prompt_tokens
+        print(f"Tools: {len(self.tools)} | prompt ~{prompt_tokens:,} tokens "
+              f"of {self.num_ctx:,} | ~{headroom:,} left for the conversation")
+        if headroom < prompt_tokens // 2:
+            print("  Warning: little room left for tool results. "
+                  "Raise --num-ctx if replies stop early.")
         self.messages = [{"role": "system", "content": system_prompt}]
 
     def execute_tool(self, name: str, arguments: dict[str, Any]) -> str:
@@ -226,7 +280,7 @@ class BlenderChatSession:
             "model": self.chat_model,
             "messages": self.messages,
             "tools": self.tools,
-            "options": {"num_ctx": 32768},
+            "options": {"num_ctx": self.num_ctx},
         }
 
         for _round in range(MAX_TOOL_ROUNDS):
@@ -513,6 +567,13 @@ def main():
         help="Ollama API host URL (default: http://localhost:11434)",
     )
     parser.add_argument(
+        "--num-ctx",
+        type=int,
+        default=DEFAULT_NUM_CTX,
+        help=f"Ollama context window (default: {DEFAULT_NUM_CTX}); the tool "
+             f"schemas alone cost ~31k tokens",
+    )
+    parser.add_argument(
         "--think",
         action="store_true",
         default=False,
@@ -527,6 +588,7 @@ def main():
         port=args.port,
         ollama_host=args.ollama_host,
         think=args.think,
+        num_ctx=args.num_ctx,
     )
 
     ollama_display = args.ollama_host or "localhost:11434"

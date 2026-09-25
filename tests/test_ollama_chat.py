@@ -95,6 +95,112 @@ class TestConstants:
         assert "subdivision" in SYSTEM_PROMPT_BASE.lower() or "Subdivision" in SYSTEM_PROMPT_BASE
 
 
+class TestContextWindow:
+    """The 175 tool schemas cost ~31,000 tokens of every request.
+
+    Measured against the live model: the prompt alone was 31,086 tokens
+    against a hardcoded num_ctx of 32,768, leaving under 1,700 tokens for up
+    to MAX_TOOL_ROUNDS rounds of calls and results. Work overflowed the
+    window mid-task and Ollama silently dropped messages, which looked like
+    the model giving up early.
+    """
+
+    def test_default_context_has_room_for_the_tool_schemas(self):
+        from blend_ai.ollama_chat import DEFAULT_NUM_CTX
+        assert DEFAULT_NUM_CTX >= 65536, (
+            "The tool schemas alone are ~31k tokens; anything near 32k leaves "
+            "no working room for tool results."
+        )
+
+    def test_num_ctx_is_configurable(self):
+        from blend_ai.ollama_chat import BlenderChatSession
+        session = BlenderChatSession(num_ctx=12345)
+        assert session.num_ctx == 12345
+
+    def test_session_sends_the_configured_context(self):
+        from unittest.mock import MagicMock, patch
+        from blend_ai.ollama_chat import BlenderChatSession
+
+        session = BlenderChatSession(num_ctx=99999)
+        session.tools = []
+        session._tool_names = set()
+        session.messages = []
+
+        captured = {}
+
+        def fake_chat(**kwargs):
+            captured.update(kwargs)
+            resp = MagicMock()
+            resp.message.tool_calls = []
+            resp.message.content = "done"
+            return resp
+
+        with patch.object(session, "ollama_client") as client:
+            client.chat = fake_chat
+            session.chat("hello")
+
+        assert captured["options"]["num_ctx"] == 99999, (
+            "The session must send the configured window, not a hardcoded one."
+        )
+
+    def test_context_budget_is_reported(self):
+        """Silent truncation is the failure mode; make the number visible."""
+        import inspect
+        from blend_ai import ollama_chat
+        src = inspect.getsource(ollama_chat)
+        assert "prompt_tokens" in src or "context budget" in src.lower(), (
+            "Startup should report how much of the window the tools consume."
+        )
+
+
+class TestPrimitiveGuidance:
+    """A local model asked for a rocket built four cubes, 74m tall and 2m deep.
+
+    It was obedient, not confused: the strategy section routed every
+    mechanical object to CUBE, and mentioned CYLINDER only under organic
+    shapes. Nothing asked for all three axes to be sized, so it modelled a
+    front elevation and left Y alone.
+    """
+
+    def test_cylinder_is_offered_for_cylindrical_hard_surface(self):
+        """Rockets, pipes, tanks and barrels are the obvious cylinder cases."""
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "cylinder" in prompt
+        cylindrical = ("rocket", "pipe", "tank", "barrel", "bottle", "column")
+        assert any(word in prompt for word in cylindrical), (
+            "The strategy section names no cylindrical object, so a model "
+            "reading 'hard-surface' reaches for CUBE every time."
+        )
+
+    def test_primitive_choice_is_by_shape_not_category(self):
+        """'mechanical -> CUBE' is the exact rule that produced a boxy rocket."""
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "silhouette" in prompt or "match the shape" in prompt, (
+            "Primitive choice should follow the object's silhouette, not a "
+            "category label."
+        )
+
+    def test_all_three_axes_are_required(self):
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "all three" in prompt or "x, y and z" in prompt or "x, y, z" in prompt, (
+            "Nothing tells the model to size depth as well as width and "
+            "height, so it produces flat cutouts."
+        )
+
+    def test_warns_against_leaving_an_axis_at_default(self):
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "flat" in prompt or "cutout" in prompt or "cardboard" in prompt, (
+            "The failure mode is worth naming so the model recognises it."
+        )
+
+    def test_parts_must_be_positioned_relative_to_each_other(self):
+        """It put both stages at the same z and the engines off to one side."""
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "stack" in prompt or "overlap" in prompt or "touch" in prompt, (
+            "Nothing tells the model that assembled parts must actually meet."
+        )
+
+
 class TestBlenderChatSession:
     def test_init_defaults(self, mock_ollama_client):
         session = BlenderChatSession()
