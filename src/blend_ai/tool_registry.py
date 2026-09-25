@@ -25,9 +25,12 @@ def get_ollama_tools(mcp_server: Any) -> list[dict[str, Any]]:
         arg_docs = _parse_arg_docs(tool.description or "")
         clean_props: dict[str, Any] = {}
         for name, prop in properties.items():
-            clean_prop: dict[str, Any] = {
-                "type": _map_json_type(prop.get("type", "string")),
-            }
+            prop = _flatten_optional(prop)
+            clean_prop: dict[str, Any] = {}
+            # Absent "type" means Any, not string. Claiming string sends a model
+            # looking for quotes: a colour published as string invites "red".
+            if "type" in prop:
+                clean_prop["type"] = _map_json_type(prop["type"])
             if "description" in prop:
                 clean_prop["description"] = prop["description"]
             if "title" in prop:
@@ -50,7 +53,7 @@ def get_ollama_tools(mcp_server: Any) -> list[dict[str, Any]]:
             # an XYZ vector". Say so in the schema: without it a model guesses
             # the length, and a wrong guess costs a whole round trip.
             default = clean_prop.get("default")
-            if clean_prop["type"] == "array" and isinstance(default, list):
+            if clean_prop.get("type") == "array" and isinstance(default, list):
                 if len(default) == 3 and all(
                     isinstance(v, (int, float)) and not isinstance(v, bool)
                     for v in default
@@ -75,6 +78,32 @@ def get_ollama_tools(mcp_server: Any) -> list[dict[str, Any]]:
         ollama_tools.append(ollama_tool)
 
     return ollama_tools
+
+
+def _flatten_optional(prop: dict[str, Any]) -> dict[str, Any]:
+    """Collapse an `X | None` union back to X.
+
+    Pydantic renders an optional parameter as an anyOf with a null branch and
+    no top-level type, so anything reading `prop["type"]` sees nothing. Keeping
+    the real branch preserves both the type and its items.
+
+    Args:
+        prop: A JSON Schema property.
+
+    Returns:
+        The property, or its single non-null branch merged with any sibling
+        keys such as default and title.
+    """
+    branches = prop.get("anyOf")
+    if not branches:
+        return prop
+    real = [b for b in branches if b.get("type") != "null"]
+    if len(real) != 1:
+        # A genuine multi-type union; leave it alone rather than guess.
+        return prop
+    merged = {k: v for k, v in prop.items() if k != "anyOf"}
+    merged.update(real[0])
+    return merged
 
 
 def _parse_arg_docs(description: str) -> dict[str, str]:
