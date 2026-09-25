@@ -95,6 +95,125 @@ class TestConstants:
         assert "subdivision" in SYSTEM_PROMPT_BASE.lower() or "Subdivision" in SYSTEM_PROMPT_BASE
 
 
+class TestContextWindow:
+    """The 175 tool schemas cost ~31,000 tokens of every request.
+
+    Measured against the live model: the prompt alone was 31,086 tokens
+    against a hardcoded num_ctx of 32,768, leaving under 1,700 tokens for up
+    to MAX_TOOL_ROUNDS rounds of calls and results. Work overflowed the
+    window mid-task and Ollama silently dropped messages, which looked like
+    the model giving up early.
+    """
+
+    def test_default_context_has_room_for_the_tool_schemas(self):
+        from blend_ai.ollama_chat import DEFAULT_NUM_CTX
+        assert DEFAULT_NUM_CTX >= 65536, (
+            "The tool schemas alone are ~31k tokens; anything near 32k leaves "
+            "no working room for tool results."
+        )
+
+    def test_num_ctx_is_configurable(self):
+        from unittest.mock import MagicMock, patch
+        from blend_ai.ollama_chat import BlenderChatSession
+        # ollama is an optional extra; the client is irrelevant to this.
+        with patch("blend_ai.ollama_chat.OllamaClient", MagicMock()):
+            session = BlenderChatSession(num_ctx=12345)
+        assert session.num_ctx == 12345
+
+    def test_missing_ollama_package_says_how_to_install_it(self):
+        from unittest.mock import patch
+        import pytest as _pytest
+        from blend_ai.ollama_chat import BlenderChatSession
+        with patch("blend_ai.ollama_chat.OllamaClient", None):
+            with _pytest.raises(RuntimeError) as exc:
+                BlenderChatSession()
+        assert "[chat]" in str(exc.value)
+
+    def test_session_sends_the_configured_context(self):
+        from unittest.mock import MagicMock, patch
+        from blend_ai.ollama_chat import BlenderChatSession
+
+        with patch("blend_ai.ollama_chat.OllamaClient", MagicMock()):
+            session = BlenderChatSession(num_ctx=99999)
+        session.tools = []
+        session._tool_names = set()
+        session.messages = []
+
+        captured = {}
+
+        def fake_chat(**kwargs):
+            captured.update(kwargs)
+            resp = MagicMock()
+            resp.message.tool_calls = []
+            resp.message.content = "done"
+            return resp
+
+        with patch.object(session, "ollama_client") as client:
+            client.chat = fake_chat
+            session.chat("hello")
+
+        assert captured["options"]["num_ctx"] == 99999, (
+            "The session must send the configured window, not a hardcoded one."
+        )
+
+    def test_context_budget_is_reported(self):
+        """Silent truncation is the failure mode; make the number visible."""
+        import inspect
+        from blend_ai import ollama_chat
+        src = inspect.getsource(ollama_chat)
+        assert "prompt_tokens" in src or "context budget" in src.lower(), (
+            "Startup should report how much of the window the tools consume."
+        )
+
+
+class TestPrimitiveGuidance:
+    """A local model asked for a rocket built four cubes, 74m tall and 2m deep.
+
+    It was obedient, not confused: the strategy section routed every
+    mechanical object to CUBE, and mentioned CYLINDER only under organic
+    shapes. Nothing asked for all three axes to be sized, so it modelled a
+    front elevation and left Y alone.
+    """
+
+    def test_cylinder_is_offered_for_cylindrical_hard_surface(self):
+        """Rockets, pipes, tanks and barrels are the obvious cylinder cases."""
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "cylinder" in prompt
+        cylindrical = ("rocket", "pipe", "tank", "barrel", "bottle", "column")
+        assert any(word in prompt for word in cylindrical), (
+            "The strategy section names no cylindrical object, so a model "
+            "reading 'hard-surface' reaches for CUBE every time."
+        )
+
+    def test_primitive_choice_is_by_shape_not_category(self):
+        """'mechanical -> CUBE' is the exact rule that produced a boxy rocket."""
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "silhouette" in prompt or "match the shape" in prompt, (
+            "Primitive choice should follow the object's silhouette, not a "
+            "category label."
+        )
+
+    def test_all_three_axes_are_required(self):
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "all three" in prompt or "x, y and z" in prompt or "x, y, z" in prompt, (
+            "Nothing tells the model to size depth as well as width and "
+            "height, so it produces flat cutouts."
+        )
+
+    def test_warns_against_leaving_an_axis_at_default(self):
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "flat" in prompt or "cutout" in prompt or "cardboard" in prompt, (
+            "The failure mode is worth naming so the model recognises it."
+        )
+
+    def test_parts_must_be_positioned_relative_to_each_other(self):
+        """It put both stages at the same z and the engines off to one side."""
+        prompt = SYSTEM_PROMPT_BASE.lower()
+        assert "stack" in prompt or "overlap" in prompt or "touch" in prompt, (
+            "Nothing tells the model that assembled parts must actually meet."
+        )
+
+
 class TestBlenderChatSession:
     def test_init_defaults(self, mock_ollama_client):
         session = BlenderChatSession()
@@ -713,3 +832,124 @@ class TestChatWithImages:
 
         user_msg = next(m for m in session.messages if m["role"] == "user")
         assert "images" not in user_msg
+
+
+class TestToolSchemaConstraints:
+    """Models trust the schema over the prose around it.
+
+    A local model repeatedly sent scale=[0.3, 0.25] and was rejected, because
+    the schema said only "array of number". The length requirement and the
+    parameter descriptions both lived in the docstring, which reaches the
+    model as one blob of text attached to the tool, not as structure on the
+    parameter it constrains. Each rejection costs a full round trip.
+
+    These build their own server stub rather than reading blend_ai.server.mcp,
+    which other tests in this file replace with a MagicMock.
+    """
+
+    @staticmethod
+    def _stub_server(tools):
+        """A minimal stand-in for FastMCP.list_tools()."""
+        class _Tool:
+            def __init__(self, name, description, schema):
+                self.name = name
+                self.description = description
+                self.inputSchema = schema
+
+        class _Server:
+            async def list_tools(self):
+                return [_Tool(*t) for t in tools]
+
+        return _Server()
+
+    def _create_object_params(self):
+        from blend_ai.tool_registry import get_ollama_tools
+        description = (
+            "Create a primitive object in the scene.\n"
+            "\n"
+            "Args:\n"
+            "    type: Primitive type. One of: CUBE, SPHERE, UV_SPHERE, CYLINDER,\n"
+            "          CONE, TORUS, PLANE, MONKEY, EMPTY.\n"
+            "    name: Optional name for the object. Auto-generated if empty.\n"
+            "    location: XYZ position as a 3-element list/tuple.\n"
+            "    rotation: XYZ Euler rotation in radians as a 3-element list/tuple.\n"
+            "    scale: XYZ scale as a 3-element list/tuple. Defaults to (1,1,1).\n"
+            "\n"
+            "Returns:\n"
+            "    Dict with the created object's name.\n"
+        )
+        schema = {
+            "properties": {
+                "type": {"type": "string", "title": "Type"},
+                "name": {"type": "string", "title": "Name", "default": ""},
+                "location": {"type": "array", "title": "Location",
+                             "default": [0, 0, 0], "items": {"type": "number"}},
+                "rotation": {"type": "array", "title": "Rotation",
+                             "default": [0, 0, 0], "items": {"type": "number"}},
+                "scale": {"type": "array", "title": "Scale",
+                          "default": [1, 1, 1], "items": {"type": "number"}},
+            },
+            "required": ["type"],
+        }
+        server = self._stub_server([("create_object", description, schema)])
+        tools = get_ollama_tools(server)
+        return tools[0]["function"]["parameters"]["properties"]
+
+    def test_vector_parameters_declare_their_length(self):
+        props = self._create_object_params()
+        for axis_param in ("location", "rotation", "scale"):
+            prop = props[axis_param]
+            assert prop.get("minItems") == 3, f"{axis_param} does not require 3 items"
+            assert prop.get("maxItems") == 3, f"{axis_param} does not cap at 3 items"
+
+    def test_parameters_carry_their_descriptions(self):
+        props = self._create_object_params()
+        assert "description" in props["scale"], (
+            "The docstring documents scale, but the schema does not."
+        )
+        assert "3" in props["scale"]["description"]
+
+    def test_descriptions_survive_multi_line_docstring_entries(self):
+        """create_object's 'type' description wraps onto a second line."""
+        props = self._create_object_params()
+        desc = props["type"].get("description", "")
+        assert "CUBE" in desc and "CYLINDER" in desc, (
+            "A wrapped Args entry lost its continuation lines."
+        )
+
+    def test_scalar_and_short_arrays_are_untouched(self):
+        """Only arrays with a 3-number default describe an XYZ vector."""
+        from blend_ai.tool_registry import get_ollama_tools
+        description = (
+            "Do a thing.\n\nArgs:\n"
+            "    names: Objects to act on.\n"
+            "    pair: Two numbers.\n"
+            "    flags: Three booleans, not a vector.\n"
+        )
+        schema = {
+            "properties": {
+                "names": {"type": "array", "title": "Names", "default": []},
+                "pair": {"type": "array", "title": "Pair", "default": [1, 2]},
+                "flags": {"type": "array", "title": "Flags",
+                          "default": [True, False, True]},
+            },
+            "required": [],
+        }
+        props = get_ollama_tools(
+            self._stub_server([("thing", description, schema)])
+        )[0]["function"]["parameters"]["properties"]
+        for name in ("names", "pair", "flags"):
+            assert "minItems" not in props[name], (
+                f"{name} was constrained to 3 without an XYZ default"
+            )
+
+    def test_arg_parser_ignores_a_missing_args_section(self):
+        from blend_ai.tool_registry import _parse_arg_docs
+        assert _parse_arg_docs("Just a summary, no sections.") == {}
+
+    def test_arg_parser_stops_at_returns(self):
+        from blend_ai.tool_registry import _parse_arg_docs
+        docs = _parse_arg_docs(
+            "Summary.\n\nArgs:\n    a: First.\n\nReturns:\n    Something else.\n"
+        )
+        assert docs == {"a": "First."}

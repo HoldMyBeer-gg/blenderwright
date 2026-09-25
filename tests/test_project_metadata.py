@@ -177,3 +177,41 @@ def test_sitemap_matches_the_canonical_url():
     with open(os.path.join(ROOT, "docs", "index.html"), encoding="utf-8") as f:
         canonical = re.findall(r'rel="canonical" href="([^"]+)"', f.read())
     assert loc == canonical, f"sitemap {loc} disagrees with canonical {canonical}"
+
+
+def test_mcp_dependency_excludes_the_breaking_major():
+    """mcp 2.x renamed FastMCP, so an unbounded pin breaks fresh installs.
+
+    server.py imports `from mcp.server.fastmcp import FastMCP`. That module
+    does not exist in mcp 2.x, where it became MCPServer. The lockfile keeps
+    this checkout on 1.26.0, but anyone following the README's
+    `uv pip install -e .` resolves the newest mcp and cannot start blend-ai.
+    """
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        deps = tomllib.load(f)["project"]["dependencies"]
+    mcp_pin = next((d for d in deps if d.replace(" ", "").startswith("mcp")), None)
+    assert mcp_pin, "mcp is no longer a declared dependency"
+    assert "<2" in mcp_pin.replace(" ", ""), (
+        f"mcp pin is {mcp_pin!r}, which allows mcp 2.x. FastMCP was renamed to "
+        f"MCPServer there, so src/blend_ai/server.py cannot import."
+    )
+
+
+def test_server_still_imports_fastmcp_from_the_pinned_path():
+    """If this import ever moves, the pin above can be relaxed deliberately."""
+    assert "from mcp.server.fastmcp import FastMCP" in _read("src", "blend_ai", "server.py")
+
+
+def test_ollama_chat_dependency_is_declared():
+    """blend_ai.ollama_chat needs the ollama package; say so.
+
+    The import is guarded and main() prints an install hint, but nothing in
+    the project metadata asks for it, so a fresh checkout has no way to
+    install it except by being told.
+    """
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        extras = tomllib.load(f)["project"].get("optional-dependencies", {})
+    declared = [d for group in extras.values() for d in group]
+    assert any(d.replace(" ", "").startswith("ollama") for d in declared), (
+        "src/blend_ai/ollama_chat.py imports ollama, but no extra provides it."
+    )

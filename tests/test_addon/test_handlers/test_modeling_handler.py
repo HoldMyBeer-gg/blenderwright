@@ -106,3 +106,42 @@ class TestSetModifierPropertyTypeCoercion:
         params, mock_mod = _make_params("levels", "abc", 1)
         # setattr will be called with "abc" — mock won't raise, so no error
         modeling_handler.handle_set_modifier_property(params)
+
+
+class TestModifierPropertyErrorIsActionable:
+    """Naming the valid properties turns a dead end into one retry.
+
+    A model set 'subdivisions' on a Subdivision Surface modifier; the real
+    name is 'levels'. The error said only that 'subdivisions' was wrong.
+    """
+
+    def test_unknown_property_lists_the_valid_ones(self):
+        mod = _load_modeling_handler()
+        bpy = sys.modules["bpy"]
+
+        prop = MagicMock()
+        prop.identifier = "levels"
+        prop.is_readonly = False
+        rna_type = MagicMock()
+        rna_type.identifier = "rna_type"
+        rna_type.is_readonly = False
+
+        modifier = MagicMock(spec=["bl_rna", "name"])
+        modifier.name = "Subdivision Surface"
+        modifier.bl_rna.properties = [prop, rna_type]
+
+        obj = MagicMock()
+        obj.name = "Apple_Body"
+        obj.modifiers.get.return_value = modifier
+        bpy.data.objects.get.return_value = obj
+
+        with pytest.raises(ValueError) as exc:
+            mod.handle_set_modifier_property({
+                "object_name": "Apple_Body",
+                "modifier_name": "Subdivision Surface",
+                "property": "subdivisions",
+                "value": 2,
+            })
+        message = str(exc.value)
+        assert "levels" in message, "the valid property was not offered"
+        assert "rna_type" not in message, "internal properties should not be listed"

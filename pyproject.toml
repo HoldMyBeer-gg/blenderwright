@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "AGPL-3.0-or-later"
 dependencies = [
-    "mcp>=1.26.0",
+    "mcp>=1.26.0,<2",
     "pydantic>=2.0",
 ]
 
@@ -29,6 +29,11 @@ target-version = "py310"
 line-length = 100
 
 [project.optional-dependencies]
+# blend_ai.ollama_chat drives Blender from a local Ollama model. The import is
+# optional so the MCP server itself stays dependency-light.
+chat = [
+    "ollama>=0.4",
+]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
