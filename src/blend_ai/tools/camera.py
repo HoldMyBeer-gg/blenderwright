@@ -69,7 +69,7 @@ def create_camera(
     name = validate_object_name(name)
     location = list(validate_vector(location, size=3, name="location"))
     rotation = list(validate_vector(rotation, size=3, name="rotation"))
-    validate_numeric_range(lens, min_val=1.0, max_val=500.0, name="lens")
+    lens = validate_numeric_range(lens, min_val=1.0, max_val=500.0, name="lens")
 
     return _send_camera_command("create_camera", {
         "name": name,
@@ -98,24 +98,24 @@ def set_camera_property(name: str, property: str, value: Any) -> dict[str, Any]:
 
     # Validate specific properties
     if property == "lens":
-        validate_numeric_range(value, min_val=1.0, max_val=500.0, name="lens")
+        value = validate_numeric_range(value, min_val=1.0, max_val=500.0, name="lens")
     elif property == "clip_start":
-        validate_numeric_range(value, min_val=0.001, max_val=10000.0, name="clip_start")
+        value = validate_numeric_range(value, min_val=0.001, max_val=10000.0, name="clip_start")
     elif property == "clip_end":
-        validate_numeric_range(value, min_val=0.1, max_val=100000.0, name="clip_end")
+        value = validate_numeric_range(value, min_val=0.1, max_val=100000.0, name="clip_end")
     elif property in ("sensor_width", "sensor_height"):
-        validate_numeric_range(value, min_val=1.0, max_val=500.0, name=property)
+        value = validate_numeric_range(value, min_val=1.0, max_val=500.0, name=property)
     elif property == "dof.use_dof":
         if not isinstance(value, bool):
             raise ValidationError("dof.use_dof must be a boolean")
     elif property == "dof.focus_distance":
-        validate_numeric_range(value, min_val=0.0, max_val=100000.0, name="dof.focus_distance")
+        value = validate_numeric_range(value, min_val=0.0, max_val=100000.0, name="dof.focus_distance")
     elif property == "dof.aperture_fstop":
-        validate_numeric_range(value, min_val=0.1, max_val=128.0, name="dof.aperture_fstop")
+        value = validate_numeric_range(value, min_val=0.1, max_val=128.0, name="dof.aperture_fstop")
     elif property == "ortho_scale":
-        validate_numeric_range(value, min_val=0.001, max_val=100000.0, name="ortho_scale")
+        value = validate_numeric_range(value, min_val=0.001, max_val=100000.0, name="ortho_scale")
     elif property in ("shift_x", "shift_y"):
-        validate_numeric_range(value, min_val=-10.0, max_val=10.0, name=property)
+        value = validate_numeric_range(value, min_val=-10.0, max_val=10.0, name=property)
     elif property == "type":
         validate_enum(value, ALLOWED_CAMERA_TYPES, name="camera type")
     elif property == "sensor_fit":
@@ -192,8 +192,8 @@ def capture_viewport(
     """
     if filepath:
         filepath = validate_file_path(filepath, allowed_extensions=ALLOWED_RENDER_EXTENSIONS)
-    validate_numeric_range(width, min_val=1, max_val=8192, name="width")
-    validate_numeric_range(height, min_val=1, max_val=8192, name="height")
+    width = validate_numeric_range(width, min_val=1, max_val=8192, name="width")
+    height = validate_numeric_range(height, min_val=1, max_val=8192, name="height")
 
     return _send_camera_command("capture_viewport", {
         "filepath": filepath,

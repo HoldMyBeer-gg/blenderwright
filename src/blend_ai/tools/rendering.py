@@ -55,9 +55,9 @@ def set_render_resolution(
     Returns:
         Confirmation dict with the new resolution settings.
     """
-    validate_numeric_range(width, min_val=1, max_val=MAX_RENDER_RESOLUTION, name="width")
-    validate_numeric_range(height, min_val=1, max_val=MAX_RENDER_RESOLUTION, name="height")
-    validate_numeric_range(percentage, min_val=1, max_val=100, name="percentage")
+    width = validate_numeric_range(width, min_val=1, max_val=MAX_RENDER_RESOLUTION, name="width")
+    height = validate_numeric_range(height, min_val=1, max_val=MAX_RENDER_RESOLUTION, name="height")
+    percentage = validate_numeric_range(percentage, min_val=1, max_val=100, name="percentage")
 
     conn = get_connection()
     response = conn.send_command("set_render_resolution", {
@@ -80,7 +80,7 @@ def set_render_samples(samples: int) -> dict[str, Any]:
     Returns:
         Confirmation dict with the new sample count.
     """
-    validate_numeric_range(samples, min_val=1, max_val=MAX_RENDER_SAMPLES, name="samples")
+    samples = validate_numeric_range(samples, min_val=1, max_val=MAX_RENDER_SAMPLES, name="samples")
 
     conn = get_connection()
     response = conn.send_command("set_render_samples", {"samples": samples})
@@ -184,17 +184,17 @@ def set_eevee_light_path(
     """
     params = {}
     if diffuse_intensity is not None:
-        validate_numeric_range(
+        diffuse_intensity = validate_numeric_range(
             diffuse_intensity, min_val=0.0, max_val=10.0, name="diffuse_intensity"
         )
         params["diffuse_intensity"] = diffuse_intensity
     if glossy_intensity is not None:
-        validate_numeric_range(
+        glossy_intensity = validate_numeric_range(
             glossy_intensity, min_val=0.0, max_val=10.0, name="glossy_intensity"
         )
         params["glossy_intensity"] = glossy_intensity
     if transmission_intensity is not None:
-        validate_numeric_range(
+        transmission_intensity = validate_numeric_range(
             transmission_intensity, min_val=0.0, max_val=10.0,
             name="transmission_intensity",
         )

@@ -368,3 +368,37 @@ class TestNumericStringCoercion:
         from blend_ai.validators import validate_numeric_range
         assert validate_numeric_range(0.5, min_val=0.0, max_val=1.0) == 0.5
         assert validate_numeric_range(3, min_val=0, max_val=10) == 3
+
+
+class TestOutOfRangeAngleSuggestsRadians:
+    """A model sent shade_auto_smooth(angle=30), meaning 30 degrees.
+
+    The error said "angle must be <= 3.14159, got 30.0", which is true and
+    tells the caller nothing about why. Every angle in this API is radians,
+    and a value that looks like degrees is the common mistake.
+    """
+
+    def test_degree_sized_angle_is_told_about_radians(self):
+        from blend_ai.validators import ValidationError, validate_numeric_range
+        with pytest.raises(ValidationError) as exc:
+            validate_numeric_range(30, min_val=0.0, max_val=3.14159, name="angle")
+        message = str(exc.value)
+        assert "radian" in message.lower()
+        assert "0.52" in message, "the converted value should be offered"
+
+    def test_non_angle_parameters_get_no_radian_hint(self):
+        from blend_ai.validators import ValidationError, validate_numeric_range
+        with pytest.raises(ValidationError) as exc:
+            validate_numeric_range(30, min_val=0.0, max_val=1.0, name="roughness")
+        assert "radian" not in str(exc.value).lower()
+
+    def test_in_range_angle_is_unaffected(self):
+        from blend_ai.validators import validate_numeric_range
+        assert validate_numeric_range(0.52, min_val=0.0, max_val=3.14159,
+                                      name="angle") == 0.52
+
+    def test_angle_below_range_is_not_given_a_degree_hint(self):
+        from blend_ai.validators import ValidationError, validate_numeric_range
+        with pytest.raises(ValidationError) as exc:
+            validate_numeric_range(-5, min_val=0.0, max_val=3.14159, name="angle")
+        assert "radian" not in str(exc.value).lower()

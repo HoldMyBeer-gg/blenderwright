@@ -123,9 +123,9 @@ def create_polygon_prism(
     """
     if not isinstance(sides, int) or isinstance(sides, bool):
         raise ValidationError("sides must be an integer")
-    validate_numeric_range(sides, min_val=3, max_val=64, name="sides")
-    validate_numeric_range(radius, min_val=1e-9, name="radius")
-    validate_numeric_range(depth, min_val=1e-9, name="depth")
+    sides = validate_numeric_range(sides, min_val=3, max_val=64, name="sides")
+    radius = validate_numeric_range(radius, min_val=1e-9, name="radius")
+    depth = validate_numeric_range(depth, min_val=1e-9, name="depth")
     if name:
         name = validate_object_name(name)
     location = validate_vector(location, size=3, name="location")
@@ -190,9 +190,9 @@ def create_threaded_shaft(
         Dict with the created object's name, diameter, length, pitch, and the
         number of thread iterations actually generated.
     """
-    validate_numeric_range(diameter, min_val=1e-9, name="diameter")
-    validate_numeric_range(length, min_val=1e-9, name="length")
-    validate_numeric_range(pitch, min_val=1e-9, name="pitch")
+    diameter = validate_numeric_range(diameter, min_val=1e-9, name="diameter")
+    length = validate_numeric_range(length, min_val=1e-9, name="length")
+    pitch = validate_numeric_range(pitch, min_val=1e-9, name="pitch")
     if pitch > length:
         raise ValidationError(
             f"pitch ({pitch}) must be <= length ({length}) — "
@@ -200,7 +200,7 @@ def create_threaded_shaft(
         )
     # thread_depth=0 is a sentinel meaning "auto" — handler computes it.
     if thread_depth != 0:
-        validate_numeric_range(thread_depth, min_val=1e-9, name="thread_depth")
+        thread_depth = validate_numeric_range(thread_depth, min_val=1e-9, name="thread_depth")
         if thread_depth >= diameter / 2.0:
             raise ValidationError(
                 f"thread_depth ({thread_depth}) must be < diameter/2 "
@@ -208,10 +208,10 @@ def create_threaded_shaft(
             )
     if not isinstance(segments, int) or isinstance(segments, bool):
         raise ValidationError("segments must be an integer")
-    validate_numeric_range(segments, min_val=3, max_val=256, name="segments")
+    segments = validate_numeric_range(segments, min_val=3, max_val=256, name="segments")
     # thread_runout: negative sentinel = auto. 0 = full-length threads. Positive = explicit.
     if thread_runout >= 0:
-        validate_numeric_range(
+        thread_runout = validate_numeric_range(
             thread_runout, min_val=0.0, max_val=length, name="thread_runout",
         )
     if name:
@@ -471,7 +471,7 @@ def shade_auto_smooth(object_name: str, angle: float = 0.523599) -> dict[str, An
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(angle, min_val=0.0, max_val=3.14159, name="angle")
+    angle = validate_numeric_range(angle, min_val=0.0, max_val=3.14159, name="angle")
 
     conn = get_connection()
     response = conn.send_command("shade_auto_smooth", {

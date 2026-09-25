@@ -112,15 +112,15 @@ def set_curve_property(
 
     # Validate specific property values
     if property == "resolution_u":
-        validate_numeric_range(value, min_val=1, max_val=1024, name="resolution_u")
+        value = validate_numeric_range(value, min_val=1, max_val=1024, name="resolution_u")
     elif property == "fill_mode":
         validate_enum(value, ALLOWED_FILL_MODES, name="fill_mode")
     elif property == "bevel_depth":
-        validate_numeric_range(value, min_val=0.0, name="bevel_depth")
+        value = validate_numeric_range(value, min_val=0.0, name="bevel_depth")
     elif property == "bevel_resolution":
-        validate_numeric_range(value, min_val=0, max_val=32, name="bevel_resolution")
+        value = validate_numeric_range(value, min_val=0, max_val=32, name="bevel_resolution")
     elif property == "extrude":
-        validate_numeric_range(value, min_val=0.0, name="extrude")
+        value = validate_numeric_range(value, min_val=0.0, name="extrude")
     elif property == "twist_mode":
         validate_enum(value, ALLOWED_TWIST_MODES, name="twist_mode")
     elif property == "use_fill_caps":
@@ -184,7 +184,7 @@ def create_text(
     if len(text) > 10000:
         raise ValidationError("text must be 10000 characters or fewer")
     location = validate_vector(location, size=3, name="location")
-    validate_numeric_range(size, min_val=0.001, max_val=1000.0, name="size")
+    size = validate_numeric_range(size, min_val=0.001, max_val=1000.0, name="size")
     if name:
         name = validate_object_name(name)
 
@@ -285,7 +285,7 @@ def subdivide_curve(
         Dict with confirmation of subdivision.
     """
     curve_name = validate_object_name(curve_name)
-    validate_numeric_range(number_cuts, min_val=1, max_val=100, name="number_cuts")
+    number_cuts = validate_numeric_range(number_cuts, min_val=1, max_val=100, name="number_cuts")
 
     conn = get_connection()
     response = conn.send_command("subdivide_curve", {

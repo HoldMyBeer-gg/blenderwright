@@ -1,5 +1,6 @@
 """Input validation and security utilities for blend-ai."""
 
+import math
 import re
 import os
 from pathlib import Path
@@ -93,6 +94,16 @@ def validate_numeric_range(value: float | int | str, min_val: float | int | None
     if min_val is not None and value < min_val:
         raise ValidationError(f"{name} must be >= {min_val}, got {value}")
     if max_val is not None and value > max_val:
+        # Every angle in this API is radians, and a caller reaching for 30 or
+        # 90 is thinking in degrees. Saying only "must be <= 3.14159" is true
+        # and useless; offer the conversion.
+        if "angle" in name.lower() and max_val <= math.tau:
+            radians = math.radians(value)
+            if radians <= max_val:
+                raise ValidationError(
+                    f"{name} must be <= {max_val}, got {value}. Angles are in "
+                    f"radians: {value:g} degrees is {radians:.2f}."
+                )
         raise ValidationError(f"{name} must be <= {max_val}, got {value}")
     return value
 

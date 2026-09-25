@@ -168,7 +168,7 @@ def snap_to_grid(name: str, grid_size: float = 1.0) -> dict[str, Any]:
         Dict with the object name and snapped location.
     """
     name = validate_object_name(name)
-    validate_numeric_range(grid_size, min_val=0.001, max_val=1000.0, name="grid_size")
+    grid_size = validate_numeric_range(grid_size, min_val=0.001, max_val=1000.0, name="grid_size")
 
     conn = get_connection()
     response = conn.send_command("snap_to_grid", {"name": name, "grid_size": grid_size})

@@ -42,9 +42,9 @@ def add_rigid_body(
     """
     object_name = validate_object_name(object_name)
     validate_enum(type, ALLOWED_RIGID_BODY_TYPES, name="type")
-    validate_numeric_range(mass, min_val=0.001, max_val=1000000.0, name="mass")
-    validate_numeric_range(friction, min_val=0.0, max_val=1.0, name="friction")
-    validate_numeric_range(restitution, min_val=0.0, max_val=1.0, name="restitution")
+    mass = validate_numeric_range(mass, min_val=0.001, max_val=1000000.0, name="mass")
+    friction = validate_numeric_range(friction, min_val=0.0, max_val=1.0, name="friction")
+    restitution = validate_numeric_range(restitution, min_val=0.0, max_val=1.0, name="restitution")
 
     conn = get_connection()
     response = conn.send_command("add_rigid_body", {
@@ -76,8 +76,8 @@ def add_cloth_sim(
         Confirmation dict with cloth settings.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(quality, min_val=1, max_val=80, name="quality")
-    validate_numeric_range(mass, min_val=0.001, max_val=1000.0, name="mass")
+    quality = validate_numeric_range(quality, min_val=1, max_val=80, name="quality")
+    mass = validate_numeric_range(mass, min_val=0.001, max_val=1000.0, name="mass")
 
     conn = get_connection()
     response = conn.send_command("add_cloth_sim", {
@@ -141,8 +141,8 @@ def add_particle_system(
         Confirmation dict with particle system settings.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(count, min_val=1, max_val=MAX_PARTICLE_COUNT, name="count")
-    validate_numeric_range(lifetime, min_val=1.0, max_val=100000.0, name="lifetime")
+    count = validate_numeric_range(count, min_val=1, max_val=MAX_PARTICLE_COUNT, name="count")
+    lifetime = validate_numeric_range(lifetime, min_val=1.0, max_val=100000.0, name="lifetime")
     validate_enum(emit_from, ALLOWED_EMIT_FROM, name="emit_from")
 
     conn = get_connection()

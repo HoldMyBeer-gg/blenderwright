@@ -128,7 +128,7 @@ def add_annotation_stroke(
     for i, pt in enumerate(points):
         validated_points.append(list(validate_vector(pt, size=3, name=f"points[{i}]")))
 
-    validate_numeric_range(pressure, min_val=0.0, max_val=1.0, name="pressure")
+    pressure = validate_numeric_range(pressure, min_val=0.0, max_val=1.0, name="pressure")
 
     conn = get_connection()
     response = conn.send_command("add_annotation_stroke", {
@@ -164,7 +164,7 @@ def set_annotation_stroke_property(
     """
     annotation_name = validate_object_name(annotation_name)
     layer_name = validate_object_name(layer_name)
-    validate_numeric_range(stroke_index, min_val=0, name="stroke_index")
+    stroke_index = validate_numeric_range(stroke_index, min_val=0, name="stroke_index")
     validate_enum(property, ALLOWED_GP_STROKE_PROPERTIES, name="property")
 
     conn = get_connection()
