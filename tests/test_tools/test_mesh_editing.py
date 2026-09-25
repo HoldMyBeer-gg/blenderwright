@@ -42,7 +42,7 @@ class TestInsetFaces:
         inset_faces("Cube")
         mock_conn.send_command.assert_called_once_with(
             "inset_faces",
-            {"object_name": "Cube", "thickness": 0.1, "depth": 0.0},
+            {"selection": "ALL", "object_name": "Cube", "thickness": 0.1, "depth": 0.0},
         )
 
     def test_custom_params(self, mock_conn):
@@ -86,7 +86,7 @@ class TestFillFaces:
     def test_valid(self, mock_conn):
         fill_faces("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "fill_faces", {"object_name": "Cube"},
+            "fill_faces", {"selection": "ALL", "object_name": "Cube"},
         )
 
     def test_empty_name_raises(self, mock_conn):
@@ -108,7 +108,7 @@ class TestGridFill:
     def test_valid_defaults(self, mock_conn):
         grid_fill("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "grid_fill", {"object_name": "Cube", "span": 1, "offset": 0},
+            "grid_fill", {"selection": "ALL", "object_name": "Cube", "span": 1, "offset": 0},
         )
 
     def test_custom_params(self, mock_conn):
@@ -148,7 +148,7 @@ class TestMarkSeam:
     def test_valid_mark(self, mock_conn):
         mark_seam("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "mark_seam", {"object_name": "Cube", "clear": False},
+            "mark_seam", {"selection": "ALL", "object_name": "Cube", "clear": False},
         )
 
     def test_valid_clear(self, mock_conn):
@@ -175,7 +175,7 @@ class TestMarkSharp:
     def test_valid_mark(self, mock_conn):
         mark_sharp("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "mark_sharp", {"object_name": "Cube", "clear": False},
+            "mark_sharp", {"selection": "ALL", "object_name": "Cube", "clear": False},
         )
 
     def test_valid_clear(self, mock_conn):
@@ -202,7 +202,7 @@ class TestRecalculateNormals:
     def test_valid_default(self, mock_conn):
         recalculate_normals("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "recalculate_normals", {"object_name": "Cube", "inside": False},
+            "recalculate_normals", {"selection": "ALL", "object_name": "Cube", "inside": False},
         )
 
     def test_inside(self, mock_conn):
@@ -229,7 +229,7 @@ class TestFlipNormals:
     def test_valid(self, mock_conn):
         flip_normals("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "flip_normals", {"object_name": "Cube"},
+            "flip_normals", {"selection": "ALL", "object_name": "Cube"},
         )
 
     def test_empty_name_raises(self, mock_conn):
@@ -251,7 +251,7 @@ class TestQuadsToTris:
     def test_valid(self, mock_conn):
         quads_to_tris("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "quads_to_tris", {"object_name": "Cube"},
+            "quads_to_tris", {"selection": "ALL", "object_name": "Cube"},
         )
 
     def test_empty_name_raises(self, mock_conn):
@@ -273,7 +273,7 @@ class TestTrisToQuads:
     def test_valid(self, mock_conn):
         tris_to_quads("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "tris_to_quads", {"object_name": "Cube"},
+            "tris_to_quads", {"selection": "ALL", "object_name": "Cube"},
         )
 
     def test_empty_name_raises(self, mock_conn):
@@ -295,7 +295,7 @@ class TestDissolveFaces:
     def test_valid(self, mock_conn):
         dissolve_faces("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "dissolve_faces", {"object_name": "Cube"},
+            "dissolve_faces", {"selection": "ALL", "object_name": "Cube"},
         )
 
     def test_empty_name_raises(self, mock_conn):
@@ -317,7 +317,7 @@ class TestDissolveEdges:
     def test_valid(self, mock_conn):
         dissolve_edges("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "dissolve_edges", {"object_name": "Cube"},
+            "dissolve_edges", {"selection": "ALL", "object_name": "Cube"},
         )
 
     def test_empty_name_raises(self, mock_conn):
@@ -339,7 +339,7 @@ class TestDissolveVerts:
     def test_valid(self, mock_conn):
         dissolve_verts("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "dissolve_verts", {"object_name": "Cube"},
+            "dissolve_verts", {"selection": "ALL", "object_name": "Cube"},
         )
 
     def test_empty_name_raises(self, mock_conn):
@@ -438,7 +438,7 @@ class TestSetEdgeCrease:
     def test_valid_default(self, mock_conn):
         set_edge_crease("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "set_edge_crease", {"object_name": "Cube", "value": 1.0},
+            "set_edge_crease", {"selection": "ALL", "object_name": "Cube", "value": 1.0},
         )
 
     def test_custom_value(self, mock_conn):

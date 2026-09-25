@@ -204,7 +204,7 @@ class TestSubdivideMesh:
     def test_valid_default(self, mock_conn):
         subdivide_mesh("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "subdivide_mesh", {"object_name": "Cube", "cuts": 1}
+            "subdivide_mesh", {"selection": "ALL", "object_name": "Cube", "cuts": 1}
         )
 
     def test_valid_custom_cuts(self, mock_conn):
@@ -234,7 +234,7 @@ class TestExtrudeFaces:
     def test_valid_default(self, mock_conn):
         extrude_faces("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "extrude_faces", {"object_name": "Cube", "offset": 1.0}
+            "extrude_faces", {"selection": "ALL", "object_name": "Cube", "offset": 1.0}
         )
 
     def test_custom_offset(self, mock_conn):
@@ -256,7 +256,7 @@ class TestBevelEdges:
     def test_valid_defaults(self, mock_conn):
         bevel_edges("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "bevel_edges", {"object_name": "Cube", "width": 0.1, "segments": 1}
+            "bevel_edges", {"selection": "ALL", "object_name": "Cube", "width": 0.1, "segments": 1}
         )
 
     def test_custom_params(self, mock_conn):
@@ -287,7 +287,7 @@ class TestLoopCut:
     def test_valid_default(self, mock_conn):
         loop_cut("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "loop_cut", {"object_name": "Cube", "cuts": 1}
+            "loop_cut", {"selection": "ALL", "object_name": "Cube", "cuts": 1}
         )
 
     def test_custom_cuts(self, mock_conn):
@@ -339,7 +339,7 @@ class TestMergeVertices:
     def test_valid_default(self, mock_conn):
         merge_vertices("Cube")
         mock_conn.send_command.assert_called_once_with(
-            "merge_vertices", {"object_name": "Cube", "threshold": 0.0001}
+            "merge_vertices", {"selection": "ALL", "object_name": "Cube", "threshold": 0.0001}
         )
 
     def test_custom_threshold(self, mock_conn):

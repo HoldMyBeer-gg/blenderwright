@@ -503,48 +503,67 @@ and &#x27;bands_direction&#x27;, Noise &#x27;noise_dimensions&#x27;.</p><table c
 <section class="module" id="mesh_editing" data-module="mesh editing"><h2>Mesh Editing <span class="n">16</span></h2><article class="tool" id="dissolve_edges" data-search="dissolve_edges dissolve all edges, merging adjacent faces.
 
 simplifies topology by removing unnecessary edge loops while
-preserving the overall shape."><h3><a href="#dissolve_edges">dissolve_edges</a></h3><pre class="sig"><code>dissolve_edges(object_name: str)</code></pre><p>Dissolve all edges, merging adjacent faces.
+preserving the overall shape."><h3><a href="#dissolve_edges">dissolve_edges</a></h3><pre class="sig"><code>dissolve_edges(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Dissolve all edges, merging adjacent faces.
 
 Simplifies topology by removing unnecessary edge loops while
-preserving the overall shape.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="dissolve_faces" data-search="dissolve_faces dissolve all faces, merging them into surrounding geometry.
+preserving the overall shape.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="dissolve_faces" data-search="dissolve_faces dissolve all faces, merging them into surrounding geometry.
 
 removes faces while keeping the surrounding mesh structure intact.
-cleaner than deleting faces which leaves holes."><h3><a href="#dissolve_faces">dissolve_faces</a></h3><pre class="sig"><code>dissolve_faces(object_name: str)</code></pre><p>Dissolve all faces, merging them into surrounding geometry.
+cleaner than deleting faces which leaves holes."><h3><a href="#dissolve_faces">dissolve_faces</a></h3><pre class="sig"><code>dissolve_faces(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Dissolve all faces, merging them into surrounding geometry.
 
 Removes faces while keeping the surrounding mesh structure intact.
-Cleaner than deleting faces which leaves holes.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="dissolve_verts" data-search="dissolve_verts dissolve all vertices, merging connected edges and faces.
+Cleaner than deleting faces which leaves holes.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="dissolve_verts" data-search="dissolve_verts dissolve all vertices, merging connected edges and faces.
 
-removes vertices while preserving surrounding geometry."><h3><a href="#dissolve_verts">dissolve_verts</a></h3><pre class="sig"><code>dissolve_verts(object_name: str)</code></pre><p>Dissolve all vertices, merging connected edges and faces.
+removes vertices while preserving surrounding geometry."><h3><a href="#dissolve_verts">dissolve_verts</a></h3><pre class="sig"><code>dissolve_verts(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Dissolve all vertices, merging connected edges and faces.
 
-Removes vertices while preserving surrounding geometry.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="fill_faces" data-search="fill_faces fill selected edges with a face.
+Removes vertices while preserving surrounding geometry.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="fill_faces" data-search="fill_faces fill selected edges with a face.
 
 creates faces from a closed edge loop. useful for closing gaps in meshes
-or capping open ends."><h3><a href="#fill_faces">fill_faces</a></h3><pre class="sig"><code>fill_faces(object_name: str)</code></pre><p>Fill selected edges with a face.
+or capping open ends."><h3><a href="#fill_faces">fill_faces</a></h3><pre class="sig"><code>fill_faces(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Fill selected edges with a face.
 
 Creates faces from a closed edge loop. Useful for closing gaps in meshes
-or capping open ends.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="flip_normals" data-search="flip_normals flip the direction of all face normals on a mesh.
+or capping open ends.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="flip_normals" data-search="flip_normals flip the direction of all face normals on a mesh.
 
 reverses inside/outside of all faces. use recalculate_normals instead
-if normals are inconsistent rather than uniformly wrong."><h3><a href="#flip_normals">flip_normals</a></h3><pre class="sig"><code>flip_normals(object_name: str)</code></pre><p>Flip the direction of all face normals on a mesh.
+if normals are inconsistent rather than uniformly wrong."><h3><a href="#flip_normals">flip_normals</a></h3><pre class="sig"><code>flip_normals(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Flip the direction of all face normals on a mesh.
 
 Reverses inside/outside of all faces. Use recalculate_normals instead
-if normals are inconsistent rather than uniformly wrong.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="grid_fill" data-search="grid_fill fill a closed edge loop with a grid of quads.
+if normals are inconsistent rather than uniformly wrong.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="grid_fill" data-search="grid_fill fill a closed edge loop with a grid of quads.
 
 creates a clean quad grid between edge loops. better than fill_faces
-for maintaining good topology."><h3><a href="#grid_fill">grid_fill</a></h3><pre class="sig"><code>grid_fill(object_name: str, span: int = 1, offset: int = 0)</code></pre><p>Fill a closed edge loop with a grid of quads.
+for maintaining good topology."><h3><a href="#grid_fill">grid_fill</a></h3><pre class="sig"><code>grid_fill(object_name: str, span: int = 1, offset: int = 0, selection: str = &#x27;ALL&#x27;)</code></pre><p>Fill a closed edge loop with a grid of quads.
 
 Creates a clean quad grid between edge loops. Better than fill_faces
 for maintaining good topology.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>span</th><td>Number of grid columns. Range: 1-1000.</td></tr>
-<tr><th>offset</th><td>Offset for the grid alignment. Range: 0-1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="inset_faces" data-search="inset_faces inset all faces of a mesh, creating a border/frame around each face.
+<tr><th>offset</th><td>Offset for the grid alignment. Range: 0-1000.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="inset_faces" data-search="inset_faces inset all faces of a mesh, creating a border/frame around each face.
 
 core hard-surface modeling operation for adding detail, panel lines, or
-preparing faces for extrusion."><h3><a href="#inset_faces">inset_faces</a></h3><pre class="sig"><code>inset_faces(object_name: str, thickness: float = 0.1, depth: float = 0.0)</code></pre><p>Inset all faces of a mesh, creating a border/frame around each face.
+preparing faces for extrusion.
+
+on a closed mesh, selection=&quot;all&quot; does nothing: a region with no boundary
+has nothing to inset from, and blender reports success having changed
+nothing. measured on a default cube in 5.1, the vertex, edge and face
+counts are identical afterwards. select the faces you mean and pass
+selection=&quot;current&quot;."><h3><a href="#inset_faces">inset_faces</a></h3><pre class="sig"><code>inset_faces(object_name: str, thickness: float = 0.1, depth: float = 0.0, selection: str = &#x27;ALL&#x27;)</code></pre><p>Inset all faces of a mesh, creating a border/frame around each face.
 
 Core hard-surface modeling operation for adding detail, panel lines, or
-preparing faces for extrusion.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+preparing faces for extrusion.
+
+On a closed mesh, selection=&quot;ALL&quot; does nothing: a region with no boundary
+has nothing to inset from, and Blender reports success having changed
+nothing. Measured on a default cube in 5.1, the vertex, edge and face
+counts are identical afterwards. Select the faces you mean and pass
+selection=&quot;CURRENT&quot;.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>thickness</th><td>Inset thickness (border width). Range: 0.0-10.0.</td></tr>
-<tr><th>depth</th><td>Inset depth (positive=outward, negative=inward). Range: -10.0 to 10.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="knife_project" data-search="knife_project project a cutter object&#x27;s outline onto a mesh to cut it.
+<tr><th>depth</th><td>Inset depth (positive=outward, negative=inward). Range: -10.0 to 10.0.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="knife_project" data-search="knife_project project a cutter object&#x27;s outline onto a mesh to cut it.
 
 the cutter object (curve or mesh) is projected from the viewport onto
 the target mesh, cutting new edges into it."><h3><a href="#knife_project">knife_project</a></h3><pre class="sig"><code>knife_project(object_name: str, cutter_name: str)</code></pre><p>Project a cutter object&#x27;s outline onto a mesh to cut it.
@@ -554,27 +573,31 @@ the target mesh, cutting new edges into it.</p><table class="args"><tbody><tr><t
 <tr><th>cutter_name</th><td>Name of the cutter object (curve or mesh) to project.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="mark_seam" data-search="mark_seam mark or clear uv seams on all edges of a mesh.
 
 uv seams guide the uv unwrapping process. edges marked as seams define
-where the mesh is &quot;cut&quot; when unwrapped to 2d."><h3><a href="#mark_seam">mark_seam</a></h3><pre class="sig"><code>mark_seam(object_name: str, clear: bool = False)</code></pre><p>Mark or clear UV seams on all edges of a mesh.
+where the mesh is &quot;cut&quot; when unwrapped to 2d."><h3><a href="#mark_seam">mark_seam</a></h3><pre class="sig"><code>mark_seam(object_name: str, clear: bool = False, selection: str = &#x27;ALL&#x27;)</code></pre><p>Mark or clear UV seams on all edges of a mesh.
 
 UV seams guide the UV unwrapping process. Edges marked as seams define
 where the mesh is &quot;cut&quot; when unwrapped to 2D.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>clear</th><td>If True, clear seams instead of marking them.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="mark_sharp" data-search="mark_sharp mark or clear sharp edges on a mesh.
+<tr><th>clear</th><td>If True, clear seams instead of marking them.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="mark_sharp" data-search="mark_sharp mark or clear sharp edges on a mesh.
 
 sharp edges control auto-smooth shading. edges marked as sharp will have
-a hard edge in the shading even with smooth shading enabled."><h3><a href="#mark_sharp">mark_sharp</a></h3><pre class="sig"><code>mark_sharp(object_name: str, clear: bool = False)</code></pre><p>Mark or clear sharp edges on a mesh.
+a hard edge in the shading even with smooth shading enabled."><h3><a href="#mark_sharp">mark_sharp</a></h3><pre class="sig"><code>mark_sharp(object_name: str, clear: bool = False, selection: str = &#x27;ALL&#x27;)</code></pre><p>Mark or clear sharp edges on a mesh.
 
 Sharp edges control auto-smooth shading. Edges marked as sharp will have
 a hard edge in the shading even with smooth shading enabled.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>clear</th><td>If True, clear sharp marks instead of setting them.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="quads_to_tris" data-search="quads_to_tris convert all quad faces to triangles.
+<tr><th>clear</th><td>If True, clear sharp marks instead of setting them.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="quads_to_tris" data-search="quads_to_tris convert all quad faces to triangles.
 
-useful for game engine export or when triangulated geometry is required."><h3><a href="#quads_to_tris">quads_to_tris</a></h3><pre class="sig"><code>quads_to_tris(object_name: str)</code></pre><p>Convert all quad faces to triangles.
+useful for game engine export or when triangulated geometry is required."><h3><a href="#quads_to_tris">quads_to_tris</a></h3><pre class="sig"><code>quads_to_tris(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Convert all quad faces to triangles.
 
-Useful for game engine export or when triangulated geometry is required.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="recalculate_normals" data-search="recalculate_normals recalculate face normals to be consistent (all pointing outward or inward).
+Useful for game engine export or when triangulated geometry is required.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="recalculate_normals" data-search="recalculate_normals recalculate face normals to be consistent (all pointing outward or inward).
 
-fixes meshes with flipped or inconsistent normals that cause shading artifacts."><h3><a href="#recalculate_normals">recalculate_normals</a></h3><pre class="sig"><code>recalculate_normals(object_name: str, inside: bool = False)</code></pre><p>Recalculate face normals to be consistent (all pointing outward or inward).
+fixes meshes with flipped or inconsistent normals that cause shading artifacts."><h3><a href="#recalculate_normals">recalculate_normals</a></h3><pre class="sig"><code>recalculate_normals(object_name: str, inside: bool = False, selection: str = &#x27;ALL&#x27;)</code></pre><p>Recalculate face normals to be consistent (all pointing outward or inward).
 
 Fixes meshes with flipped or inconsistent normals that cause shading artifacts.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>inside</th><td>If True, normals point inward instead of outward.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="select_linked" data-search="select_linked select all geometry linked to the current selection.
+<tr><th>inside</th><td>If True, normals point inward instead of outward.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="select_linked" data-search="select_linked select all geometry linked to the current selection.
 
 expands selection to include all connected vertices, edges, and faces.
 useful for isolating mesh islands or selecting connected components."><h3><a href="#select_linked">select_linked</a></h3><pre class="sig"><code>select_linked(object_name: str)</code></pre><p>Select all geometry linked to the current selection.
@@ -583,15 +606,16 @@ Expands selection to include all connected vertices, edges, and faces.
 Useful for isolating mesh islands or selecting connected components.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_edge_crease" data-search="set_edge_crease set edge crease value on all edges for subdivision surface control.
 
 crease values control how sharp edges remain when a subdivision surface
-modifier is applied. 0 = fully smooth, 1 = fully sharp."><h3><a href="#set_edge_crease">set_edge_crease</a></h3><pre class="sig"><code>set_edge_crease(object_name: str, value: float = 1.0)</code></pre><p>Set edge crease value on all edges for subdivision surface control.
+modifier is applied. 0 = fully smooth, 1 = fully sharp."><h3><a href="#set_edge_crease">set_edge_crease</a></h3><pre class="sig"><code>set_edge_crease(object_name: str, value: float = 1.0, selection: str = &#x27;ALL&#x27;)</code></pre><p>Set edge crease value on all edges for subdivision surface control.
 
 Crease values control how sharp edges remain when a Subdivision Surface
 modifier is applied. 0 = fully smooth, 1 = fully sharp.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>value</th><td>Crease value. Range: -1.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="spin_mesh" data-search="spin_mesh spin (lathe) mesh geometry around an axis.
+<tr><th>value</th><td>Crease value. Range: -1.0 to 1.0.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="spin_mesh" data-search="spin_mesh spin (lathe) mesh geometry around an axis.
 
 creates rotational geometry by duplicating and rotating the selected
 geometry around a center point. great for creating round shapes like
-vases, columns, or wheels."><h3><a href="#spin_mesh">spin_mesh</a></h3><pre class="sig"><code>spin_mesh(object_name: str, angle: float = math.tau, steps: int = 12, axis: list[float] | tuple[float, ...] = (0, 0, 1), center: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Spin (lathe) mesh geometry around an axis.
+vases, columns, or wheels."><h3><a href="#spin_mesh">spin_mesh</a></h3><pre class="sig"><code>spin_mesh(object_name: str, angle: float = math.tau, steps: int = 12, axis: list[float] | tuple[float, ...] = (0, 0, 1), center: list[float] | tuple[float, ...] = (0, 0, 0), selection: str = &#x27;ALL&#x27;)</code></pre><p>Spin (lathe) mesh geometry around an axis.
 
 Creates rotational geometry by duplicating and rotating the selected
 geometry around a center point. Great for creating round shapes like
@@ -599,13 +623,15 @@ vases, columns, or wheels.</p><table class="args"><tbody><tr><th>object_name</th
 <tr><th>angle</th><td>Total spin angle in radians. Range: -6.283 to 6.283 (full circle).</td></tr>
 <tr><th>steps</th><td>Number of steps in the spin. Range: 1-1000.</td></tr>
 <tr><th>axis</th><td>Spin axis as XYZ vector. Defaults to Z-up (0, 0, 1).</td></tr>
-<tr><th>center</th><td>Center point for the spin as XYZ. Defaults to origin.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="tris_to_quads" data-search="tris_to_quads convert adjacent triangle pairs to quad faces where possible.
+<tr><th>center</th><td>Center point for the spin as XYZ. Defaults to origin.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="tris_to_quads" data-search="tris_to_quads convert adjacent triangle pairs to quad faces where possible.
 
 improves topology for subdivision and deformation. not all triangles
-can be merged — only adjacent pairs with compatible angles."><h3><a href="#tris_to_quads">tris_to_quads</a></h3><pre class="sig"><code>tris_to_quads(object_name: str)</code></pre><p>Convert adjacent triangle pairs to quad faces where possible.
+can be merged — only adjacent pairs with compatible angles."><h3><a href="#tris_to_quads">tris_to_quads</a></h3><pre class="sig"><code>tris_to_quads(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Convert adjacent triangle pairs to quad faces where possible.
 
 Improves topology for subdivision and deformation. Not all triangles
-can be merged — only adjacent pairs with compatible angles.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+can be merged — only adjacent pairs with compatible angles.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
 <section class="module" id="mesh_quality" data-module="mesh quality"><h2>Mesh Quality <span class="n">3</span></h2><article class="tool" id="analyze_mesh_quality" data-search="analyze_mesh_quality analyze mesh topology quality and return a structured defect report.
 
 checks for non-manifold edges, loose vertices, zero-area faces,
@@ -648,9 +674,10 @@ instead — they apply the boolean immediately and handle cutter cleanup automat
 Only use add_modifier with BOOLEAN when you want a non-destructive modifier stack.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to add the modifier to.</td></tr>
 <tr><th>modifier_type</th><td>Type of modifier. Must be one of: SUBSURF, MIRROR, ARRAY, BEVEL, BOOLEAN, SOLIDIFY, DECIMATE, REMESH, WIREFRAME, SHRINKWRAP, SMOOTH, EDGE_SPLIT, TRIANGULATE, WEIGHTED_NORMAL, SIMPLE_DEFORM, LATTICE, CURVE, CAST, WAVE, DISPLACE, SCREW, SKIN, MASK, WELD, CORRECTIVE_SMOOTH, LAPLACIAN_SMOOTH, SURFACE_DEFORM, MESH_DEFORM, HOOK.</td></tr>
 <tr><th>name</th><td>Optional custom name for the modifier.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with modifier details.</p></article><article class="tool" id="apply_modifier" data-search="apply_modifier apply a modifier to an object, making its effect permanent."><h3><a href="#apply_modifier">apply_modifier</a></h3><pre class="sig"><code>apply_modifier(object_name: str, modifier_name: str)</code></pre><p>Apply a modifier to an object, making its effect permanent.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
-<tr><th>modifier_name</th><td>Name of the modifier to apply.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="bevel_edges" data-search="bevel_edges bevel all edges of a mesh."><h3><a href="#bevel_edges">bevel_edges</a></h3><pre class="sig"><code>bevel_edges(object_name: str, width: float = 0.1, segments: int = 1)</code></pre><p>Bevel all edges of a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>modifier_name</th><td>Name of the modifier to apply.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="bevel_edges" data-search="bevel_edges bevel all edges of a mesh."><h3><a href="#bevel_edges">bevel_edges</a></h3><pre class="sig"><code>bevel_edges(object_name: str, width: float = 0.1, segments: int = 1, selection: str = &#x27;ALL&#x27;)</code></pre><p>Bevel all edges of a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>width</th><td>Bevel width.</td></tr>
-<tr><th>segments</th><td>Number of bevel segments. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="boolean_operation" data-search="boolean_operation perform a boolean operation between two objects using a modifier.
+<tr><th>segments</th><td>Number of bevel segments. Range: 1-100.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="boolean_operation" data-search="boolean_operation perform a boolean operation between two objects using a modifier.
 
 note: for destructive booleans, prefer the booltool_auto_* tools instead
 (booltool_auto_union, booltool_auto_difference, booltool_auto_intersect,
@@ -672,10 +699,13 @@ Select two edge loops on a mesh before calling this. The operation creates
 faces connecting the two loops, useful for connecting separate mesh parts,
 creating holes between surfaces, or building tube-like geometry.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object with selected edge loops.</td></tr>
 <tr><th>segments</th><td>Number of segments in the bridge. Range: 1-1000.</td></tr>
-<tr><th>profile_shape_factor</th><td>Shape of the bridge profile. Range: -1.0 to 1.0. 0.0 is straight, positive values bulge outward, negative inward.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with bridge details.</p></article><article class="tool" id="extrude_faces" data-search="extrude_faces extrude all faces of a mesh along their normals."><h3><a href="#extrude_faces">extrude_faces</a></h3><pre class="sig"><code>extrude_faces(object_name: str, offset: float = 1.0)</code></pre><p>Extrude all faces of a mesh along their normals.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>offset</th><td>Extrusion distance along face normals.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="loop_cut" data-search="loop_cut add loop cuts to a mesh object."><h3><a href="#loop_cut">loop_cut</a></h3><pre class="sig"><code>loop_cut(object_name: str, cuts: int = 1)</code></pre><p>Add loop cuts to a mesh object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>cuts</th><td>Number of loop cuts. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="merge_vertices" data-search="merge_vertices merge vertices by distance."><h3><a href="#merge_vertices">merge_vertices</a></h3><pre class="sig"><code>merge_vertices(object_name: str, threshold: float = 0.0001)</code></pre><p>Merge vertices by distance.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>threshold</th><td>Maximum distance between vertices to merge. Range: 0.0-10.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with number of removed vertices.</p></article><article class="tool" id="remove_modifier" data-search="remove_modifier remove a modifier from an object."><h3><a href="#remove_modifier">remove_modifier</a></h3><pre class="sig"><code>remove_modifier(object_name: str, modifier_name: str)</code></pre><p>Remove a modifier from an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>profile_shape_factor</th><td>Shape of the bridge profile. Range: -1.0 to 1.0. 0.0 is straight, positive values bulge outward, negative inward.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with bridge details.</p></article><article class="tool" id="extrude_faces" data-search="extrude_faces extrude all faces of a mesh along their normals."><h3><a href="#extrude_faces">extrude_faces</a></h3><pre class="sig"><code>extrude_faces(object_name: str, offset: float = 1.0, selection: str = &#x27;ALL&#x27;)</code></pre><p>Extrude all faces of a mesh along their normals.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>offset</th><td>Extrusion distance along face normals.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="loop_cut" data-search="loop_cut add loop cuts to a mesh object."><h3><a href="#loop_cut">loop_cut</a></h3><pre class="sig"><code>loop_cut(object_name: str, cuts: int = 1, selection: str = &#x27;ALL&#x27;)</code></pre><p>Add loop cuts to a mesh object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>cuts</th><td>Number of loop cuts. Range: 1-100.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="merge_vertices" data-search="merge_vertices merge vertices by distance."><h3><a href="#merge_vertices">merge_vertices</a></h3><pre class="sig"><code>merge_vertices(object_name: str, threshold: float = 0.0001, selection: str = &#x27;ALL&#x27;)</code></pre><p>Merge vertices by distance.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>threshold</th><td>Maximum distance between vertices to merge. Range: 0.0-10.0.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with number of removed vertices.</p></article><article class="tool" id="remove_modifier" data-search="remove_modifier remove a modifier from an object."><h3><a href="#remove_modifier">remove_modifier</a></h3><pre class="sig"><code>remove_modifier(object_name: str, modifier_name: str)</code></pre><p>Remove a modifier from an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>modifier_name</th><td>Name of the modifier to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="separate_mesh" data-search="separate_mesh separate a mesh into parts."><h3><a href="#separate_mesh">separate_mesh</a></h3><pre class="sig"><code>separate_mesh(object_name: str, type: str = &#x27;SELECTED&#x27;)</code></pre><p>Separate a mesh into parts.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>type</th><td>Separation method. One of: SELECTED, MATERIAL, LOOSE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_modifier_property" data-search="set_modifier_property set a property on a modifier (e.g., levels, count, offset, angle)."><h3><a href="#set_modifier_property">set_modifier_property</a></h3><pre class="sig"><code>set_modifier_property(object_name: str, modifier_name: str, property: str, value: Any)</code></pre><p>Set a property on a modifier (e.g., levels, count, offset, angle).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>modifier_name</th><td>Name of the modifier.</td></tr>
@@ -689,8 +719,9 @@ smoothing faces within the angle threshold."><h3><a href="#set_smooth_shading">s
 TIP: For production use, prefer shade_auto_smooth which provides angle-based
 auto-smooth shading — it gives better results on hard-surface models by only
 smoothing faces within the angle threshold.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>smooth</th><td>True for smooth shading, False for flat shading.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="subdivide_mesh" data-search="subdivide_mesh subdivide a mesh."><h3><a href="#subdivide_mesh">subdivide_mesh</a></h3><pre class="sig"><code>subdivide_mesh(object_name: str, cuts: int = 1)</code></pre><p>Subdivide a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to subdivide.</td></tr>
-<tr><th>cuts</th><td>Number of cuts per edge. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<tr><th>smooth</th><td>True for smooth shading, False for flat shading.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="subdivide_mesh" data-search="subdivide_mesh subdivide a mesh."><h3><a href="#subdivide_mesh">subdivide_mesh</a></h3><pre class="sig"><code>subdivide_mesh(object_name: str, cuts: int = 1, selection: str = &#x27;ALL&#x27;)</code></pre><p>Subdivide a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to subdivide.</td></tr>
+<tr><th>cuts</th><td>Number of cuts per edge. Range: 1-100.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
 <section class="module" id="objects" data-module="objects"><h2>Objects <span class="n">15</span></h2><article class="tool" id="convert_object" data-search="convert_object convert an object to a different type."><h3><a href="#convert_object">convert_object</a></h3><pre class="sig"><code>convert_object(object_name: str, target: str = &#x27;MESH&#x27;)</code></pre><p>Convert an object to a different type.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to convert.</td></tr>
 <tr><th>target</th><td>Target type. One of: MESH, CURVE, SURFACE, META, FONT, CURVES, POINTCLOUD, GPENCIL.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="create_object" data-search="create_object create a primitive object in the scene."><h3><a href="#create_object">create_object</a></h3><pre class="sig"><code>create_object(type: str, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), rotation: list[float] | tuple[float, ...] = (0, 0, 0), scale: list[float] | tuple[float, ...] = (1, 1, 1))</code></pre><p>Create a primitive object in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Primitive type. One of: CUBE, SPHERE, UV_SPHERE, ICO_SPHERE, CYLINDER, CONE, TORUS, PLANE, CIRCLE, MONKEY, EMPTY.</td></tr>
 <tr><th>name</th><td>Optional name for the object. Auto-generated if empty.</td></tr>

@@ -195,7 +195,8 @@ def handle_subdivide_mesh(params):
     cuts = params.get("cuts", 1)
 
     bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
+    if params.get("selection", "ALL") != "CURRENT":
+        bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.mesh.subdivide(number_cuts=cuts)
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -214,7 +215,8 @@ def handle_extrude_faces(params):
     offset = params.get("offset", 1.0)
 
     bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
+    if params.get("selection", "ALL") != "CURRENT":
+        bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.mesh.select_mode(type="FACE")
     bpy.ops.mesh.extrude_region_move(
         TRANSFORM_OT_translate={"value": (0, 0, 0)}
@@ -242,7 +244,8 @@ def handle_bevel_edges(params):
     segments = params.get("segments", 1)
 
     bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
+    if params.get("selection", "ALL") != "CURRENT":
+        bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.mesh.select_mode(type="EDGE")
     bpy.ops.mesh.bevel(offset=width, segments=segments)
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -267,7 +270,8 @@ def handle_loop_cut(params):
     mod.render_levels = 0
 
     bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
+    if params.get("selection", "ALL") != "CURRENT":
+        bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.mesh.loopcut_slide(
         MESH_OT_loopcut={
             "number_cuts": cuts,
@@ -318,7 +322,8 @@ def handle_merge_vertices(params):
     vert_count_before = len(obj.data.vertices)
 
     bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
+    if params.get("selection", "ALL") != "CURRENT":
+        bpy.ops.mesh.select_all(action="SELECT")
     bpy.ops.mesh.remove_doubles(threshold=threshold)
     bpy.ops.object.mode_set(mode="OBJECT")
 

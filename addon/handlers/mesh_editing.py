@@ -27,11 +27,41 @@ def _get_mesh_object(name):
     return obj
 
 
-def _enter_edit_select_all(obj):
-    """Select object, enter edit mode, and select all geometry."""
+def _enter_edit(obj, selection="ALL"):
+    """Enter edit mode, selecting everything unless told otherwise.
+
+    selection="CURRENT" leaves the mesh's existing selection alone, which is
+    what lets a caller act on the part it chose with the select_* tools.
+    Blender keeps that selection on the mesh data, so it is still there.
+
+    Args:
+        obj: The mesh object.
+        selection: "ALL" to select everything first, "CURRENT" to keep what
+            is already selected.
+    """
     _select_only(obj)
     bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
+    if selection != "CURRENT":
+        bpy.ops.mesh.select_all(action="SELECT")
+    elif not _anything_selected(obj):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        raise ValueError(
+            "selection='CURRENT' but nothing is selected on "
+            f"'{obj.name}'. Select something first with select_by_index, "
+            "select_by_axis or select_faces_by_sides, or use "
+            "selection='ALL'."
+        )
+
+
+def _anything_selected(obj):
+    """True if any vertex is selected, checked outside edit mode."""
+    mode = obj.mode
+    if mode == "EDIT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    selected = any(v.select for v in obj.data.vertices)
+    if mode == "EDIT":
+        bpy.ops.object.mode_set(mode="EDIT")
+    return selected
 
 
 def handle_inset_faces(params):
@@ -41,7 +71,7 @@ def handle_inset_faces(params):
     thickness = params.get("thickness", 0.1)
     depth = params.get("depth", 0.0)
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="FACE")
     bpy.ops.mesh.inset(thickness=thickness, depth=depth)
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -54,7 +84,7 @@ def handle_fill_faces(params):
     _ensure_object_mode()
     obj = _get_mesh_object(params["object_name"])
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.fill()
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -68,7 +98,7 @@ def handle_grid_fill(params):
     span = params.get("span", 1)
     offset = params.get("offset", 0)
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.fill_grid(span=span, offset=offset)
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -81,7 +111,7 @@ def handle_mark_seam(params):
     obj = _get_mesh_object(params["object_name"])
     clear = params.get("clear", False)
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="EDGE")
     bpy.ops.mesh.mark_seam(clear=clear)
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -95,7 +125,7 @@ def handle_mark_sharp(params):
     obj = _get_mesh_object(params["object_name"])
     clear = params.get("clear", False)
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="EDGE")
     bpy.ops.mesh.mark_sharp(clear=clear)
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -109,7 +139,7 @@ def handle_recalculate_normals(params):
     obj = _get_mesh_object(params["object_name"])
     inside = params.get("inside", False)
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.normals_make_consistent(inside=inside)
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -121,7 +151,7 @@ def handle_flip_normals(params):
     _ensure_object_mode()
     obj = _get_mesh_object(params["object_name"])
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.flip_normals()
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -133,7 +163,7 @@ def handle_quads_to_tris(params):
     _ensure_object_mode()
     obj = _get_mesh_object(params["object_name"])
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="FACE")
     bpy.ops.mesh.quads_convert_to_tris()
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -146,7 +176,7 @@ def handle_tris_to_quads(params):
     _ensure_object_mode()
     obj = _get_mesh_object(params["object_name"])
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="FACE")
     bpy.ops.mesh.tris_convert_to_quads()
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -159,7 +189,7 @@ def handle_dissolve_faces(params):
     _ensure_object_mode()
     obj = _get_mesh_object(params["object_name"])
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="FACE")
     bpy.ops.mesh.dissolve_faces()
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -172,7 +202,7 @@ def handle_dissolve_edges(params):
     _ensure_object_mode()
     obj = _get_mesh_object(params["object_name"])
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="EDGE")
     bpy.ops.mesh.dissolve_edges()
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -185,7 +215,7 @@ def handle_dissolve_verts(params):
     _ensure_object_mode()
     obj = _get_mesh_object(params["object_name"])
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="VERT")
     bpy.ops.mesh.dissolve_verts()
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -226,7 +256,7 @@ def handle_spin_mesh(params):
     axis = tuple(params.get("axis", (0, 0, 1)))
     center = tuple(params.get("center", (0, 0, 0)))
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.spin(angle=angle, steps=steps, axis=axis, center=center)
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -245,7 +275,7 @@ def handle_set_edge_crease(params):
     obj = _get_mesh_object(params["object_name"])
     value = params.get("value", 1.0)
 
-    _enter_edit_select_all(obj)
+    _enter_edit(obj, params.get("selection", "ALL"))
     bpy.ops.mesh.select_mode(type="EDGE")
     bpy.ops.transform.edge_crease(value=value)
     bpy.ops.object.mode_set(mode="OBJECT")

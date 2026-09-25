@@ -11,6 +11,12 @@ from blend_ai.validators import (
 )
 
 # Allowed modifier types
+
+# Whether a mesh tool acts on everything or only on what the caller selected.
+# Selection lives on the mesh data, so "CURRENT" reads state Blender already
+# keeps; see the select_* tools in blend_ai.tools.selection.
+ALLOWED_SELECTION_MODES = {"ALL", "CURRENT"}
+
 ALLOWED_MODIFIER_TYPES = {
     "SUBSURF", "MIRROR", "ARRAY", "BEVEL", "BOOLEAN", "SOLIDIFY",
     "DECIMATE", "REMESH", "WIREFRAME", "SHRINKWRAP", "SMOOTH",
@@ -182,21 +188,30 @@ def boolean_operation(
 
 
 @mcp.tool()
-def subdivide_mesh(object_name: str, cuts: int = 1) -> dict[str, Any]:
+def subdivide_mesh(object_name: str, cuts: int = 1,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Subdivide a mesh.
 
     Args:
         object_name: Name of the mesh object to subdivide.
         cuts: Number of cuts per edge. Range: 1-100.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     cuts = validate_numeric_range(cuts, min_val=1, max_val=100, name="cuts")
 
     conn = get_connection()
     response = conn.send_command("subdivide_mesh", {
+        "selection": selection,
         "object_name": object_name,
         "cuts": cuts,
     })
@@ -206,17 +221,25 @@ def subdivide_mesh(object_name: str, cuts: int = 1) -> dict[str, Any]:
 
 
 @mcp.tool()
-def extrude_faces(object_name: str, offset: float = 1.0) -> dict[str, Any]:
+def extrude_faces(object_name: str, offset: float = 1.0,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Extrude all faces of a mesh along their normals.
 
     Args:
         object_name: Name of the mesh object.
         offset: Extrusion distance along face normals.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     offset = validate_numeric_range(offset, min_val=-1000.0, max_val=1000.0,
                                     name="offset")
     if offset == 0:
@@ -227,6 +250,7 @@ def extrude_faces(object_name: str, offset: float = 1.0) -> dict[str, Any]:
 
     conn = get_connection()
     response = conn.send_command("extrude_faces", {
+        "selection": selection,
         "object_name": object_name,
         "offset": offset,
     })
@@ -236,7 +260,9 @@ def extrude_faces(object_name: str, offset: float = 1.0) -> dict[str, Any]:
 
 
 @mcp.tool()
-def bevel_edges(object_name: str, width: float = 0.1, segments: int = 1) -> dict[str, Any]:
+def bevel_edges(object_name: str, width: float = 0.1, segments: int = 1,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Bevel all edges of a mesh.
 
     Args:
@@ -244,10 +270,16 @@ def bevel_edges(object_name: str, width: float = 0.1, segments: int = 1) -> dict
         width: Bevel width.
         segments: Number of bevel segments. Range: 1-100.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     width = validate_numeric_range(width, min_val=0.0, name="width")
     if width == 0:
         raise ValidationError(
@@ -258,6 +290,7 @@ def bevel_edges(object_name: str, width: float = 0.1, segments: int = 1) -> dict
 
     conn = get_connection()
     response = conn.send_command("bevel_edges", {
+        "selection": selection,
         "object_name": object_name,
         "width": width,
         "segments": segments,
@@ -268,21 +301,30 @@ def bevel_edges(object_name: str, width: float = 0.1, segments: int = 1) -> dict
 
 
 @mcp.tool()
-def loop_cut(object_name: str, cuts: int = 1) -> dict[str, Any]:
+def loop_cut(object_name: str, cuts: int = 1,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Add loop cuts to a mesh object.
 
     Args:
         object_name: Name of the mesh object.
         cuts: Number of loop cuts. Range: 1-100.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     cuts = validate_numeric_range(cuts, min_val=1, max_val=100, name="cuts")
 
     conn = get_connection()
     response = conn.send_command("loop_cut", {
+        "selection": selection,
         "object_name": object_name,
         "cuts": cuts,
     })
@@ -319,21 +361,30 @@ def set_smooth_shading(object_name: str, smooth: bool = True) -> dict[str, Any]:
 
 
 @mcp.tool()
-def merge_vertices(object_name: str, threshold: float = 0.0001) -> dict[str, Any]:
+def merge_vertices(object_name: str, threshold: float = 0.0001,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Merge vertices by distance.
 
     Args:
         object_name: Name of the mesh object.
         threshold: Maximum distance between vertices to merge. Range: 0.0-10.0.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict with number of removed vertices.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     threshold = validate_numeric_range(threshold, min_val=0.0, max_val=10.0, name="threshold")
 
     conn = get_connection()
     response = conn.send_command("merge_vertices", {
+        "selection": selection,
         "object_name": object_name,
         "threshold": threshold,
     })
@@ -343,12 +394,14 @@ def merge_vertices(object_name: str, threshold: float = 0.0001) -> dict[str, Any
 
 
 @mcp.tool()
-def separate_mesh(object_name: str, type: str = "SELECTED") -> dict[str, Any]:
+def separate_mesh(object_name: str, type: str = "SELECTED",
+) -> dict[str, Any]:
     """Separate a mesh into parts.
 
     Args:
         object_name: Name of the mesh object.
         type: Separation method. One of: SELECTED, MATERIAL, LOOSE.
+
 
     Returns:
         Confirmation dict.

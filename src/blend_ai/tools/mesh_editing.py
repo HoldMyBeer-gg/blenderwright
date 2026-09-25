@@ -5,6 +5,7 @@ from typing import Any
 
 from blend_ai.server import mcp, get_connection
 from blend_ai.validators import (
+    validate_enum,
     ValidationError,
     validate_object_name,
     validate_numeric_range,
@@ -12,24 +13,43 @@ from blend_ai.validators import (
 )
 
 
+
+# Whether a mesh tool acts on everything or only on what the caller selected.
+# Selection lives on the mesh data, so "CURRENT" reads state Blender already
+# keeps; see the select_* tools in blend_ai.tools.selection.
+ALLOWED_SELECTION_MODES = {"ALL", "CURRENT"}
+
 @mcp.tool()
 def inset_faces(
-    object_name: str, thickness: float = 0.1, depth: float = 0.0
+    object_name: str, thickness: float = 0.1, depth: float = 0.0,
+    selection: str = "ALL",
 ) -> dict[str, Any]:
     """Inset all faces of a mesh, creating a border/frame around each face.
 
     Core hard-surface modeling operation for adding detail, panel lines, or
     preparing faces for extrusion.
 
+    On a closed mesh, selection="ALL" does nothing: a region with no boundary
+    has nothing to inset from, and Blender reports success having changed
+    nothing. Measured on a default cube in 5.1, the vertex, edge and face
+    counts are identical afterwards. Select the faces you mean and pass
+    selection="CURRENT".
+
     Args:
         object_name: Name of the mesh object.
         thickness: Inset thickness (border width). Range: 0.0-10.0.
         depth: Inset depth (positive=outward, negative=inward). Range: -10.0 to 10.0.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     thickness = validate_numeric_range(thickness, min_val=0.0, max_val=10.0,
                                        name="thickness")
     if thickness == 0:
@@ -41,6 +61,7 @@ def inset_faces(
 
     conn = get_connection()
     response = conn.send_command("inset_faces", {
+        "selection": selection,
         "object_name": object_name,
         "thickness": thickness,
         "depth": depth,
@@ -51,7 +72,9 @@ def inset_faces(
 
 
 @mcp.tool()
-def fill_faces(object_name: str) -> dict[str, Any]:
+def fill_faces(object_name: str,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Fill selected edges with a face.
 
     Creates faces from a closed edge loop. Useful for closing gaps in meshes
@@ -60,13 +83,20 @@ def fill_faces(object_name: str) -> dict[str, Any]:
     Args:
         object_name: Name of the mesh object.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
-    response = conn.send_command("fill_faces", {"object_name": object_name})
+    response = conn.send_command("fill_faces", {
+        "selection": selection,"object_name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
@@ -74,7 +104,8 @@ def fill_faces(object_name: str) -> dict[str, Any]:
 
 @mcp.tool()
 def grid_fill(
-    object_name: str, span: int = 1, offset: int = 0
+    object_name: str, span: int = 1, offset: int = 0,
+    selection: str = "ALL",
 ) -> dict[str, Any]:
     """Fill a closed edge loop with a grid of quads.
 
@@ -86,15 +117,22 @@ def grid_fill(
         span: Number of grid columns. Range: 1-1000.
         offset: Offset for the grid alignment. Range: 0-1000.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     span = validate_numeric_range(span, min_val=1, max_val=1000, name="span")
     offset = validate_numeric_range(offset, min_val=0, max_val=1000, name="offset")
 
     conn = get_connection()
     response = conn.send_command("grid_fill", {
+        "selection": selection,
         "object_name": object_name,
         "span": span,
         "offset": offset,
@@ -105,7 +143,9 @@ def grid_fill(
 
 
 @mcp.tool()
-def mark_seam(object_name: str, clear: bool = False) -> dict[str, Any]:
+def mark_seam(object_name: str, clear: bool = False,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Mark or clear UV seams on all edges of a mesh.
 
     UV seams guide the UV unwrapping process. Edges marked as seams define
@@ -115,13 +155,20 @@ def mark_seam(object_name: str, clear: bool = False) -> dict[str, Any]:
         object_name: Name of the mesh object.
         clear: If True, clear seams instead of marking them.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
     response = conn.send_command("mark_seam", {
+        "selection": selection,
         "object_name": object_name,
         "clear": clear,
     })
@@ -131,7 +178,9 @@ def mark_seam(object_name: str, clear: bool = False) -> dict[str, Any]:
 
 
 @mcp.tool()
-def mark_sharp(object_name: str, clear: bool = False) -> dict[str, Any]:
+def mark_sharp(object_name: str, clear: bool = False,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Mark or clear sharp edges on a mesh.
 
     Sharp edges control auto-smooth shading. Edges marked as sharp will have
@@ -141,13 +190,20 @@ def mark_sharp(object_name: str, clear: bool = False) -> dict[str, Any]:
         object_name: Name of the mesh object.
         clear: If True, clear sharp marks instead of setting them.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
     response = conn.send_command("mark_sharp", {
+        "selection": selection,
         "object_name": object_name,
         "clear": clear,
     })
@@ -157,7 +213,9 @@ def mark_sharp(object_name: str, clear: bool = False) -> dict[str, Any]:
 
 
 @mcp.tool()
-def recalculate_normals(object_name: str, inside: bool = False) -> dict[str, Any]:
+def recalculate_normals(object_name: str, inside: bool = False,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Recalculate face normals to be consistent (all pointing outward or inward).
 
     Fixes meshes with flipped or inconsistent normals that cause shading artifacts.
@@ -166,13 +224,20 @@ def recalculate_normals(object_name: str, inside: bool = False) -> dict[str, Any
         object_name: Name of the mesh object.
         inside: If True, normals point inward instead of outward.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
     response = conn.send_command("recalculate_normals", {
+        "selection": selection,
         "object_name": object_name,
         "inside": inside,
     })
@@ -182,7 +247,9 @@ def recalculate_normals(object_name: str, inside: bool = False) -> dict[str, Any
 
 
 @mcp.tool()
-def flip_normals(object_name: str) -> dict[str, Any]:
+def flip_normals(object_name: str,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Flip the direction of all face normals on a mesh.
 
     Reverses inside/outside of all faces. Use recalculate_normals instead
@@ -191,20 +258,29 @@ def flip_normals(object_name: str) -> dict[str, Any]:
     Args:
         object_name: Name of the mesh object.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
-    response = conn.send_command("flip_normals", {"object_name": object_name})
+    response = conn.send_command("flip_normals", {
+        "selection": selection,"object_name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
 
 
 @mcp.tool()
-def quads_to_tris(object_name: str) -> dict[str, Any]:
+def quads_to_tris(object_name: str,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Convert all quad faces to triangles.
 
     Useful for game engine export or when triangulated geometry is required.
@@ -212,20 +288,29 @@ def quads_to_tris(object_name: str) -> dict[str, Any]:
     Args:
         object_name: Name of the mesh object.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
-    response = conn.send_command("quads_to_tris", {"object_name": object_name})
+    response = conn.send_command("quads_to_tris", {
+        "selection": selection,"object_name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
 
 
 @mcp.tool()
-def tris_to_quads(object_name: str) -> dict[str, Any]:
+def tris_to_quads(object_name: str,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Convert adjacent triangle pairs to quad faces where possible.
 
     Improves topology for subdivision and deformation. Not all triangles
@@ -234,20 +319,29 @@ def tris_to_quads(object_name: str) -> dict[str, Any]:
     Args:
         object_name: Name of the mesh object.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
-    response = conn.send_command("tris_to_quads", {"object_name": object_name})
+    response = conn.send_command("tris_to_quads", {
+        "selection": selection,"object_name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
 
 
 @mcp.tool()
-def dissolve_faces(object_name: str) -> dict[str, Any]:
+def dissolve_faces(object_name: str,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Dissolve all faces, merging them into surrounding geometry.
 
     Removes faces while keeping the surrounding mesh structure intact.
@@ -256,20 +350,29 @@ def dissolve_faces(object_name: str) -> dict[str, Any]:
     Args:
         object_name: Name of the mesh object.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
-    response = conn.send_command("dissolve_faces", {"object_name": object_name})
+    response = conn.send_command("dissolve_faces", {
+        "selection": selection,"object_name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
 
 
 @mcp.tool()
-def dissolve_edges(object_name: str) -> dict[str, Any]:
+def dissolve_edges(object_name: str,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Dissolve all edges, merging adjacent faces.
 
     Simplifies topology by removing unnecessary edge loops while
@@ -278,20 +381,29 @@ def dissolve_edges(object_name: str) -> dict[str, Any]:
     Args:
         object_name: Name of the mesh object.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
-    response = conn.send_command("dissolve_edges", {"object_name": object_name})
+    response = conn.send_command("dissolve_edges", {
+        "selection": selection,"object_name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
 
 
 @mcp.tool()
-def dissolve_verts(object_name: str) -> dict[str, Any]:
+def dissolve_verts(object_name: str,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Dissolve all vertices, merging connected edges and faces.
 
     Removes vertices while preserving surrounding geometry.
@@ -299,20 +411,28 @@ def dissolve_verts(object_name: str) -> dict[str, Any]:
     Args:
         object_name: Name of the mesh object.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
 
     conn = get_connection()
-    response = conn.send_command("dissolve_verts", {"object_name": object_name})
+    response = conn.send_command("dissolve_verts", {
+        "selection": selection,"object_name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
 
 
 @mcp.tool()
-def knife_project(object_name: str, cutter_name: str) -> dict[str, Any]:
+def knife_project(object_name: str, cutter_name: str,
+) -> dict[str, Any]:
     """Project a cutter object's outline onto a mesh to cut it.
 
     The cutter object (curve or mesh) is projected from the viewport onto
@@ -321,6 +441,7 @@ def knife_project(object_name: str, cutter_name: str) -> dict[str, Any]:
     Args:
         object_name: Name of the mesh to cut into.
         cutter_name: Name of the cutter object (curve or mesh) to project.
+
 
     Returns:
         Confirmation dict.
@@ -345,6 +466,7 @@ def spin_mesh(
     steps: int = 12,
     axis: list[float] | tuple[float, ...] = (0, 0, 1),
     center: list[float] | tuple[float, ...] = (0, 0, 0),
+    selection: str = "ALL",
 ) -> dict[str, Any]:
     """Spin (lathe) mesh geometry around an axis.
 
@@ -359,10 +481,16 @@ def spin_mesh(
         axis: Spin axis as XYZ vector. Defaults to Z-up (0, 0, 1).
         center: Center point for the spin as XYZ. Defaults to origin.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     angle = validate_numeric_range(angle, min_val=-math.tau, max_val=math.tau, name="angle")
     steps = validate_numeric_range(steps, min_val=1, max_val=1000, name="steps")
     axis = validate_vector(axis, size=3, name="axis")
@@ -375,6 +503,7 @@ def spin_mesh(
 
     conn = get_connection()
     response = conn.send_command("spin_mesh", {
+        "selection": selection,
         "object_name": object_name,
         "angle": angle,
         "steps": steps,
@@ -387,7 +516,9 @@ def spin_mesh(
 
 
 @mcp.tool()
-def set_edge_crease(object_name: str, value: float = 1.0) -> dict[str, Any]:
+def set_edge_crease(object_name: str, value: float = 1.0,
+    selection: str = "ALL",
+) -> dict[str, Any]:
     """Set edge crease value on all edges for subdivision surface control.
 
     Crease values control how sharp edges remain when a Subdivision Surface
@@ -397,14 +528,21 @@ def set_edge_crease(object_name: str, value: float = 1.0) -> dict[str, Any]:
         object_name: Name of the mesh object.
         value: Crease value. Range: -1.0 to 1.0.
 
+        selection: "ALL" to act on the whole mesh, or "CURRENT" to act only
+            on what is already selected. Use the select_* tools to choose
+            first. Defaults to "ALL".
+
     Returns:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    selection = validate_enum(selection, ALLOWED_SELECTION_MODES,
+                              name="selection")
     value = validate_numeric_range(value, min_val=-1.0, max_val=1.0, name="value")
 
     conn = get_connection()
     response = conn.send_command("set_edge_crease", {
+        "selection": selection,
         "object_name": object_name,
         "value": value,
     })
