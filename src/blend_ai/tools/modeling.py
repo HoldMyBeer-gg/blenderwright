@@ -193,7 +193,7 @@ def subdivide_mesh(object_name: str, cuts: int = 1) -> dict[str, Any]:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(cuts, min_val=1, max_val=100, name="cuts")
+    cuts = validate_numeric_range(cuts, min_val=1, max_val=100, name="cuts")
 
     conn = get_connection()
     response = conn.send_command("subdivide_mesh", {
@@ -217,6 +217,13 @@ def extrude_faces(object_name: str, offset: float = 1.0) -> dict[str, Any]:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    offset = validate_numeric_range(offset, min_val=-1000.0, max_val=1000.0,
+                                    name="offset")
+    if offset == 0:
+        raise ValidationError(
+            "offset of 0 is a no-op that still duplicates every face in place, "
+            "leaving a non-manifold mesh. Use a non-zero distance."
+        )
 
     conn = get_connection()
     response = conn.send_command("extrude_faces", {
@@ -241,8 +248,13 @@ def bevel_edges(object_name: str, width: float = 0.1, segments: int = 1) -> dict
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(width, min_val=0.0, name="width")
-    validate_numeric_range(segments, min_val=1, max_val=100, name="segments")
+    width = validate_numeric_range(width, min_val=0.0, name="width")
+    if width == 0:
+        raise ValidationError(
+            "width of 0 is a no-op; the bevel runs and changes nothing."
+        )
+    segments = validate_numeric_range(segments, min_val=1, max_val=100,
+                                      name="segments")
 
     conn = get_connection()
     response = conn.send_command("bevel_edges", {
@@ -267,7 +279,7 @@ def loop_cut(object_name: str, cuts: int = 1) -> dict[str, Any]:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(cuts, min_val=1, max_val=100, name="cuts")
+    cuts = validate_numeric_range(cuts, min_val=1, max_val=100, name="cuts")
 
     conn = get_connection()
     response = conn.send_command("loop_cut", {
@@ -318,7 +330,7 @@ def merge_vertices(object_name: str, threshold: float = 0.0001) -> dict[str, Any
         Confirmation dict with number of removed vertices.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(threshold, min_val=0.0, max_val=10.0, name="threshold")
+    threshold = validate_numeric_range(threshold, min_val=0.0, max_val=10.0, name="threshold")
 
     conn = get_connection()
     response = conn.send_command("merge_vertices", {
@@ -374,8 +386,8 @@ def bridge_edge_loops(
         Confirmation dict with bridge details.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(segments, min_val=1, max_val=1000, name="segments")
-    validate_numeric_range(
+    segments = validate_numeric_range(segments, min_val=1, max_val=1000, name="segments")
+    profile_shape_factor = validate_numeric_range(
         profile_shape_factor, min_val=-1.0, max_val=1.0, name="profile_shape_factor"
     )
 

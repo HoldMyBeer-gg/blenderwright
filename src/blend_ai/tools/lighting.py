@@ -72,7 +72,7 @@ def create_light(
     if name:
         name = validate_object_name(name)
     location = list(validate_vector(location, size=3, name="location"))
-    validate_numeric_range(energy, min_val=0.0, max_val=10000000.0, name="energy")
+    energy = validate_numeric_range(energy, min_val=0.0, max_val=10000000.0, name="energy")
     color = list(validate_color(color))[:3]
 
     return _send_light_command("create_light", {
@@ -103,19 +103,19 @@ def set_light_property(name: str, property: str, value: Any) -> dict[str, Any]:
 
     # Validate specific properties
     if property == "energy":
-        validate_numeric_range(value, min_val=0.0, max_val=10000000.0, name="energy")
+        value = validate_numeric_range(value, min_val=0.0, max_val=10000000.0, name="energy")
     elif property == "color":
         value = list(validate_color(value))[:3]
     elif property in ("shadow_soft_size", "area_size", "area_size_y"):
-        validate_numeric_range(value, min_val=0.0, max_val=1000.0, name=property)
+        value = validate_numeric_range(value, min_val=0.0, max_val=1000.0, name=property)
     elif property == "spot_size":
-        validate_numeric_range(value, min_val=0.0, max_val=3.14159, name="spot_size")
+        value = validate_numeric_range(value, min_val=0.0, max_val=3.14159, name="spot_size")
     elif property == "spot_blend":
-        validate_numeric_range(value, min_val=0.0, max_val=1.0, name="spot_blend")
+        value = validate_numeric_range(value, min_val=0.0, max_val=1.0, name="spot_blend")
     elif property == "angle":
-        validate_numeric_range(value, min_val=0.0, max_val=3.14159, name="angle")
+        value = validate_numeric_range(value, min_val=0.0, max_val=3.14159, name="angle")
     elif property in ("specular_factor", "diffuse_factor", "volume_factor"):
-        validate_numeric_range(value, min_val=0.0, max_val=1.0, name=property)
+        value = validate_numeric_range(value, min_val=0.0, max_val=1.0, name=property)
     elif property == "use_shadow":
         if not isinstance(value, bool):
             raise ValidationError("use_shadow must be a boolean")
@@ -148,7 +148,7 @@ def set_world_background(
     if color is not None and hdri_path is not None:
         raise ValidationError("Cannot set both 'color' and 'hdri_path' at the same time")
 
-    validate_numeric_range(strength, min_val=0.0, max_val=1000.0, name="strength")
+    strength = validate_numeric_range(strength, min_val=0.0, max_val=1000.0, name="strength")
 
     params: dict[str, Any] = {"strength": strength}
     if color is not None:
@@ -178,7 +178,7 @@ def create_light_rig(
     validate_enum(type, ALLOWED_RIG_TYPES, name="type")
     if target:
         target = validate_object_name(target)
-    validate_numeric_range(intensity, min_val=0.0, max_val=10000000.0, name="intensity")
+    intensity = validate_numeric_range(intensity, min_val=0.0, max_val=10000000.0, name="intensity")
 
     return _send_light_command("create_light_rig", {
         "type": type,
@@ -230,7 +230,7 @@ def set_shadow_settings(
     name = validate_object_name(name)
     if not isinstance(use_shadow, bool):
         raise ValidationError("use_shadow must be a boolean")
-    validate_numeric_range(shadow_soft_size, min_val=0.0, max_val=100.0, name="shadow_soft_size")
+    shadow_soft_size = validate_numeric_range(shadow_soft_size, min_val=0.0, max_val=100.0, name="shadow_soft_size")
 
     return _send_light_command("set_shadow_settings", {
         "name": name,

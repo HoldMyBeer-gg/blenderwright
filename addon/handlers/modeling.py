@@ -71,6 +71,31 @@ def handle_apply_modifier(params):
     return {"object": obj.name, "applied_modifier": modifier_name}
 
 
+# Duplicated from blend_ai.validators on purpose: the socket is reachable by
+# any local process, so the handler cannot trust the tool layer. The tool layer
+# also cannot apply these, because set_modifier_property is given a modifier's
+# name and not its type. tests/test_addon/test_layer_consistency.py pins the
+# two tables together.
+MAX_SUBDIVISION_LEVEL = 6
+MAX_ARRAY_COUNT = 1000
+
+MODIFIER_PROPERTY_LIMITS = {
+    "SUBSURF": {
+        "levels": (0, MAX_SUBDIVISION_LEVEL),
+        "render_levels": (0, MAX_SUBDIVISION_LEVEL),
+    },
+    "MULTIRES": {
+        "levels": (0, MAX_SUBDIVISION_LEVEL),
+        "render_levels": (0, MAX_SUBDIVISION_LEVEL),
+        "sculpt_levels": (0, MAX_SUBDIVISION_LEVEL),
+    },
+    "ARRAY": {"count": (1, MAX_ARRAY_COUNT)},
+    "BEVEL": {"segments": (1, 100)},
+    "SCREW": {"steps": (1, 1000), "render_steps": (1, 1000), "iterations": (1, 100)},
+    "REMESH": {"octree_depth": (1, 12)},
+}
+
+
 def handle_set_modifier_property(params):
     """Set a property on a modifier."""
     obj = _get_object(params["object_name"])
@@ -94,6 +119,22 @@ def handle_set_modifier_property(params):
             f"Modifier '{modifier_name}' has no property '{prop}'. "
             f"Available: {', '.join(available)}"
         )
+
+    # Blender accepts values that grind it to a halt: a Subdivision at level
+    # 11 is 4^11 faces per original face, and the caller's socket times out
+    # long before it returns.
+    limits = MODIFIER_PROPERTY_LIMITS.get(mod.type, {})
+    if prop in limits:
+        low, high = limits[prop]
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"{mod.type}.{prop} must be a number, got {value!r}")
+        if not low <= numeric <= high:
+            raise ValueError(
+                f"{mod.type}.{prop} must be between {low} and {high}, got {value}. "
+                f"Higher values hang Blender rather than failing."
+            )
 
     # Coerce value to match the property's current type.
     # LLMs often pass numbers as strings (e.g., "3" for int property).
@@ -178,7 +219,11 @@ def handle_extrude_faces(params):
     bpy.ops.mesh.extrude_region_move(
         TRANSFORM_OT_translate={"value": (0, 0, 0)}
     )
-    bpy.ops.transform.shrink_fatten(value=-offset)
+    # Not negated. Measured on a 2m cube in Blender 5.1: shrink_fatten(-0.5)
+    # leaves its dimensions at 2.0 and pushes the new geometry inward, while
+    # shrink_fatten(+0.5) grows them to 2.577. A positive offset is documented
+    # as extruding along the normals, which means outward.
+    bpy.ops.transform.shrink_fatten(value=offset)
     bpy.ops.object.mode_set(mode="OBJECT")
 
     return {"object": obj.name, "offset": offset}

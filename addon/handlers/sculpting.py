@@ -129,6 +129,14 @@ def handle_set_brush_property(params: dict) -> dict:
         raise RuntimeError(f"Failed to set brush property: {e}")
 
 
+# Voxel remesh builds a grid across the object's bounding box. Blender accepts
+# any size and then grinds: a 2m object at 0.001 is 2000^3 cells, which takes
+# longer than the caller's socket will wait, so the call dies on a timeout that
+# explains nothing. Only this layer knows the object's size, so the budget
+# lives here.
+MAX_VOXEL_GRID_CELLS = 40_000_000
+
+
 def handle_remesh(params: dict) -> dict:
     """Remesh an object."""
     object_name = params.get("object_name")
@@ -153,11 +161,30 @@ def handle_remesh(params: dict) -> dict:
         if obj.mode != "OBJECT":
             bpy.ops.object.mode_set(mode='OBJECT')
 
+        applied_voxel_size = None
         if mode == "VOXEL":
-            obj.data.remesh_voxel_size = float(voxel_size)
+            size = float(voxel_size)
+            dims = [max(float(d), 1e-6) for d in obj.dimensions]
+            cells = 1.0
+            for d in dims:
+                cells *= d / size
+            if cells > MAX_VOXEL_GRID_CELLS:
+                workable = (
+                    (dims[0] * dims[1] * dims[2]) / MAX_VOXEL_GRID_CELLS
+                ) ** (1.0 / 3.0)
+                raise ValueError(
+                    f"voxel_size {size:g} on an object measuring "
+                    f"{dims[0]:.2f} x {dims[1]:.2f} x {dims[2]:.2f} needs about "
+                    f"{cells:,.0f} voxels, which hangs Blender rather than "
+                    f"failing. Use {workable:.3f} or larger."
+                )
+            obj.data.remesh_voxel_size = size
             bpy.ops.object.voxel_remesh()
+            applied_voxel_size = size
         else:
-            # Use remesh modifier for SHARP, SMOOTH, BLOCKS
+            # SHARP, SMOOTH and BLOCKS use the remesh modifier, which has no
+            # voxel size at all. It was previously accepted and ignored while
+            # the result reported success.
             mod = obj.modifiers.new(name="Remesh", type='REMESH')
             mod.mode = mode
             mod.octree_depth = 6
@@ -168,6 +195,7 @@ def handle_remesh(params: dict) -> dict:
         return {
             "object_name": obj.name,
             "mode": mode,
+            "voxel_size": applied_voxel_size,
             "vertex_count": vertex_count,
             "success": True,
         }

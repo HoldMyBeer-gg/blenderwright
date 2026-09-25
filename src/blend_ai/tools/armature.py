@@ -102,6 +102,12 @@ def add_bone(
     bone_name = validate_object_name(bone_name)
     head = validate_vector(head, size=3, name="head")
     tail = validate_vector(tail, size=3, name="tail")
+    if head == tail:
+        raise ValidationError(
+            "head and tail are the same point, so the bone has zero "
+            "length. Blender discards those when leaving edit mode, so "
+            "the bone would be reported as created and not exist."
+        )
     if parent_bone:
         parent_bone = validate_object_name(parent_bone)
 

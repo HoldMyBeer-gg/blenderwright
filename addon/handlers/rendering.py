@@ -4,9 +4,31 @@ import bpy
 from .. import dispatcher
 
 
+# Blender renamed its EEVEE engine twice: BLENDER_EEVEE (pre-4.2),
+# BLENDER_EEVEE_NEXT (4.2-4.4), BLENDER_EEVEE again (5.x). Callers should not
+# have to know which build they reached, so either name maps to whichever this
+# build actually offers.
+_EEVEE_ALIASES = ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT")
+
+
+def _resolve_engine(engine):
+    """Map an engine id to one this Blender accepts."""
+    available = bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items.keys()
+    if engine in available:
+        return engine
+    if engine in _EEVEE_ALIASES:
+        for alias in _EEVEE_ALIASES:
+            if alias in available:
+                return alias
+    raise ValueError(
+        f"Render engine '{engine}' is not available in this Blender build. "
+        f"Available: {', '.join(sorted(available))}"
+    )
+
+
 def handle_set_render_engine(params):
     """Set the render engine."""
-    engine = params["engine"]
+    engine = _resolve_engine(params["engine"])
     bpy.context.scene.render.engine = engine
     return {"engine": bpy.context.scene.render.engine}
 
@@ -105,21 +127,33 @@ def handle_render_animation(params):
 
 
 def handle_set_eevee_light_path(params: dict) -> dict:
-    """Set EEVEE light path intensity controls."""
+    """Set EEVEE light intensity controls.
+
+    The previous implementation set light_path_diffuse_intensity and two
+    siblings, which exist in no Blender version, so every call raised
+    AttributeError. EEVEE Next exposes direct_light_intensity and
+    indirect_light_intensity instead, with no per-lobe split.
+    """
     eevee = bpy.context.scene.eevee
 
-    if "diffuse_intensity" in params:
-        eevee.light_path_diffuse_intensity = params["diffuse_intensity"]
-    if "glossy_intensity" in params:
-        eevee.light_path_glossy_intensity = params["glossy_intensity"]
-    if "transmission_intensity" in params:
-        eevee.light_path_transmission_intensity = params["transmission_intensity"]
-
-    return {
-        "diffuse_intensity": eevee.light_path_diffuse_intensity,
-        "glossy_intensity": eevee.light_path_glossy_intensity,
-        "transmission_intensity": eevee.light_path_transmission_intensity,
+    supported = {
+        "direct_intensity": "direct_light_intensity",
+        "indirect_intensity": "indirect_light_intensity",
     }
+
+    missing = [attr for attr in supported.values() if not hasattr(eevee, attr)]
+    if missing:
+        raise RuntimeError(
+            f"This Blender build has no EEVEE light intensity controls "
+            f"({', '.join(missing)}). They were added in Blender 5.1."
+        )
+
+    applied = {}
+    for param, attr in supported.items():
+        if params.get(param) is not None:
+            setattr(eevee, attr, params[param])
+        applied[param] = getattr(eevee, attr)
+    return applied
 
 
 def register():

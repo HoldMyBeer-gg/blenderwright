@@ -40,7 +40,7 @@ class TestSetRenderEngine:
         from blend_ai.tools.rendering import set_render_engine
 
         with pytest.raises(ValidationError):
-            set_render_engine("BLENDER_EEVEE_NEXT")  # removed in 5.0, not allowed
+            set_render_engine("OCTANE")  # removed in 5.0, not allowed
 
     def test_invalid_engine_arbitrary(self, mock_conn):
         from blend_ai.tools.rendering import set_render_engine
@@ -211,19 +211,21 @@ class TestRenderAnimation:
         from blend_ai.tools.rendering import render_animation
 
         render_animation()
-        mock_conn.send_command.assert_called_once_with("render_animation", {
-            "filepath": "/tmp/render_",
-            "format": "PNG",
-        })
+        sent = mock_conn.send_command.call_args[0][1]
+        # validate_file_path resolves symlinks, so /tmp becomes /private/tmp
+        # on macOS. render_image has always done this; this now agrees.
+        assert sent["filepath"].replace("\\", "/").endswith("/tmp/render_")
+        assert sent["format"] == "PNG"
 
     def test_render_animation_custom(self, mock_conn):
         from blend_ai.tools.rendering import render_animation
 
         render_animation(filepath="/tmp/anim_", format="JPEG")
-        mock_conn.send_command.assert_called_once_with("render_animation", {
-            "filepath": "/tmp/anim_",
-            "format": "JPEG",
-        })
+        sent = mock_conn.send_command.call_args[0][1]
+        # validate_file_path resolves symlinks, so /tmp becomes /private/tmp
+        # on macOS. render_image has always done this; this now agrees.
+        assert sent["filepath"].replace("\\", "/").endswith("/tmp/anim_")
+        assert sent["format"] == "JPEG"
 
     def test_render_animation_invalid_format(self, mock_conn):
         from blend_ai.tools.rendering import render_animation

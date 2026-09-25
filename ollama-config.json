@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "blend-ai": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/Users/michael/code/blend-ai",
+        "blend-ai"
+      ]
+    }
+  }
+}
+

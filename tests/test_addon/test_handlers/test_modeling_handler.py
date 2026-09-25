@@ -145,3 +145,43 @@ class TestModifierPropertyErrorIsActionable:
         message = str(exc.value)
         assert "levels" in message, "the valid property was not offered"
         assert "rna_type" not in message, "internal properties should not be listed"
+
+
+class TestExtrudeDirection:
+    """A positive offset must grow the object, as the docstring promises.
+
+    The handler negated the value, so extrude_faces(offset=0.5) on a 2m cube
+    left its dimensions at 2.0 and pushed the new geometry inward. Measured in
+    Blender 5.1: shrink_fatten(-0.5) leaves dims at 2.0, shrink_fatten(+0.5)
+    grows them to 2.577.
+    """
+
+    def test_positive_offset_is_passed_through_unnegated(self):
+        mod = _load_modeling_handler()
+        bpy = sys.modules["bpy"]
+        obj = MagicMock()
+        obj.name = "Cube"
+        obj.type = "MESH"
+        obj.mode = "OBJECT"
+        bpy.data.objects.get.return_value = obj
+        bpy.ops.transform.shrink_fatten.reset_mock()
+
+        mod.handle_extrude_faces({"object_name": "Cube", "offset": 0.5})
+
+        kwargs = bpy.ops.transform.shrink_fatten.call_args.kwargs
+        assert kwargs["value"] == 0.5, (
+            f"sent {kwargs['value']}, which moves faces inward for a positive offset"
+        )
+
+    def test_negative_offset_still_goes_inward(self):
+        mod = _load_modeling_handler()
+        bpy = sys.modules["bpy"]
+        obj = MagicMock()
+        obj.name = "Cube"
+        obj.type = "MESH"
+        obj.mode = "OBJECT"
+        bpy.data.objects.get.return_value = obj
+        bpy.ops.transform.shrink_fatten.reset_mock()
+
+        mod.handle_extrude_faces({"object_name": "Cube", "offset": -0.25})
+        assert bpy.ops.transform.shrink_fatten.call_args.kwargs["value"] == -0.25

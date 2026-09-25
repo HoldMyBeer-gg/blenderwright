@@ -443,3 +443,36 @@ class TestBridgeEdgeLoops:
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
             bridge_edge_loops("Cube")
+
+
+class TestExtrudeOffsetValidation:
+    """offset was the only float in 175 tools with no validation at all.
+
+    A numeric string reached `bpy.ops.transform.shrink_fatten(value=-offset)`
+    and died on `unary -: 'str'`; offset=0 duplicated every face in place and
+    reported success, leaving a non-manifold mesh.
+    """
+
+    def test_numeric_string_is_coerced(self, mock_conn):
+        from blend_ai.tools.modeling import extrude_faces
+        extrude_faces("Cube", offset="0.5")
+        assert mock_conn.send_command.call_args[0][1]["offset"] == 0.5
+
+    def test_zero_offset_is_rejected(self, mock_conn):
+        from blend_ai.tools.modeling import extrude_faces
+        from blend_ai.validators import ValidationError
+        with pytest.raises(ValidationError) as exc:
+            extrude_faces("Cube", offset=0)
+        assert "no-op" in str(exc.value).lower() or "zero" in str(exc.value).lower()
+
+    def test_negative_offset_is_allowed(self, mock_conn):
+        """Extruding inward is legitimate; only zero is meaningless."""
+        from blend_ai.tools.modeling import extrude_faces
+        extrude_faces("Cube", offset=-0.2)
+        assert mock_conn.send_command.call_args[0][1]["offset"] == -0.2
+
+    def test_absurd_offset_is_rejected(self, mock_conn):
+        from blend_ai.tools.modeling import extrude_faces
+        from blend_ai.validators import ValidationError
+        with pytest.raises(ValidationError):
+            extrude_faces("Cube", offset=1e9)

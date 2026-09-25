@@ -67,4 +67,93 @@ def handle_analyze_mesh_quality(params: dict) -> dict:
         bm.free()
 
 
+def _counts(obj):
+    """Vertex, edge and face totals, for reporting the effect of a repair."""
+    mesh = obj.data
+    return {
+        "vertices": len(mesh.vertices),
+        "edges": len(mesh.edges),
+        "faces": len(mesh.polygons),
+    }
+
+
+def handle_repair_mesh(params: dict) -> dict:
+    """Remove loose geometry, dissolve degenerate faces, and close holes."""
+    object_name = params.get("object_name")
+    obj = bpy.data.objects.get(object_name)
+    if obj is None:
+        raise ValueError(f"Object '{object_name}' not found")
+    if obj.type != "MESH":
+        raise ValueError(f"Object '{object_name}' is not a mesh (type: {obj.type})")
+
+    before = _counts(obj)
+    applied = []
+
+    if obj.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+    bpy.ops.object.mode_set(mode="EDIT")
+    try:
+        bpy.ops.mesh.select_all(action="SELECT")
+        if params.get("remove_loose", True):
+            bpy.ops.mesh.delete_loose()
+            applied.append("remove_loose")
+        if params.get("dissolve_degenerate", True):
+            bpy.ops.mesh.select_all(action="SELECT")
+            bpy.ops.mesh.dissolve_degenerate()
+            applied.append("dissolve_degenerate")
+        if params.get("fill_holes", False):
+            bpy.ops.mesh.select_all(action="SELECT")
+            bpy.ops.mesh.fill_holes(sides=0)
+            applied.append("fill_holes")
+    finally:
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+    after = _counts(obj)
+    return {
+        "object_name": obj.name,
+        "repairs_applied": applied,
+        "before": before,
+        "after": after,
+        "removed": {k: before[k] - after[k] for k in before},
+    }
+
+
+def handle_decimate_mesh(params: dict) -> dict:
+    """Reduce the polygon count with a Decimate modifier, then apply it."""
+    object_name = params.get("object_name")
+    ratio = float(params.get("ratio", 0.5))
+    obj = bpy.data.objects.get(object_name)
+    if obj is None:
+        raise ValueError(f"Object '{object_name}' not found")
+    if obj.type != "MESH":
+        raise ValueError(f"Object '{object_name}' is not a mesh (type: {obj.type})")
+
+    before = _counts(obj)
+
+    if obj.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+    mod = obj.modifiers.new(name="Decimate", type="DECIMATE")
+    mod.decimate_type = "COLLAPSE"
+    mod.ratio = ratio
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+    after = _counts(obj)
+    return {
+        "object_name": obj.name,
+        "ratio": ratio,
+        "before": before,
+        "after": after,
+    }
+
+
 dispatcher.register_handler("analyze_mesh_quality", handle_analyze_mesh_quality)
+dispatcher.register_handler("repair_mesh", handle_repair_mesh)
+dispatcher.register_handler("decimate_mesh", handle_decimate_mesh)

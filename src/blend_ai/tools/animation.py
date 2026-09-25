@@ -63,7 +63,7 @@ def insert_keyframe(
     """
     object_name = validate_object_name(object_name)
     data_path = _validate_data_path(data_path)
-    validate_numeric_range(frame, min_val=0, max_val=1048574, name="frame")
+    frame = validate_numeric_range(frame, min_val=0, max_val=1048574, name="frame")
 
     conn = get_connection()
     response = conn.send_command("insert_keyframe", {
@@ -91,7 +91,7 @@ def delete_keyframe(object_name: str, data_path: str, frame: int) -> dict[str, A
     """
     object_name = validate_object_name(object_name)
     data_path = _validate_data_path(data_path)
-    validate_numeric_range(frame, min_val=0, max_val=1048574, name="frame")
+    frame = validate_numeric_range(frame, min_val=0, max_val=1048574, name="frame")
 
     conn = get_connection()
     response = conn.send_command("delete_keyframe", {
@@ -114,7 +114,7 @@ def set_frame(frame: int) -> dict[str, Any]:
     Returns:
         Confirmation dict with the new current frame.
     """
-    validate_numeric_range(frame, min_val=0, max_val=1048574, name="frame")
+    frame = validate_numeric_range(frame, min_val=0, max_val=1048574, name="frame")
 
     conn = get_connection()
     response = conn.send_command("set_frame", {"frame": frame})
@@ -134,8 +134,8 @@ def set_frame_range(start: int, end: int) -> dict[str, Any]:
     Returns:
         Confirmation dict with the new frame range.
     """
-    validate_numeric_range(start, min_val=0, max_val=1048574, name="start")
-    validate_numeric_range(end, min_val=0, max_val=1048574, name="end")
+    start = validate_numeric_range(start, min_val=0, max_val=1048574, name="start")
+    end = validate_numeric_range(end, min_val=0, max_val=1048574, name="end")
     if end <= start:
         raise ValidationError(f"end ({end}) must be greater than start ({start})")
 

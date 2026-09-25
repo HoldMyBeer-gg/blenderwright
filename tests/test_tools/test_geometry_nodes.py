@@ -71,7 +71,7 @@ class TestAddGeometryNode:
     def test_empty_node_type(self, mock_conn):
         from blend_ai.tools.geometry_nodes import add_geometry_node
 
-        with pytest.raises(ValidationError, match="node_type must be a non-empty string"):
+        with pytest.raises(ValidationError, match="not a Blender node identifier"):
             add_geometry_node("GeometryNodes", "")
 
     def test_invalid_modifier_name(self, mock_conn):

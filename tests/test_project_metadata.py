@@ -215,3 +215,96 @@ def test_ollama_chat_dependency_is_declared():
     assert any(d.replace(" ", "").startswith("ollama") for d in declared), (
         "src/blend_ai/ollama_chat.py imports ollama, but no extra provides it."
     )
+
+
+def test_numeric_validation_results_are_not_discarded():
+    """validate_numeric_range coerces, so throwing away its result loses that.
+
+    A model sent value='0.85'. The validator accepted and converted it, the
+    caller ignored the return, and the original string reached Blender:
+    "NodeSocketFloatFactor.default_value expected a float type, not str".
+    Calling it as a bare statement is now always a bug.
+    """
+    offenders = []
+    for root, _, files in os.walk(os.path.join(ROOT, "src", "blend_ai")):
+        for filename in sorted(files):
+            if not filename.endswith(".py"):
+                continue
+            path = os.path.join(root, filename)
+            with open(path, encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)):
+                    continue
+                func = node.value.func
+                name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+                if name == "validate_numeric_range":
+                    rel = os.path.relpath(path, ROOT)
+                    offenders.append(f"{rel}:{node.lineno}")
+    assert not offenders, (
+        f"{len(offenders)} call(s) discard the coerced value, so a numeric "
+        f"string is validated and then passed on unconverted: "
+        f"{offenders[:5]}{'...' if len(offenders) > 5 else ''}"
+    )
+
+
+def test_dev_tools_are_in_a_group_uv_installs_by_default():
+    """`uv run pytest` must use the project's pytest, not one from PATH.
+
+    pytest lived only in the optional `dev` extra, which uv does not install,
+    so the command fell through to the pyenv pytest. That interpreter had
+    mcp 2.x, where FastMCP was renamed, so every test importing
+    blend_ai.server errored and the failures looked unexplained and
+    pre-existing.
+    """
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        config = tomllib.load(f)
+    groups = config.get("dependency-groups", {})
+    assert "dev" in groups, (
+        "no [dependency-groups] dev, so `uv run pytest` will not install pytest"
+    )
+    names = {d.split(">")[0].split("=")[0].split("[")[0].strip() for d in groups["dev"]}
+    assert "pytest" in names
+
+
+def test_the_dev_extra_still_exists_for_ci():
+    """CI installs with pip, which does not read [dependency-groups]."""
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        config = tomllib.load(f)
+    extras = config["project"].get("optional-dependencies", {})
+    assert "dev" in extras, "CI's `pip install -e .[dev]` would break"
+
+
+def test_the_two_dev_lists_agree():
+    """Two lists of the same tools drift; pin them together."""
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        config = tomllib.load(f)
+    extra = sorted(config["project"]["optional-dependencies"]["dev"])
+    group = sorted(config["dependency-groups"]["dev"])
+    assert extra == group, (
+        f"the dev extra and the dev group differ: {set(extra) ^ set(group)}"
+    )
+
+
+def test_no_conftest_permanently_fakes_the_server_module():
+    """A fake blend_ai.server in sys.modules makes results depend on import order.
+
+    tests/test_tools/conftest.py used sys.modules.setdefault and never cleaned
+    up, so the real registry was visible to some tests and not others, and
+    fifteen collection errors in test_ollama_chat.py went unexplained for
+    months. Nothing needs the fake; keep it that way.
+    """
+    import re
+    for dirpath, _, filenames in os.walk(os.path.join(ROOT, "tests")):
+        for filename in filenames:
+            if filename != "conftest.py":
+                continue
+            path = os.path.join(dirpath, filename)
+            with open(path, encoding="utf-8") as f:
+                body = f.read()
+            offending = re.findall(
+                r"sys\.modules(?:\.setdefault\(|\[)\s*[\"']blend_ai\.server[\"']", body)
+            assert not offending, (
+                f"{os.path.relpath(path, ROOT)} installs a fake blend_ai.server "
+                f"at collection; that makes test results depend on import order."
+            )

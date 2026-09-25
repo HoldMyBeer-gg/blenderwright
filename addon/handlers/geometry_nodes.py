@@ -82,6 +82,19 @@ def handle_add_geometry_node(params: dict) -> dict:
                 f"No geometry nodes modifier or node group named '{modifier_name}' found"
             )
 
+        # Ask this Blender what node classes it has rather than carrying a
+        # list that goes stale. nodes.new() on an unknown type raises a bare
+        # RuntimeError naming nothing useful, so near misses are offered:
+        # GeometryNodeCube for GeometryNodeMeshCube is an easy guess to make.
+        known = {c.__name__ for base in ("GeometryNode", "FunctionNode", "ShaderNode")
+                 for c in getattr(bpy.types, base).__subclasses__()}
+        if node_type not in known:
+            lowered = node_type.lower()
+            near = sorted(n for n in known
+                          if lowered in n.lower() or n.lower() in lowered)
+            hint = f" Did you mean: {', '.join(near[:5])}?" if near else ""
+            raise ValueError(f"Unknown node type '{node_type}'.{hint}")
+
         node = node_group.nodes.new(type=node_type)
         node.location = (location[0], location[1])
 

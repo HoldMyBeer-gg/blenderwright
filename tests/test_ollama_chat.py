@@ -953,3 +953,77 @@ class TestToolSchemaConstraints:
             "Summary.\n\nArgs:\n    a: First.\n\nReturns:\n    Something else.\n"
         )
         assert docs == {"a": "First."}
+
+
+class TestSchemaTypeFidelity:
+    """A parameter must not be published as a type it is not.
+
+    _map_json_type defaulted an absent "type" to "string", so two shapes were
+    misreported: a bare `Any` parameter (no type key at all) and an optional
+    union like `list[float] | None` (an anyOf with no top-level type). 27
+    parameters published as string, including colours, vectors and sockets.
+    A model reading `color: string` sends "red" or "[1,0,0]".
+    """
+
+    @staticmethod
+    def _convert(schema):
+        from blend_ai.tool_registry import get_ollama_tools
+
+        class _Tool:
+            name = "t"
+            description = "Do a thing.\n\nArgs:\n    p: A parameter.\n"
+            inputSchema = schema
+
+        class _Server:
+            async def list_tools(self):
+                return [_Tool()]
+
+        return get_ollama_tools(_Server())[0]["function"]["parameters"]["properties"]["p"]
+
+    def test_bare_any_is_not_called_a_string(self):
+        """`value: Any` arrives with no type key at all."""
+        prop = self._convert({"properties": {"p": {"title": "P"}}, "required": []})
+        assert prop.get("type") != "string", (
+            "A parameter of unknown type must not claim to be a string."
+        )
+
+    def test_optional_array_keeps_its_array_type(self):
+        """`list[float] | None` arrives as an anyOf."""
+        prop = self._convert({"properties": {"p": {
+            "anyOf": [{"items": {"type": "number"}, "type": "array"},
+                      {"type": "null"}],
+            "default": None, "title": "P"}}, "required": []})
+        assert prop["type"] == "array", f"published as {prop.get('type')!r}"
+
+    def test_optional_array_keeps_its_item_type(self):
+        prop = self._convert({"properties": {"p": {
+            "anyOf": [{"items": {"type": "number"}, "type": "array"},
+                      {"type": "null"}],
+            "default": None, "title": "P"}}, "required": []})
+        assert prop.get("items", {}).get("type") == "number"
+
+    def test_optional_scalar_keeps_its_type(self):
+        prop = self._convert({"properties": {"p": {
+            "anyOf": [{"type": "integer"}, {"type": "null"}],
+            "default": None, "title": "P"}}, "required": []})
+        assert prop["type"] == "integer"
+
+    def test_a_real_string_is_still_a_string(self):
+        prop = self._convert({"properties": {"p": {"type": "string", "title": "P"}},
+                              "required": []})
+        assert prop["type"] == "string"
+
+    def test_optional_vector_parameters_survive_conversion(self):
+        """set_world_background(color=...) is `list[float] | None` in source."""
+        prop = self._convert({"properties": {"p": {
+            "anyOf": [{"items": {}, "type": "array"}, {"type": "null"}],
+            "default": None, "title": "P"}}, "required": []})
+        assert prop["type"] == "array"
+        assert prop.get("default") is None, "the default must survive flattening"
+
+    def test_a_genuine_multi_type_union_is_left_alone(self):
+        """str | int is ambiguous; guessing one would be worse than silence."""
+        prop = self._convert({"properties": {"p": {
+            "anyOf": [{"type": "string"}, {"type": "integer"}], "title": "P"}},
+            "required": []})
+        assert prop.get("type") != "string" or "anyOf" in prop
