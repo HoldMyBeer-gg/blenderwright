@@ -4,6 +4,7 @@ from typing import Any
 
 from blend_ai.server import mcp, get_connection
 from blend_ai.validators import (
+    validate_file_path,
     validate_object_name,
     validate_enum,
     validate_vector,
@@ -12,6 +13,8 @@ from blend_ai.validators import (
 )
 
 ALLOWED_CURVE_TYPES = {"BEZIER", "NURBS", "PATH"}
+ALLOWED_FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".pfb", ".woff", ".woff2"}
+
 ALLOWED_HANDLE_TYPES = {"AUTO", "VECTOR", "ALIGNED", "FREE"}
 ALLOWED_CURVE_HANDLE_TYPES = {"AUTO", "VECTOR", "ALIGNED", "FREE_ALIGN"}
 ALLOWED_FILL_MODES = {"FULL", "BACK", "FRONT", "HALF", "NONE"}
@@ -184,9 +187,14 @@ def create_text(
     if len(text) > 10000:
         raise ValidationError("text must be 10000 characters or fewer")
     location = validate_vector(location, size=3, name="location")
-    validate_numeric_range(size, min_val=0.001, max_val=1000.0, name="size")
+    size = validate_numeric_range(size, min_val=0.001, max_val=1000.0, name="size")
     if name:
         name = validate_object_name(name)
+    if font:
+        # The only file path in the codebase that skipped validation: no
+        # absolute-path requirement, no null-byte check, no extension check.
+        font = validate_file_path(
+            font, allowed_extensions=ALLOWED_FONT_EXTENSIONS, must_exist=True)
 
     conn = get_connection()
     response = conn.send_command("create_text", {

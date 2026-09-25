@@ -248,7 +248,11 @@ def bevel_edges(object_name: str, width: float = 0.1, segments: int = 1) -> dict
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(width, min_val=0.0, name="width")
+    width = validate_numeric_range(width, min_val=0.0, name="width")
+    if width == 0:
+        raise ValidationError(
+            "width of 0 is a no-op; the bevel runs and changes nothing."
+        )
     validate_numeric_range(segments, min_val=1, max_val=100, name="segments")
 
     conn = get_connection()

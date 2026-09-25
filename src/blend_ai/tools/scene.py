@@ -3,7 +3,13 @@
 from typing import Any
 
 from blend_ai.server import mcp, get_connection
-from blend_ai.validators import validate_object_name, validate_enum, validate_numeric_range
+from blend_ai.validators import (
+    ValidationError,
+    validate_enum,
+    validate_numeric_range,
+    validate_object_name,
+    validate_vector,
+)
 
 # Allowed scene properties that can be set
 ALLOWED_SCENE_PROPERTIES = {
@@ -80,7 +86,16 @@ def set_scene_property(property: str, value: Any) -> dict[str, Any]:
     elif property == "unit_system":
         validate_enum(value, ALLOWED_UNIT_SYSTEMS, name="unit_system")
     elif property == "render_engine":
-        validate_enum(value, ALLOWED_RENDER_ENGINES, name="render_engine")
+        value = validate_enum(value, ALLOWED_RENDER_ENGINES, name="render_engine")
+    elif property == "gravity":
+        # Reached scene.gravity untouched, so a scalar raised
+        # "TypeError: 'float' object is not iterable" from inside Blender.
+        value = list(validate_vector(value, size=3, name="gravity"))
+    elif property == "use_gravity":
+        if not isinstance(value, bool):
+            raise ValidationError(
+                f"use_gravity must be true or false, got {value!r}"
+            )
 
     conn = get_connection()
     response = conn.send_command("set_scene_property", {"property": property, "value": value})

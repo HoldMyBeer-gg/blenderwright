@@ -211,19 +211,21 @@ class TestRenderAnimation:
         from blend_ai.tools.rendering import render_animation
 
         render_animation()
-        mock_conn.send_command.assert_called_once_with("render_animation", {
-            "filepath": "/tmp/render_",
-            "format": "PNG",
-        })
+        sent = mock_conn.send_command.call_args[0][1]
+        # validate_file_path resolves symlinks, so /tmp becomes /private/tmp
+        # on macOS. render_image has always done this; this now agrees.
+        assert sent["filepath"].endswith("/tmp/render_")
+        assert sent["format"] == "PNG"
 
     def test_render_animation_custom(self, mock_conn):
         from blend_ai.tools.rendering import render_animation
 
         render_animation(filepath="/tmp/anim_", format="JPEG")
-        mock_conn.send_command.assert_called_once_with("render_animation", {
-            "filepath": "/tmp/anim_",
-            "format": "JPEG",
-        })
+        sent = mock_conn.send_command.call_args[0][1]
+        # validate_file_path resolves symlinks, so /tmp becomes /private/tmp
+        # on macOS. render_image has always done this; this now agrees.
+        assert sent["filepath"].endswith("/tmp/anim_")
+        assert sent["format"] == "JPEG"
 
     def test_render_animation_invalid_format(self, mock_conn):
         from blend_ai.tools.rendering import render_animation

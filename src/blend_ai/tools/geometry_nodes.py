@@ -2,8 +2,13 @@
 
 from typing import Any
 
+import re
+
 from blend_ai.server import mcp, get_connection
 from blend_ai.validators import validate_object_name, validate_vector, ValidationError
+
+
+_NODE_TYPE_PATTERN = re.compile(r"^(Geometry|Function|Shader)Node[A-Z][A-Za-z0-9]*$")
 
 
 @mcp.tool()
@@ -52,6 +57,16 @@ def add_geometry_node(
         Dict with the created node's name and type.
     """
     modifier_name = validate_object_name(modifier_name)
+    # The addon makes the real decision by asking bpy.types, which cannot go
+    # stale across Blender versions. This only rejects shapes that could never
+    # be a node identifier, so an obvious typo costs no round trip.
+    if not isinstance(node_type, str) or not _NODE_TYPE_PATTERN.match(node_type):
+        raise ValidationError(
+            f"node_type {node_type!r} is not a Blender node identifier. They "
+            f"look like GeometryNodeMeshCube or FunctionNodeInputVector: a "
+            f"GeometryNode, FunctionNode or ShaderNode prefix followed by the "
+            f"node name in CamelCase, no spaces."
+        )
     if not node_type or not isinstance(node_type, str):
         raise ValidationError("node_type must be a non-empty string")
     location = validate_vector(location, size=2, name="location")

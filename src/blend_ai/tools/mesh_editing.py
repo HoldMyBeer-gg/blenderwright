@@ -5,6 +5,7 @@ from typing import Any
 
 from blend_ai.server import mcp, get_connection
 from blend_ai.validators import (
+    ValidationError,
     validate_object_name,
     validate_numeric_range,
     validate_vector,
@@ -29,7 +30,13 @@ def inset_faces(
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    validate_numeric_range(thickness, min_val=0.0, max_val=10.0, name="thickness")
+    thickness = validate_numeric_range(thickness, min_val=0.0, max_val=10.0,
+                                       name="thickness")
+    if thickness == 0:
+        raise ValidationError(
+            "thickness of 0 inserts faces on top of the originals and "
+            "reports success, leaving a non-manifold mesh."
+        )
     validate_numeric_range(depth, min_val=-10.0, max_val=10.0, name="depth")
 
     conn = get_connection()
@@ -359,6 +366,11 @@ def spin_mesh(
     validate_numeric_range(angle, min_val=-math.tau, max_val=math.tau, name="angle")
     validate_numeric_range(steps, min_val=1, max_val=1000, name="steps")
     axis = validate_vector(axis, size=3, name="axis")
+    if not any(axis):
+        raise ValidationError(
+            "axis has zero length, so there is no direction to spin "
+            "around. The operator runs and produces nothing."
+        )
     center = validate_vector(center, size=3, name="center")
 
     conn = get_connection()

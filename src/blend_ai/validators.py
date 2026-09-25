@@ -52,11 +52,13 @@ def validate_file_path(path: str, allowed_extensions: set[str] | None = None, mu
     if not path or not isinstance(path, str):
         raise ValidationError("File path must be a non-empty string")
 
-    resolved = str(Path(path).resolve())
-
-    # Check for null bytes (path traversal attack)
+    # Before any path operation: os.path raises a bare ValueError on an
+    # embedded null, which escapes as a stack trace instead of the clean
+    # rejection this function exists to give.
     if "\x00" in path:
         raise ValidationError("File path contains null bytes")
+
+    resolved = str(Path(path).resolve())
 
     if allowed_extensions is not None:
         ext = Path(resolved).suffix.lower()

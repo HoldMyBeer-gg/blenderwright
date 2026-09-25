@@ -368,3 +368,28 @@ class TestNumericStringCoercion:
         from blend_ai.validators import validate_numeric_range
         assert validate_numeric_range(0.5, min_val=0.0, max_val=1.0) == 0.5
         assert validate_numeric_range(3, min_val=0, max_val=10) == 3
+
+
+class TestNullByteCheckRunsFirst:
+    """A null byte reached Path().resolve() before the check for it.
+
+    os.path raises "ValueError: embedded null character in path", a raw Python
+    error rather than a ValidationError, so the caller saw a stack trace
+    instead of a clean rejection from the validator whose job it is.
+    """
+
+    def test_null_byte_raises_validation_error_not_value_error(self):
+        from blend_ai.validators import ValidationError, validate_file_path
+        with pytest.raises(ValidationError) as exc:
+            validate_file_path("/tmp/out\x00evil")
+        assert "null" in str(exc.value).lower()
+
+    def test_null_byte_is_caught_even_with_an_extension_allowlist(self):
+        from blend_ai.validators import ValidationError, validate_file_path
+        with pytest.raises(ValidationError):
+            validate_file_path("/tmp/a\x00b.png", allowed_extensions={".png"})
+
+    def test_a_clean_path_is_unaffected(self):
+        from blend_ai.validators import validate_file_path
+        assert validate_file_path("/tmp/fine.png",
+                                  allowed_extensions={".png"}).endswith("fine.png")

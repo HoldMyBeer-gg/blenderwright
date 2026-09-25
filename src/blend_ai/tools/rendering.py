@@ -149,6 +149,9 @@ def render_animation(filepath: str = "/tmp/render_", format: str = "PNG") -> dic
     validate_enum(format, ALLOWED_OUTPUT_FORMATS, name="format")
     if not filepath or not isinstance(filepath, str):
         raise ValidationError("filepath must be a non-empty string")
+    # Blender resolves a relative path against the .blend, so frames landed
+    # somewhere the caller never named. No extension check: this is a prefix.
+    filepath = validate_file_path(filepath, allowed_extensions=None)
     # Validate no null bytes
     if "\x00" in filepath:
         raise ValidationError("filepath contains null bytes")
