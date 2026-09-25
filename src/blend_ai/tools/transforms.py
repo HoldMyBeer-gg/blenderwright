@@ -1,6 +1,8 @@
 """MCP tools for Blender object transforms."""
 
-from typing import Any
+from typing import Annotated, Any
+
+from pydantic import Field
 
 from blend_ai.server import mcp, get_connection
 from blend_ai.validators import (
@@ -10,6 +12,12 @@ from blend_ai.validators import (
     validate_numeric_range,
     validate_scale,
 )
+
+# Stated once so the schema carries it. Without a length in the schema a model
+# guesses, and a wrong guess costs a round trip: scale=[0.3, 0.25] was the
+# failure that started this. These parameters are required, so the length
+# cannot be inferred from a default.
+Vector3 = Annotated[list[float], Field(min_length=3, max_length=3)]
 
 # Allowed rotation modes
 ALLOWED_ROTATION_MODES = {"EULER", "QUATERNION"}
@@ -24,7 +32,7 @@ ALLOWED_ORIGIN_TYPES = {
 
 
 @mcp.tool()
-def set_location(name: str, location: list[float] | tuple[float, ...]) -> dict[str, Any]:
+def set_location(name: str, location: Vector3) -> dict[str, Any]:
     """Set the position of an object.
 
     Args:
@@ -47,7 +55,7 @@ def set_location(name: str, location: list[float] | tuple[float, ...]) -> dict[s
 @mcp.tool()
 def set_rotation(
     name: str,
-    rotation: list[float] | tuple[float, ...],
+    rotation: Vector3,
     mode: str = "EULER",
 ) -> dict[str, Any]:
     """Set the rotation of an object.
@@ -81,7 +89,7 @@ def set_rotation(
 
 
 @mcp.tool()
-def set_scale(name: str, scale: list[float] | tuple[float, ...]) -> dict[str, Any]:
+def set_scale(name: str, scale: Vector3) -> dict[str, Any]:
     """Set the scale of an object.
 
     Args:

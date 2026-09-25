@@ -89,3 +89,73 @@ class TestUnknownParametersAreRejected:
             f"{len(lenient)} tool(s) still ignore unknown parameters: "
             f"{sorted(lenient)[:5]}"
         )
+
+
+class TestRequiredVectorsDeclareTheirLength:
+    """The minItems fix inferred length from a 3-number default.
+
+    set_location, set_rotation and set_scale take their vector as a required
+    parameter with no default, so the inference never fired on the three
+    most-called tools in the server. A model still had nothing telling it how
+    many components to send, which is the mistake that started all of this
+    (scale=[0.3, 0.25]).
+
+    These exercise the alias and the registry directly. Asserting against the
+    live server is unreliable here: tests/test_tools/conftest.py installs a
+    fake blend_ai.server into sys.modules at collection and never removes it,
+    so what the global holds depends on import order.
+    """
+
+    def test_the_vector_alias_constrains_length(self):
+        from pydantic import BaseModel, ValidationError
+        from blend_ai.tools.transforms import Vector3
+
+        class M(BaseModel):
+            v: Vector3
+
+        assert list(M(v=[1.0, 2.0, 3.0]).v) == [1.0, 2.0, 3.0]
+        with pytest.raises(ValidationError):
+            M(v=[0.3, 0.25])
+        with pytest.raises(ValidationError):
+            M(v=[1.0, 2.0, 3.0, 4.0])
+
+    def test_the_alias_publishes_its_length_in_the_schema(self):
+        from pydantic import BaseModel
+        from blend_ai.tools.transforms import Vector3
+
+        class M(BaseModel):
+            v: Vector3
+
+        prop = M.model_json_schema()["properties"]["v"]
+        assert prop["minItems"] == 3 and prop["maxItems"] == 3
+
+    def test_the_three_transform_tools_use_the_alias(self):
+        """Source-level check, immune to how the server module is loaded."""
+        import inspect
+        from blend_ai.tools import transforms
+        for name, param in (("set_location", "location"),
+                            ("set_rotation", "rotation"),
+                            ("set_scale", "scale")):
+            annotation = inspect.signature(
+                getattr(transforms, name)).parameters[param].annotation
+            assert annotation is transforms.Vector3, (
+                f"{name}.{param} is {annotation!r}, not the constrained alias"
+            )
+
+    def test_the_registry_passes_length_constraints_through(self):
+        """Previously it only added minItems via the 3-number-default guess."""
+        from blend_ai.tool_registry import get_ollama_tools
+
+        class _Tool:
+            name = "t"
+            description = "Do it.\n\nArgs:\n    v: A vector.\n"
+            inputSchema = {"properties": {"v": {
+                "type": "array", "items": {"type": "number"},
+                "minItems": 3, "maxItems": 3, "title": "V"}}, "required": ["v"]}
+
+        class _Server:
+            async def list_tools(self):
+                return [_Tool()]
+
+        prop = get_ollama_tools(_Server())[0]["function"]["parameters"]["properties"]["v"]
+        assert prop["minItems"] == 3 and prop["maxItems"] == 3

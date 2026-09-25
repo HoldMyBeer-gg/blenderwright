@@ -41,6 +41,10 @@ def get_ollama_tools(mcp_server: Any) -> list[dict[str, Any]]:
                 clean_prop["enum"] = prop["enum"]
             if "items" in prop:
                 clean_prop["items"] = prop["items"]
+            # A length stated in the annotation is authoritative; keep it.
+            for constraint in ("minItems", "maxItems", "minimum", "maximum"):
+                if constraint in prop:
+                    clean_prop[constraint] = prop[constraint]
 
             # The docstring documents each parameter, but that text reaches the
             # model as one blob attached to the tool rather than as structure on
