@@ -28,3 +28,4 @@ README.html
 
 # Planning artifacts - do not reintroduce
 .planning/
+ollama-config.json
