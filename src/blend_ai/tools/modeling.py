@@ -217,6 +217,13 @@ def extrude_faces(object_name: str, offset: float = 1.0) -> dict[str, Any]:
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
+    offset = validate_numeric_range(offset, min_val=-1000.0, max_val=1000.0,
+                                    name="offset")
+    if offset == 0:
+        raise ValidationError(
+            "offset of 0 is a no-op that still duplicates every face in place, "
+            "leaving a non-manifold mesh. Use a non-zero distance."
+        )
 
     conn = get_connection()
     response = conn.send_command("extrude_faces", {

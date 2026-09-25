@@ -178,7 +178,11 @@ def handle_extrude_faces(params):
     bpy.ops.mesh.extrude_region_move(
         TRANSFORM_OT_translate={"value": (0, 0, 0)}
     )
-    bpy.ops.transform.shrink_fatten(value=-offset)
+    # Not negated. Measured on a 2m cube in Blender 5.1: shrink_fatten(-0.5)
+    # leaves its dimensions at 2.0 and pushes the new geometry inward, while
+    # shrink_fatten(+0.5) grows them to 2.577. A positive offset is documented
+    # as extruding along the normals, which means outward.
+    bpy.ops.transform.shrink_fatten(value=offset)
     bpy.ops.object.mode_set(mode="OBJECT")
 
     return {"object": obj.name, "offset": offset}
