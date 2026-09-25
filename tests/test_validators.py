@@ -281,3 +281,51 @@ class TestValidateEnum:
         allowed = {"MESH"}
         with pytest.raises(ValidationError, match="must be one of"):
             validate_enum("mesh", allowed)
+
+
+class TestValidateScale:
+    """A local model asked for scale=[0.15, -0.2, 0] and we said yes.
+
+    Zero collapses the object to zero thickness: a "leaf" came out with
+    dimensions 0.5 x 2 x 0. Negative silently mirrors the object and inverts
+    its normals, in the same session where the user had asked for a flipped
+    normal check. validate_vector only checked type, length and numeric-ness.
+    """
+
+    def test_accepts_normal_scale(self):
+        from blend_ai.validators import validate_scale
+        assert validate_scale([1.0, 2.0, 0.5]) == (1.0, 2.0, 0.5)
+
+    def test_accepts_very_small_positive_scale(self):
+        from blend_ai.validators import validate_scale
+        assert validate_scale([0.001, 0.001, 0.001]) == (0.001, 0.001, 0.001)
+
+    def test_rejects_zero_component(self):
+        from blend_ai.validators import ValidationError, validate_scale
+        with pytest.raises(ValidationError) as exc:
+            validate_scale([0.15, 0.2, 0])
+        assert "zero" in str(exc.value).lower()
+
+    def test_rejects_negative_component(self):
+        from blend_ai.validators import ValidationError, validate_scale
+        with pytest.raises(ValidationError) as exc:
+            validate_scale([0.5, 0.6, -1])
+        assert "negative" in str(exc.value).lower()
+
+    def test_negative_error_points_at_the_mirror_modifier(self):
+        """Refusing is only helpful if it says what to do instead."""
+        from blend_ai.validators import ValidationError, validate_scale
+        with pytest.raises(ValidationError) as exc:
+            validate_scale([-1, 1, 1])
+        assert "mirror" in str(exc.value).lower()
+
+    def test_names_the_offending_axis(self):
+        from blend_ai.validators import ValidationError, validate_scale
+        with pytest.raises(ValidationError) as exc:
+            validate_scale([1, 1, 0])
+        assert "component 2" in str(exc.value) or "z" in str(exc.value).lower()
+
+    def test_still_enforces_three_components(self):
+        from blend_ai.validators import ValidationError, validate_scale
+        with pytest.raises(ValidationError):
+            validate_scale([0.3, 0.25])

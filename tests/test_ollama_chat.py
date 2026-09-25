@@ -819,3 +819,124 @@ class TestChatWithImages:
 
         user_msg = next(m for m in session.messages if m["role"] == "user")
         assert "images" not in user_msg
+
+
+class TestToolSchemaConstraints:
+    """Models trust the schema over the prose around it.
+
+    A local model repeatedly sent scale=[0.3, 0.25] and was rejected, because
+    the schema said only "array of number". The length requirement and the
+    parameter descriptions both lived in the docstring, which reaches the
+    model as one blob of text attached to the tool, not as structure on the
+    parameter it constrains. Each rejection costs a full round trip.
+
+    These build their own server stub rather than reading blend_ai.server.mcp,
+    which other tests in this file replace with a MagicMock.
+    """
+
+    @staticmethod
+    def _stub_server(tools):
+        """A minimal stand-in for FastMCP.list_tools()."""
+        class _Tool:
+            def __init__(self, name, description, schema):
+                self.name = name
+                self.description = description
+                self.inputSchema = schema
+
+        class _Server:
+            async def list_tools(self):
+                return [_Tool(*t) for t in tools]
+
+        return _Server()
+
+    def _create_object_params(self):
+        from blend_ai.tool_registry import get_ollama_tools
+        description = (
+            "Create a primitive object in the scene.\n"
+            "\n"
+            "Args:\n"
+            "    type: Primitive type. One of: CUBE, SPHERE, UV_SPHERE, CYLINDER,\n"
+            "          CONE, TORUS, PLANE, MONKEY, EMPTY.\n"
+            "    name: Optional name for the object. Auto-generated if empty.\n"
+            "    location: XYZ position as a 3-element list/tuple.\n"
+            "    rotation: XYZ Euler rotation in radians as a 3-element list/tuple.\n"
+            "    scale: XYZ scale as a 3-element list/tuple. Defaults to (1,1,1).\n"
+            "\n"
+            "Returns:\n"
+            "    Dict with the created object's name.\n"
+        )
+        schema = {
+            "properties": {
+                "type": {"type": "string", "title": "Type"},
+                "name": {"type": "string", "title": "Name", "default": ""},
+                "location": {"type": "array", "title": "Location",
+                             "default": [0, 0, 0], "items": {"type": "number"}},
+                "rotation": {"type": "array", "title": "Rotation",
+                             "default": [0, 0, 0], "items": {"type": "number"}},
+                "scale": {"type": "array", "title": "Scale",
+                          "default": [1, 1, 1], "items": {"type": "number"}},
+            },
+            "required": ["type"],
+        }
+        server = self._stub_server([("create_object", description, schema)])
+        tools = get_ollama_tools(server)
+        return tools[0]["function"]["parameters"]["properties"]
+
+    def test_vector_parameters_declare_their_length(self):
+        props = self._create_object_params()
+        for axis_param in ("location", "rotation", "scale"):
+            prop = props[axis_param]
+            assert prop.get("minItems") == 3, f"{axis_param} does not require 3 items"
+            assert prop.get("maxItems") == 3, f"{axis_param} does not cap at 3 items"
+
+    def test_parameters_carry_their_descriptions(self):
+        props = self._create_object_params()
+        assert "description" in props["scale"], (
+            "The docstring documents scale, but the schema does not."
+        )
+        assert "3" in props["scale"]["description"]
+
+    def test_descriptions_survive_multi_line_docstring_entries(self):
+        """create_object's 'type' description wraps onto a second line."""
+        props = self._create_object_params()
+        desc = props["type"].get("description", "")
+        assert "CUBE" in desc and "CYLINDER" in desc, (
+            "A wrapped Args entry lost its continuation lines."
+        )
+
+    def test_scalar_and_short_arrays_are_untouched(self):
+        """Only arrays with a 3-number default describe an XYZ vector."""
+        from blend_ai.tool_registry import get_ollama_tools
+        description = (
+            "Do a thing.\n\nArgs:\n"
+            "    names: Objects to act on.\n"
+            "    pair: Two numbers.\n"
+            "    flags: Three booleans, not a vector.\n"
+        )
+        schema = {
+            "properties": {
+                "names": {"type": "array", "title": "Names", "default": []},
+                "pair": {"type": "array", "title": "Pair", "default": [1, 2]},
+                "flags": {"type": "array", "title": "Flags",
+                          "default": [True, False, True]},
+            },
+            "required": [],
+        }
+        props = get_ollama_tools(
+            self._stub_server([("thing", description, schema)])
+        )[0]["function"]["parameters"]["properties"]
+        for name in ("names", "pair", "flags"):
+            assert "minItems" not in props[name], (
+                f"{name} was constrained to 3 without an XYZ default"
+            )
+
+    def test_arg_parser_ignores_a_missing_args_section(self):
+        from blend_ai.tool_registry import _parse_arg_docs
+        assert _parse_arg_docs("Just a summary, no sections.") == {}
+
+    def test_arg_parser_stops_at_returns(self):
+        from blend_ai.tool_registry import _parse_arg_docs
+        docs = _parse_arg_docs(
+            "Summary.\n\nArgs:\n    a: First.\n\nReturns:\n    Something else.\n"
+        )
+        assert docs == {"a": "First."}

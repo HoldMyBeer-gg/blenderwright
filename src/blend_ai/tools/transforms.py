@@ -8,6 +8,7 @@ from blend_ai.validators import (
     validate_enum,
     validate_vector,
     validate_numeric_range,
+    validate_scale,
 )
 
 # Allowed rotation modes
@@ -91,7 +92,7 @@ def set_scale(name: str, scale: list[float] | tuple[float, ...]) -> dict[str, An
         Dict with the object name and new scale.
     """
     name = validate_object_name(name)
-    scale = validate_vector(scale, size=3, name="scale")
+    scale = validate_scale(scale, name="scale")
 
     conn = get_connection()
     response = conn.send_command("set_scale", {"name": name, "scale": list(scale)})

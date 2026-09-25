@@ -107,6 +107,38 @@ def validate_vector(vec: list | tuple, size: int = 3, name: str = "vector") -> t
     return tuple(vec)
 
 
+def validate_scale(vec: list | tuple, name: str = "scale") -> tuple:
+    """Validate a scale vector, rejecting degenerate and mirrored values.
+
+    A zero component collapses the object to no thickness, and a negative one
+    mirrors it and inverts its normals. Both are almost always mistakes from a
+    caller reasoning about a shape rather than a transform, and neither
+    reports an error from Blender, so they are caught here instead.
+
+    Args:
+        vec: Scale as a 3-element list or tuple.
+        name: Parameter name, used in error messages.
+
+    Returns:
+        The validated scale as a tuple.
+    """
+    vec = validate_vector(vec, size=3, name=name)
+    axes = ("x", "y", "z")
+    for i, v in enumerate(vec):
+        if v == 0:
+            raise ValidationError(
+                f"{name} component {i} ({axes[i]}) is zero, which flattens the "
+                f"object to no thickness. Every axis needs a positive size."
+            )
+        if v < 0:
+            raise ValidationError(
+                f"{name} component {i} ({axes[i]}) is negative, which mirrors "
+                f"the object and inverts its normals. Use a positive scale, "
+                f"and add a Mirror modifier if you want a mirrored copy."
+            )
+    return vec
+
+
 def validate_enum(value: str, allowed: set[str], name: str = "value") -> str:
     """Validate a string is one of the allowed values."""
     if not isinstance(value, str):

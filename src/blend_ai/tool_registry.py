@@ -1,6 +1,7 @@
 """Registry that extracts tool definitions from FastMCP for use with Ollama."""
 
 import asyncio
+import re
 from typing import Any
 
 
@@ -21,6 +22,7 @@ def get_ollama_tools(mcp_server: Any) -> list[dict[str, Any]]:
         properties = schema.get("properties", {})
         required = schema.get("required", [])
 
+        arg_docs = _parse_arg_docs(tool.description or "")
         clean_props: dict[str, Any] = {}
         for name, prop in properties.items():
             clean_prop: dict[str, Any] = {
@@ -36,6 +38,26 @@ def get_ollama_tools(mcp_server: Any) -> list[dict[str, Any]]:
                 clean_prop["enum"] = prop["enum"]
             if "items" in prop:
                 clean_prop["items"] = prop["items"]
+
+            # The docstring documents each parameter, but that text reaches the
+            # model as one blob attached to the tool rather than as structure on
+            # the parameter it describes. Models follow the schema, so put it
+            # where they look.
+            if "description" not in clean_prop and name in arg_docs:
+                clean_prop["description"] = arg_docs[name]
+
+            # A three-element default is the codebase's way of saying "this is
+            # an XYZ vector". Say so in the schema: without it a model guesses
+            # the length, and a wrong guess costs a whole round trip.
+            default = clean_prop.get("default")
+            if clean_prop["type"] == "array" and isinstance(default, list):
+                if len(default) == 3 and all(
+                    isinstance(v, (int, float)) and not isinstance(v, bool)
+                    for v in default
+                ):
+                    clean_prop["minItems"] = 3
+                    clean_prop["maxItems"] = 3
+
             clean_props[name] = clean_prop
 
         ollama_tool: dict[str, Any] = {
@@ -53,6 +75,39 @@ def get_ollama_tools(mcp_server: Any) -> list[dict[str, Any]]:
         ollama_tools.append(ollama_tool)
 
     return ollama_tools
+
+
+def _parse_arg_docs(description: str) -> dict[str, str]:
+    """Pull per-parameter text out of a Google-style Args: section.
+
+    Args:
+        description: The tool description, which is the full docstring.
+
+    Returns:
+        Mapping of parameter name to its documented description. Entries that
+        wrap onto following lines are joined back into one string.
+    """
+    match = re.search(r"\n\s*Args:\s*\n(.*?)(?:\n\s*(?:Returns|Raises):|\Z)",
+                      description, re.S)
+    if not match:
+        return {}
+
+    docs: dict[str, str] = {}
+    current: str | None = None
+    buf: list[str] = []
+    for line in match.group(1).splitlines():
+        if not line.strip():
+            continue
+        entry = re.match(r"\s{4}(\w+):\s*(.*)", line)
+        if entry:
+            if current:
+                docs[current] = " ".join(buf).strip()
+            current, buf = entry.group(1), [entry.group(2)]
+        elif current:
+            buf.append(line.strip())
+    if current:
+        docs[current] = " ".join(buf).strip()
+    return docs
 
 
 def _map_json_type(json_type: str) -> str:

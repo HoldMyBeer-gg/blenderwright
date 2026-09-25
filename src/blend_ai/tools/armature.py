@@ -8,6 +8,7 @@ from blend_ai.validators import (
     validate_enum,
     validate_vector,
     ValidationError,
+    validate_scale,
 )
 
 # Allowed constraint types
@@ -262,7 +263,7 @@ def set_pose(
         rotation = validate_vector(rotation, size=3, name="rotation")
         pose_params["rotation"] = list(rotation)
     if scale is not None:
-        scale = validate_vector(scale, size=3, name="scale")
+        scale = validate_scale(scale, name="scale")
         pose_params["scale"] = list(scale)
 
     conn = get_connection()

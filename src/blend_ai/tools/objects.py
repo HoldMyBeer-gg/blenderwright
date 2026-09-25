@@ -9,6 +9,7 @@ from blend_ai.validators import (
     validate_numeric_range,
     validate_vector,
     ValidationError,
+    validate_scale,
 )
 
 # Allowed primitive types for object creation
@@ -76,7 +77,7 @@ def create_object(
         name = validate_object_name(name)
     location = validate_vector(location, size=3, name="location")
     rotation = validate_vector(rotation, size=3, name="rotation")
-    scale = validate_vector(scale, size=3, name="scale")
+    scale = validate_scale(scale, name="scale")
 
     conn = get_connection()
     response = conn.send_command("create_object", {
@@ -129,7 +130,7 @@ def create_polygon_prism(
         name = validate_object_name(name)
     location = validate_vector(location, size=3, name="location")
     rotation = validate_vector(rotation, size=3, name="rotation")
-    scale = validate_vector(scale, size=3, name="scale")
+    scale = validate_scale(scale, name="scale")
 
     conn = get_connection()
     response = conn.send_command("create_polygon_prism", {
