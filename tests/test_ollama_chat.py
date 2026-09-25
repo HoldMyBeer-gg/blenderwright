@@ -113,15 +113,28 @@ class TestContextWindow:
         )
 
     def test_num_ctx_is_configurable(self):
+        from unittest.mock import MagicMock, patch
         from blend_ai.ollama_chat import BlenderChatSession
-        session = BlenderChatSession(num_ctx=12345)
+        # ollama is an optional extra; the client is irrelevant to this.
+        with patch("blend_ai.ollama_chat.OllamaClient", MagicMock()):
+            session = BlenderChatSession(num_ctx=12345)
         assert session.num_ctx == 12345
+
+    def test_missing_ollama_package_says_how_to_install_it(self):
+        from unittest.mock import patch
+        import pytest as _pytest
+        from blend_ai.ollama_chat import BlenderChatSession
+        with patch("blend_ai.ollama_chat.OllamaClient", None):
+            with _pytest.raises(RuntimeError) as exc:
+                BlenderChatSession()
+        assert "[chat]" in str(exc.value)
 
     def test_session_sends_the_configured_context(self):
         from unittest.mock import MagicMock, patch
         from blend_ai.ollama_chat import BlenderChatSession
 
-        session = BlenderChatSession(num_ctx=99999)
+        with patch("blend_ai.ollama_chat.OllamaClient", MagicMock()):
+            session = BlenderChatSession(num_ctx=99999)
         session.tools = []
         session._tool_names = set()
         session.messages = []

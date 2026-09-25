@@ -168,6 +168,11 @@ class BlenderChatSession:
         self.port = port
         self.think = think
         self.num_ctx = num_ctx
+        if OllamaClient is None:
+            raise RuntimeError(
+                "The ollama package is required for the chat client. "
+                "Install it with: uv pip install -e '.[chat]'"
+            )
         self.ollama_client = OllamaClient(host=ollama_host) if ollama_host else OllamaClient()
         self.messages: list[dict[str, Any]] = []
         self.tools: list[dict[str, Any]] = []
