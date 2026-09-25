@@ -40,3 +40,17 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.15,<0.16",
 ]
+
+# uv installs this group by default, so `uv run pytest` uses the project's own
+# pytest. Without it, pytest is only in the optional dev extra, uv does not
+# install it, and the command silently falls through to whatever pytest is on
+# PATH. That interpreter had mcp 2.x, where FastMCP was renamed, so every test
+# importing blend_ai.server errored and the failures looked unexplained.
+# The extra above stays for CI, which installs with pip.
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "ruff>=0.15,<0.16",
+]

@@ -214,7 +214,7 @@ class TestRenderAnimation:
         sent = mock_conn.send_command.call_args[0][1]
         # validate_file_path resolves symlinks, so /tmp becomes /private/tmp
         # on macOS. render_image has always done this; this now agrees.
-        assert sent["filepath"].endswith("/tmp/render_")
+        assert sent["filepath"].replace("\\", "/").endswith("/tmp/render_")
         assert sent["format"] == "PNG"
 
     def test_render_animation_custom(self, mock_conn):
@@ -224,7 +224,7 @@ class TestRenderAnimation:
         sent = mock_conn.send_command.call_args[0][1]
         # validate_file_path resolves symlinks, so /tmp becomes /private/tmp
         # on macOS. render_image has always done this; this now agrees.
-        assert sent["filepath"].endswith("/tmp/anim_")
+        assert sent["filepath"].replace("\\", "/").endswith("/tmp/anim_")
         assert sent["format"] == "JPEG"
 
     def test_render_animation_invalid_format(self, mock_conn):

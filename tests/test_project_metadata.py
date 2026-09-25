@@ -246,3 +246,41 @@ def test_numeric_validation_results_are_not_discarded():
         f"string is validated and then passed on unconverted: "
         f"{offenders[:5]}{'...' if len(offenders) > 5 else ''}"
     )
+
+
+def test_dev_tools_are_in_a_group_uv_installs_by_default():
+    """`uv run pytest` must use the project's pytest, not one from PATH.
+
+    pytest lived only in the optional `dev` extra, which uv does not install,
+    so the command fell through to the pyenv pytest. That interpreter had
+    mcp 2.x, where FastMCP was renamed, so every test importing
+    blend_ai.server errored and the failures looked unexplained and
+    pre-existing.
+    """
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        config = tomllib.load(f)
+    groups = config.get("dependency-groups", {})
+    assert "dev" in groups, (
+        "no [dependency-groups] dev, so `uv run pytest` will not install pytest"
+    )
+    names = {d.split(">")[0].split("=")[0].split("[")[0].strip() for d in groups["dev"]}
+    assert "pytest" in names
+
+
+def test_the_dev_extra_still_exists_for_ci():
+    """CI installs with pip, which does not read [dependency-groups]."""
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        config = tomllib.load(f)
+    extras = config["project"].get("optional-dependencies", {})
+    assert "dev" in extras, "CI's `pip install -e .[dev]` would break"
+
+
+def test_the_two_dev_lists_agree():
+    """Two lists of the same tools drift; pin them together."""
+    with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
+        config = tomllib.load(f)
+    extra = sorted(config["project"]["optional-dependencies"]["dev"])
+    group = sorted(config["dependency-groups"]["dev"])
+    assert extra == group, (
+        f"the dev extra and the dev group differ: {set(extra) ^ set(group)}"
+    )

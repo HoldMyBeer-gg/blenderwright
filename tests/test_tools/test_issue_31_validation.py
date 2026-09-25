@@ -6,6 +6,7 @@ audit of all 175 tools; see issue #31.
 """
 
 import contextlib
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -111,7 +112,8 @@ class TestFilePathsAreValidated:
         from blend_ai.tools.rendering import render_animation
         render_animation(filepath="frames/out")
         sent = mock_conn.send_command.call_args[0][1]["filepath"]
-        assert sent.startswith("/"), f"sent a relative path: {sent!r}"
+        # os.path.isabs, not startswith("/"): Windows absolute paths begin C:\\
+        assert os.path.isabs(sent), f"sent a relative path: {sent!r}"
 
     def test_render_animation_rejects_null_bytes(self, mock_conn):
         from blend_ai.tools.rendering import render_animation
