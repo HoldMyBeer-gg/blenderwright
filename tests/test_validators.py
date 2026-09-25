@@ -402,3 +402,52 @@ class TestOutOfRangeAngleSuggestsRadians:
         with pytest.raises(ValidationError) as exc:
             validate_numeric_range(-5, min_val=0.0, max_val=3.14159, name="angle")
         assert "radian" not in str(exc.value).lower()
+
+
+class TestModifierPropertyCaps:
+    """MAX_SUBDIVISION_LEVEL and MAX_ARRAY_COUNT were declared and never used.
+
+    set_modifier_property applied no numeric bound at all, so levels=11 on a
+    Subdivision modifier or count=100000 on an Array is accepted and hangs
+    Blender. The connection then burns its ~5 minute retry budget and dies.
+    """
+
+    def test_subdivision_levels_are_capped(self):
+        from blend_ai.validators import (MAX_SUBDIVISION_LEVEL, ValidationError,
+                                         validate_modifier_property_value)
+        with pytest.raises(ValidationError) as exc:
+            validate_modifier_property_value("SUBSURF", "levels",
+                                             MAX_SUBDIVISION_LEVEL + 1)
+        assert str(MAX_SUBDIVISION_LEVEL) in str(exc.value)
+
+    def test_subdivision_at_the_cap_is_allowed(self):
+        from blend_ai.validators import (MAX_SUBDIVISION_LEVEL,
+                                         validate_modifier_property_value)
+        assert validate_modifier_property_value(
+            "SUBSURF", "levels", MAX_SUBDIVISION_LEVEL) == MAX_SUBDIVISION_LEVEL
+
+    def test_render_levels_are_capped_too(self):
+        from blend_ai.validators import ValidationError, validate_modifier_property_value
+        with pytest.raises(ValidationError):
+            validate_modifier_property_value("SUBSURF", "render_levels", 12)
+
+    def test_array_count_is_capped(self):
+        from blend_ai.validators import (MAX_ARRAY_COUNT, ValidationError,
+                                         validate_modifier_property_value)
+        with pytest.raises(ValidationError):
+            validate_modifier_property_value("ARRAY", "count", MAX_ARRAY_COUNT + 1)
+
+    def test_numeric_strings_are_coerced_here_too(self):
+        from blend_ai.validators import validate_modifier_property_value
+        assert validate_modifier_property_value("SUBSURF", "levels", "2") == 2
+
+    def test_unbounded_properties_pass_through_untouched(self):
+        from blend_ai.validators import validate_modifier_property_value
+        assert validate_modifier_property_value("SUBSURF", "use_limit_surface",
+                                                True) is True
+        assert validate_modifier_property_value("BEVEL", "width", 0.02) == 0.02
+
+    def test_unknown_modifier_type_is_not_blocked(self):
+        """Only bound what we know; do not invent limits."""
+        from blend_ai.validators import validate_modifier_property_value
+        assert validate_modifier_property_value("WEIRD", "levels", 99) == 99

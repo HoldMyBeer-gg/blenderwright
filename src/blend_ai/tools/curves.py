@@ -12,8 +12,15 @@ from blend_ai.validators import (
 )
 
 ALLOWED_CURVE_TYPES = {"BEZIER", "NURBS", "PATH"}
-ALLOWED_HANDLE_TYPES = {"AUTO", "VECTOR", "ALIGNED", "FREE"}
-ALLOWED_CURVE_HANDLE_TYPES = {"AUTO", "VECTOR", "ALIGNED", "FREE_ALIGN"}
+# Blender's own enum for bpy.ops.curve.handle_type_set. "AUTO" and "FREE"
+# were previously accepted here and rejected by Blender, so the tool failed on
+# its own default. Both are kept as aliases because they are the natural words.
+ALLOWED_HANDLE_TYPES = {
+    "AUTOMATIC", "VECTOR", "ALIGNED", "FREE_ALIGN", "TOGGLE_FREE_ALIGN",
+    "AUTO", "FREE",
+}
+HANDLE_TYPE_ALIASES = {"AUTO": "AUTOMATIC", "FREE": "FREE_ALIGN"}
+ALLOWED_CURVE_HANDLE_TYPES = ALLOWED_HANDLE_TYPES
 ALLOWED_FILL_MODES = {"FULL", "BACK", "FRONT", "HALF", "NONE"}
 ALLOWED_TWIST_MODES = {"Z_UP", "MINIMUM", "TANGENT"}
 ALLOWED_CURVE_PROPERTIES = {
@@ -63,7 +70,7 @@ def create_curve(
 def add_curve_point(
     curve_name: str,
     location: list[float] | tuple[float, ...] = (0, 0, 0),
-    handle_type: str = "AUTO",
+    handle_type: str = "AUTOMATIC",
 ) -> dict[str, Any]:
     """Add a control point to an existing curve.
 
@@ -77,7 +84,10 @@ def add_curve_point(
     """
     curve_name = validate_object_name(curve_name)
     location = validate_vector(location, size=3, name="location")
-    validate_enum(handle_type, ALLOWED_HANDLE_TYPES, name="handle_type")
+    handle_type = HANDLE_TYPE_ALIASES.get(
+        validate_enum(handle_type, ALLOWED_HANDLE_TYPES, name="handle_type"),
+        handle_type,
+    )
 
     conn = get_connection()
     response = conn.send_command("add_curve_point", {
@@ -225,7 +235,7 @@ def switch_curve_direction(curve_name: str) -> dict[str, Any]:
 @mcp.tool()
 def set_handle_type(
     curve_name: str,
-    handle_type: str = "AUTO",
+    handle_type: str = "AUTOMATIC",
 ) -> dict[str, Any]:
     """Set the handle type for all control points of a curve.
 
@@ -237,7 +247,10 @@ def set_handle_type(
         Dict with confirmation of handle type change.
     """
     curve_name = validate_object_name(curve_name)
-    validate_enum(handle_type, ALLOWED_CURVE_HANDLE_TYPES, name="handle_type")
+    handle_type = HANDLE_TYPE_ALIASES.get(
+        validate_enum(handle_type, ALLOWED_CURVE_HANDLE_TYPES, name="handle_type"),
+        handle_type,
+    )
 
     conn = get_connection()
     response = conn.send_command("set_handle_type", {

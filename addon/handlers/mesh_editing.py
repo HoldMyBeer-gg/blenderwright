@@ -254,15 +254,38 @@ def handle_set_edge_crease(params):
 
 
 def handle_select_linked(params):
-    """Select all linked geometry."""
+    """Select geometry connected to the current selection.
+
+    Selecting everything first made this a no-op: select_linked grows a
+    selection, so starting from "all" leaves it exactly where it began. It now
+    starts from a single vertex, which is the only deterministic seed
+    available without sub-object selection tools, and reports what it reached
+    so the caller can tell whether the mesh is one connected piece.
+    """
     _ensure_object_mode()
     obj = _get_mesh_object(params["object_name"])
 
-    _enter_edit_select_all(obj)
+    _select_only(obj)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="DESELECT")
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    if not obj.data.vertices:
+        raise ValueError(f"Object '{obj.name}' has no geometry to select")
+    obj.data.vertices[0].select = True
+
+    bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_linked()
     bpy.ops.object.mode_set(mode="OBJECT")
 
-    return {"object": obj.name}
+    selected = sum(1 for v in obj.data.vertices if v.select)
+    total = len(obj.data.vertices)
+    return {
+        "object": obj.name,
+        "selected_vertices": selected,
+        "total_vertices": total,
+        "is_single_connected_piece": selected == total,
+    }
 
 
 def register():

@@ -22,7 +22,10 @@ ALLOWED_SCENE_PROPERTIES = {
 ALLOWED_UNIT_SYSTEMS = {"NONE", "METRIC", "IMPERIAL"}
 
 # Allowed render engines
-ALLOWED_RENDER_ENGINES = {"BLENDER_EEVEE", "BLENDER_WORKBENCH", "CYCLES"}
+# See tools/rendering.py: 4.2-4.4 use BLENDER_EEVEE_NEXT, 5.x uses BLENDER_EEVEE.
+ALLOWED_RENDER_ENGINES = {
+    "BLENDER_EEVEE", "BLENDER_EEVEE_NEXT", "BLENDER_WORKBENCH", "CYCLES",
+}
 
 # Extension catalog with keyword matching for proactive suggestions
 EXTENSION_CATALOG = {

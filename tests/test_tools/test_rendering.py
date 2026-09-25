@@ -40,7 +40,7 @@ class TestSetRenderEngine:
         from blend_ai.tools.rendering import set_render_engine
 
         with pytest.raises(ValidationError):
-            set_render_engine("BLENDER_EEVEE_NEXT")  # removed in 5.0, not allowed
+            set_render_engine("OCTANE")  # removed in 5.0, not allowed
 
     def test_invalid_engine_arbitrary(self, mock_conn):
         from blend_ai.tools.rendering import set_render_engine

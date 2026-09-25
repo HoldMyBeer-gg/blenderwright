@@ -63,7 +63,7 @@ class TestAddCurvePoint:
         mock_conn.send_command.assert_called_once_with("add_curve_point", {
             "curve_name": "BezierCurve",
             "location": [1, 0, 0],
-            "handle_type": "AUTO",
+            "handle_type": "AUTOMATIC",
         })
 
     def test_handle_types(self, mock_conn):
@@ -252,7 +252,7 @@ class TestSetHandleType:
         set_handle_type("BezierCurve")
         mock_conn.send_command.assert_called_once_with("set_handle_type", {
             "curve_name": "BezierCurve",
-            "handle_type": "AUTO",
+            "handle_type": "AUTOMATIC",
         })
 
     def test_empty_name_raises(self, mock_conn):
@@ -384,3 +384,50 @@ class TestBlenderErrorHandling:
         mock_conn.send_command.return_value = {"status": "error", "result": "Curve error"}
         with pytest.raises(RuntimeError, match="Blender error"):
             create_curve()
+
+
+class TestHandleTypeEnumMatchesBlender:
+    """set_handle_type's default value is not a value Blender accepts.
+
+    Default is "AUTO"; bpy.ops.curve.handle_type_set accepts AUTOMATIC,
+    VECTOR, ALIGNED, FREE_ALIGN and TOGGLE_FREE_ALIGN. Verified against a live
+    Blender 5.1. So the tool failed on its own default, and two allowlists in
+    the same file disagreed: ALLOWED_HANDLE_TYPES had FREE, and
+    ALLOWED_CURVE_HANDLE_TYPES had FREE_ALIGN, neither had AUTOMATIC.
+    """
+
+    BLENDER_ENUM = {"AUTOMATIC", "VECTOR", "ALIGNED", "FREE_ALIGN",
+                    "TOGGLE_FREE_ALIGN"}
+
+    def test_every_accepted_value_maps_to_a_real_blender_value(self):
+        from blend_ai.tools.curves import ALLOWED_CURVE_HANDLE_TYPES
+        from blend_ai.tools.curves import HANDLE_TYPE_ALIASES
+        invalid = {v for v in ALLOWED_CURVE_HANDLE_TYPES
+                   if v not in self.BLENDER_ENUM and v not in HANDLE_TYPE_ALIASES}
+        assert not invalid, f"not accepted by Blender: {sorted(invalid)}"
+
+    def test_the_default_is_accepted(self, mock_conn):
+        """The commonest call of all: no handle_type given."""
+        from blend_ai.tools.curves import set_handle_type
+        set_handle_type("Curve")
+        sent = mock_conn.send_command.call_args[0][1]
+        assert sent["handle_type"] in self.BLENDER_ENUM, (
+            f"default sends {sent['handle_type']!r}, which Blender rejects"
+        )
+
+    def test_auto_is_accepted_as_an_alias(self, mock_conn):
+        """AUTO is the natural word and was the documented default."""
+        from blend_ai.tools.curves import set_handle_type
+        set_handle_type("Curve", handle_type="AUTO")
+        assert mock_conn.send_command.call_args[0][1]["handle_type"] == "AUTOMATIC"
+
+    def test_real_values_pass_through(self, mock_conn):
+        from blend_ai.tools.curves import set_handle_type
+        set_handle_type("Curve", handle_type="VECTOR")
+        assert mock_conn.send_command.call_args[0][1]["handle_type"] == "VECTOR"
+
+    def test_add_curve_point_agrees_on_the_same_enum(self, mock_conn):
+        """Two tools, one concept: FREE vs FREE_ALIGN was a trap."""
+        from blend_ai.tools.curves import add_curve_point
+        add_curve_point("Curve", [0, 0, 0], handle_type="FREE_ALIGN")
+        assert mock_conn.send_command.call_args[0][1]["handle_type"] == "FREE_ALIGN"
