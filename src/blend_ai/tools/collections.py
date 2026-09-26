@@ -66,7 +66,7 @@ def move_to_collection(
 
 @mcp.tool()
 def set_collection_visibility(
-    name: str,
+    collection_name: str,
     visible: bool,
     viewport: bool = True,
     render: bool = True,
@@ -74,7 +74,7 @@ def set_collection_visibility(
     """Set collection visibility in viewport and/or render.
 
     Args:
-        name: Name of the collection.
+        collection_name: Name of the collection.
         visible: Whether the collection should be visible.
         viewport: Apply visibility change to viewport. Defaults to True.
         render: Apply visibility change to render. Defaults to True.
@@ -82,11 +82,11 @@ def set_collection_visibility(
     Returns:
         Confirmation dict with visibility state.
     """
-    name = validate_object_name(name)
+    collection_name = validate_object_name(collection_name)
 
     conn = get_connection()
     response = conn.send_command("set_collection_visibility", {
-        "name": name,
+        "name": collection_name,
         "visible": visible,
         "viewport": viewport,
         "render": render,
@@ -98,24 +98,24 @@ def set_collection_visibility(
 
 @mcp.tool()
 def delete_collection(
-    name: str,
+    collection_name: str,
     delete_objects: bool = False,
 ) -> dict[str, Any]:
     """Delete a collection.
 
     Args:
-        name: Name of the collection to delete.
+        collection_name: Name of the collection to delete.
         delete_objects: If True, also delete all objects in the collection.
                        If False, objects are unlinked but kept in the scene.
 
     Returns:
         Confirmation dict.
     """
-    name = validate_object_name(name)
+    collection_name = validate_object_name(collection_name)
 
     conn = get_connection()
     response = conn.send_command("delete_collection", {
-        "name": name,
+        "name": collection_name,
         "delete_objects": delete_objects,
     })
     if response.get("status") == "error":

@@ -80,11 +80,11 @@ def create_camera(
 
 
 @mcp.tool()
-def set_camera_property(name: str, property: str, value: Any) -> dict[str, Any]:
+def set_camera_property(object_name: str, property: str, value: Any) -> dict[str, Any]:
     """Set a property on a camera.
 
     Args:
-        name: Name of the camera object.
+        object_name: Name of the camera object.
         property: Property to set. One of: lens, clip_start, clip_end, sensor_width,
                   sensor_height, dof.use_dof, dof.focus_distance, dof.aperture_fstop,
                   ortho_scale, shift_x, shift_y, type, sensor_fit.
@@ -93,7 +93,7 @@ def set_camera_property(name: str, property: str, value: Any) -> dict[str, Any]:
     Returns:
         Confirmation dict.
     """
-    name = validate_object_name(name)
+    object_name = validate_object_name(object_name)
     validate_enum(property, ALLOWED_CAMERA_PROPERTIES, name="property")
 
     # Validate specific properties
@@ -122,24 +122,24 @@ def set_camera_property(name: str, property: str, value: Any) -> dict[str, Any]:
         validate_enum(value, ALLOWED_SENSOR_FIT, name="sensor_fit")
 
     return _send_camera_command("set_camera_property", {
-        "name": name,
+        "name": object_name,
         "property": property,
         "value": value,
     })
 
 
 @mcp.tool()
-def set_active_camera(name: str) -> dict[str, Any]:
+def set_active_camera(object_name: str) -> dict[str, Any]:
     """Set the active scene camera.
 
     Args:
-        name: Name of the camera object to make active.
+        object_name: Name of the camera object to make active.
 
     Returns:
         Confirmation dict.
     """
-    name = validate_object_name(name)
-    return _send_camera_command("set_active_camera", {"name": name})
+    object_name = validate_object_name(object_name)
+    return _send_camera_command("set_active_camera", {"name": object_name})
 
 
 @mcp.tool()
@@ -152,13 +152,23 @@ def point_camera_at(
 
     Args:
         camera_name: Name of the camera object.
-        target: Name of the target object to point at. Mutually exclusive with location.
+        target: Name of an existing object to point at, as a string. For
+            coordinates use `location` instead. Mutually exclusive with location.
         location: XYZ location to point at as [x, y, z]. Mutually exclusive with target.
 
     Returns:
         Confirmation dict.
     """
     camera_name = validate_object_name(camera_name)
+
+    # "target" reads like "aim here", so coordinates land in it. Say which
+    # parameter takes them rather than letting validate_object_name report
+    # that a list is not a string.
+    if target is not None and not isinstance(target, str):
+        raise ValidationError(
+            f"target takes an object name as a string, got {type(target).__name__}. "
+            f"To aim at coordinates, pass them as location=[x, y, z] instead."
+        )
 
     if not target and location is None:
         raise ValidationError("Must provide either 'target' object name or 'location'")

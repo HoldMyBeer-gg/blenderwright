@@ -85,11 +85,11 @@ def create_light(
 
 
 @mcp.tool()
-def set_light_property(name: str, property: str, value: Any) -> dict[str, Any]:
+def set_light_property(object_name: str, property: str, value: Any) -> dict[str, Any]:
     """Set a property on a light object.
 
     Args:
-        name: Name of the light object.
+        object_name: Name of the light object.
         property: Property to set. One of: energy, color, shadow_soft_size, spot_size,
                   spot_blend, area_size, area_size_y, use_shadow, angle,
                   specular_factor, diffuse_factor, volume_factor.
@@ -98,7 +98,7 @@ def set_light_property(name: str, property: str, value: Any) -> dict[str, Any]:
     Returns:
         Confirmation dict.
     """
-    name = validate_object_name(name)
+    object_name = validate_object_name(object_name)
     validate_enum(property, ALLOWED_LIGHT_PROPERTIES, name="property")
 
     # Validate specific properties
@@ -121,7 +121,7 @@ def set_light_property(name: str, property: str, value: Any) -> dict[str, Any]:
             raise ValidationError("use_shadow must be a boolean")
 
     return _send_light_command("set_light_property", {
-        "name": name,
+        "name": object_name,
         "property": property,
         "value": value,
     })
@@ -198,42 +198,42 @@ def list_lights() -> list[dict[str, Any]]:
 
 
 @mcp.tool()
-def delete_light(name: str) -> dict[str, Any]:
+def delete_light(object_name: str) -> dict[str, Any]:
     """Delete a light object from the scene.
 
     Args:
-        name: Name of the light object to delete.
+        object_name: Name of the light object to delete.
 
     Returns:
         Confirmation dict.
     """
-    name = validate_object_name(name)
-    return _send_light_command("delete_light", {"name": name})
+    object_name = validate_object_name(object_name)
+    return _send_light_command("delete_light", {"name": object_name})
 
 
 @mcp.tool()
 def set_shadow_settings(
-    name: str,
+    object_name: str,
     use_shadow: bool = True,
     shadow_soft_size: float = 0.25,
 ) -> dict[str, Any]:
     """Configure shadow settings for a light.
 
     Args:
-        name: Name of the light object.
+        object_name: Name of the light object.
         use_shadow: Whether to enable shadows, default True.
         shadow_soft_size: Soft shadow radius, default 0.25.
 
     Returns:
         Confirmation dict.
     """
-    name = validate_object_name(name)
+    object_name = validate_object_name(object_name)
     if not isinstance(use_shadow, bool):
         raise ValidationError("use_shadow must be a boolean")
     shadow_soft_size = validate_numeric_range(shadow_soft_size, min_val=0.0, max_val=100.0, name="shadow_soft_size")
 
     return _send_light_command("set_shadow_settings", {
-        "name": name,
+        "name": object_name,
         "use_shadow": use_shadow,
         "shadow_soft_size": shadow_soft_size,
     })

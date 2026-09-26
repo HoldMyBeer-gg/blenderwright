@@ -145,18 +145,18 @@ def create_scene(name: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def delete_scene(name: str) -> dict[str, Any]:
+def delete_scene(scene_name: str) -> dict[str, Any]:
     """Delete a scene by name.
 
     Args:
-        name: Name of the scene to delete. Cannot delete the last remaining scene.
+        scene_name: Name of the scene to delete. Cannot delete the last remaining scene.
 
     Returns:
         Confirmation dict.
     """
-    name = validate_object_name(name)
+    scene_name = validate_object_name(scene_name)
     conn = get_connection()
-    response = conn.send_command("delete_scene", {"name": name})
+    response = conn.send_command("delete_scene", {"name": scene_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")

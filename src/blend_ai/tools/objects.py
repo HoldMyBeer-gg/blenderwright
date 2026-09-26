@@ -235,37 +235,37 @@ def create_threaded_shaft(
 
 
 @mcp.tool()
-def delete_object(name: str) -> dict[str, Any]:
+def delete_object(object_name: str) -> dict[str, Any]:
     """Delete an object from the scene by name.
 
     Args:
-        name: Name of the object to delete.
+        object_name: Name of the object to delete.
 
     Returns:
         Confirmation dict.
     """
-    name = validate_object_name(name)
+    object_name = validate_object_name(object_name)
     conn = get_connection()
-    response = conn.send_command("delete_object", {"name": name})
+    response = conn.send_command("delete_object", {"name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
 
 
 @mcp.tool()
-def duplicate_object(name: str, linked: bool = False) -> dict[str, Any]:
+def duplicate_object(object_name: str, linked: bool = False) -> dict[str, Any]:
     """Duplicate an object.
 
     Args:
-        name: Name of the object to duplicate.
+        object_name: Name of the object to duplicate.
         linked: If True, create a linked duplicate (shares mesh data). Defaults to False.
 
     Returns:
         Dict with the new object's name.
     """
-    name = validate_object_name(name)
+    object_name = validate_object_name(object_name)
     conn = get_connection()
-    response = conn.send_command("duplicate_object", {"name": name, "linked": linked})
+    response = conn.send_command("duplicate_object", {"name": object_name, "linked": linked})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
@@ -314,19 +314,19 @@ def select_objects(names: list[str], deselect_others: bool = True) -> dict[str, 
 
 
 @mcp.tool()
-def get_object_info(name: str) -> dict[str, Any]:
+def get_object_info(object_name: str) -> dict[str, Any]:
     """Get detailed information about an object.
 
     Args:
-        name: Name of the object.
+        object_name: Name of the object.
 
     Returns:
         Dict with type, location, rotation, scale, modifiers, materials,
         parent, children, and visibility info.
     """
-    name = validate_object_name(name)
+    object_name = validate_object_name(object_name)
     conn = get_connection()
-    response = conn.send_command("get_object_info", {"name": name})
+    response = conn.send_command("get_object_info", {"name": object_name})
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
@@ -354,7 +354,7 @@ def list_objects(type_filter: str = "") -> list[dict[str, Any]]:
 
 @mcp.tool()
 def set_object_visibility(
-    name: str,
+    object_name: str,
     visible: bool,
     viewport: bool = True,
     render: bool = True,
@@ -362,7 +362,7 @@ def set_object_visibility(
     """Set object visibility in viewport and/or render.
 
     Args:
-        name: Name of the object.
+        object_name: Name of the object.
         visible: Whether the object should be visible.
         viewport: Apply visibility change to viewport. Defaults to True.
         render: Apply visibility change to render. Defaults to True.
@@ -370,10 +370,10 @@ def set_object_visibility(
     Returns:
         Confirmation dict with visibility state.
     """
-    name = validate_object_name(name)
+    object_name = validate_object_name(object_name)
     conn = get_connection()
     response = conn.send_command("set_object_visibility", {
-        "name": name,
+        "name": object_name,
         "visible": visible,
         "viewport": viewport,
         "render": render,

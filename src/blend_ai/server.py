@@ -60,9 +60,11 @@ from blend_ai.prompts import workflows  # noqa: E402, F401
 
 from blend_ai.strict import forbid_unknown_parameters  # noqa: E402
 from blend_ai.enum_hints import attach_enum_hints  # noqa: E402
+from blend_ai.aliases import attach_legacy_aliases  # noqa: E402
 
 forbid_unknown_parameters(mcp)
 attach_enum_hints(mcp)
+attach_legacy_aliases(mcp)
 
 
 def main():
