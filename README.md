@@ -4,6 +4,10 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 **blend-ai goes beyond tool exposure: it guides the LLM to produce professional 3D results** through expert prompts, proven workflows, visual feedback, and mesh quality analysis.
 
+<small>A two-storey Western saloon from a single sentence: "create a Western style 2-story saloon, the outside is more important than any inside detail." Claude Code (Fable 5.1) built the false front, plank siding, balcony, batwing doors and street dressing, then relit it for dusk, all through blend-ai, in about twenty minutes with no manual modelling:</small>
+
+![blend-ai saloon built from one prompt](./saloon.png)
+
 <small>This was created via Claude Code using the Haiku model and 20 random reference images. It took 5 minutes:</small>
 
 ![blend-ai screenshot](./screenshot.png)
