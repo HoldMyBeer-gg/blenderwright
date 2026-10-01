@@ -45,3 +45,27 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Refuse to publish a version that does not match the tag
+        run: |
+          version="$(uv version --short)"
+          test "v${version}" = "${GITHUB_REF_NAME}" || {
+            echo "pyproject version ${version} does not match tag ${GITHUB_REF_NAME}"; exit 1; }
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
