@@ -6,17 +6,17 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 **blenderwright goes beyond tool exposure: it guides the LLM to produce professional 3D results** through expert prompts, proven workflows, visual feedback, and mesh quality analysis.
 
-<small>A two-storey Western saloon from a single sentence: "create a Western style 2-story saloon, the outside is more important than any inside detail." Claude Code (Fable 5.1) built the false front, plank siding, balcony, batwing doors and street dressing, then relit it for dusk, all through blenderwright, in about twenty minutes with no manual modelling:</small>
+<small>A shuttle launch from two questions: "do you want to have a go at the space shuttle launch?" and then "could you animate the launch?" Claude Code (Fable 5.1) modelled the orbiter, tank, boosters and service tower, lit the plumes as emissive volumes and grew the exhaust cloud from metaballs. Keyframes lift the stack and tilt the camera after it, drivers stream the plumes and boil the smoke, and all 60 Cycles frames come back from a single `render_animation` call, all through blenderwright with no manual modelling:</small>
 
-![blenderwright saloon built from one prompt](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/saloon.png)
+![blenderwright space shuttle launch, animated](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shuttle-launch.gif)
 
-<small>A shuttle launch from one question: "do you want to have a go at the space shuttle launch?" Claude Code (Fable 5.1) modelled the orbiter, tank, boosters and service tower, lit the plumes as emissive volumes, grew the exhaust cloud from metaballs and rendered it in Cycles, all through blenderwright, in under twenty minutes with no manual modelling:</small>
+<small>The still it grew from, modelled and rendered in under twenty minutes:</small>
 
 ![blenderwright space shuttle launch built from one prompt](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shuttle-launch.png)
 
-<small>Then one more question: "could you animate the launch?" Keyframes lift the stack and tilt the camera after it, drivers stream the plumes and boil the smoke, and all 60 Cycles frames come back from a single `render_animation` call:</small>
+<small>A two-storey Western saloon from a single sentence: "create a Western style 2-story saloon, the outside is more important than any inside detail." Claude Code (Fable 5.1) built the false front, plank siding, balcony, batwing doors and street dressing, then relit it for dusk, all through blenderwright, in about twenty minutes with no manual modelling:</small>
 
-![blenderwright space shuttle launch, animated](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shuttle-launch.gif)
+![blenderwright saloon built from one prompt](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/saloon.png)
 
 <small>Fifteen procedural materials, each built by a single `create_procedural_material` call. The selected ball's node graph below was generated entirely by that one call: coordinates, mapping, noise, height mask, colour ramp, and Principled BSDF, laid out and wired:</small>
 
