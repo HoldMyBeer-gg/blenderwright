@@ -8,15 +8,15 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 <small>A two-storey Western saloon from a single sentence: "create a Western style 2-story saloon, the outside is more important than any inside detail." Claude Code (Fable 5.1) built the false front, plank siding, balcony, batwing doors and street dressing, then relit it for dusk, all through blenderwright, in about twenty minutes with no manual modelling:</small>
 
-![blenderwright saloon built from one prompt](./saloon.png)
+![blenderwright saloon built from one prompt](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/saloon.png)
 
 <small>This was created via Claude Code using the Haiku model and 20 random reference images. It took 5 minutes:</small>
 
-![blenderwright screenshot](./screenshot.png)
+![blenderwright screenshot](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/screenshot.png)
 
 <small>Fifteen procedural materials, each built by a single `create_procedural_material` call. The selected ball's node graph below was generated entirely by that one call: coordinates, mapping, noise, height mask, colour ramp, and Principled BSDF, laid out and wired:</small>
 
-![blenderwright procedural shader preview](./shader-preview.png)
+![blenderwright procedural shader preview](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shader-preview.png)
 
 ## Key Features
 
@@ -38,11 +38,20 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ### 1. Install the MCP server
 
+Nothing to install. With [uv](https://docs.astral.sh/uv/) on your machine, `uvx blenderwright` fetches the server from PyPI and runs it; every client config below uses that one command. Prefer pip? `pip install blenderwright` gives you a `blenderwright` command instead.
+
+<details>
+<summary><strong>Working on blenderwright itself</strong></summary>
+
 ```bash
 git clone https://github.com/HoldMyBeer-gg/blenderwright.git
 cd blenderwright
 uv pip install -e .
 ```
+
+Then point your client at `uv run --directory /path/to/blenderwright blenderwright` instead of `uvx blenderwright`.
+
+</details>
 
 ### 2. Install the Blender addon
 
@@ -84,10 +93,10 @@ In Blender's 3D Viewport, open the **N-panel** (press `N`), find the **blenderwr
 <summary><strong>Claude Code</strong></summary>
 
 ```bash
-claude mcp add blenderwright -- uv run --directory /path/to/blenderwright blenderwright
+claude mcp add blenderwright -- uvx blenderwright
 ```
 
-Replace `/path/to/blenderwright` with the actual path to your clone. Make sure Blender is running with the addon server started before using the tools.
+Make sure Blender is running with the addon server started before using the tools.
 
 **Usage:**
 
@@ -114,14 +123,12 @@ Add blenderwright to your Claude Desktop config (`~/Library/Application Support/
 {
   "mcpServers": {
     "blenderwright": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/blenderwright", "blenderwright"]
+      "command": "uvx",
+      "args": ["blenderwright"]
     }
   }
 }
 ```
-
-Replace `/path/to/blenderwright` with the actual path to your clone.
 
 Restart Claude Desktop. The Blender tools will appear in the tool list.
 
@@ -133,11 +140,11 @@ Restart Claude Desktop. The Blender tools will appear in the tool list.
 blenderwright is a standard MCP server using stdio transport. Any MCP-compatible client can connect by running the server directly:
 
 ```bash
-uv run --directory /path/to/blenderwright blenderwright
-# or: python -m blenderwright.server
+uvx blenderwright
+# or, after pip install blenderwright: blenderwright
 ```
 
-The exact config location and format vary by client (typically JSON or TOML under `~/.<client>/`). The `command` is `uv` and the `args` are `["run", "--directory", "/path/to/blenderwright", "blenderwright"]`.
+The exact config location and format vary by client (typically JSON or TOML under `~/.<client>/`). The `command` is `uvx` and the `args` are `["blenderwright"]`.
 
 The server communicates over stdin/stdout using the MCP protocol. It connects to Blender's addon over TCP on `127.0.0.1:9876` (or your configured port).
 
@@ -363,6 +370,6 @@ blenderwright/
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE.md](https://github.com/HoldMyBeer-gg/blenderwright/blob/main/LICENSE.md).
 
 Copyright © 2026 jabberwock.
