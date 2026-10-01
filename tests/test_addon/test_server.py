@@ -113,6 +113,36 @@ class TestClientCleanup:
         mock_client.close.assert_called()
 
 
+class TestMainThreadBusy:
+    """A command the main thread never picked up is answered busy, not dropped."""
+
+    def test_busy_response_keeps_the_connection_open(self, server_module, monkeypatch):
+        import json
+
+        class MainThreadBusyError(Exception):
+            pass
+
+        ts = server_module.thread_safety
+        monkeypatch.setattr(ts, "MainThreadBusyError", MainThreadBusyError, raising=False)
+        monkeypatch.setattr(
+            ts, "execute_on_main_thread", MagicMock(side_effect=MainThreadBusyError())
+        )
+
+        server = server_module.BlenderServer()
+        server._running = True
+        mock_client = MagicMock(spec=socket.socket)
+        request = json.dumps({"command": "get_scene_info"}).encode("utf-8")
+        server._recv_message = MagicMock(side_effect=[request, request, None])
+        server._send_message = MagicMock()
+
+        server._handle_client(mock_client)
+
+        # Both requests were answered: the first busy did not end the session.
+        assert server._send_message.call_count == 2
+        sent = json.loads(server._send_message.call_args[0][1].decode("utf-8"))
+        assert sent["status"] == "busy"
+
+
 class TestNonFiniteJSON:
     """Python's json parser accepts NaN and Infinity by default.
 

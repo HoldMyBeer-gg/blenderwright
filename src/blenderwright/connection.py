@@ -6,7 +6,7 @@ import socket
 import struct
 import threading
 import time
-from typing import Any
+from typing import Any, NoReturn
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,8 @@ class BlenderConnection:
     DEFAULT_HOST = "127.0.0.1"
     DEFAULT_PORT = 9876
     DEFAULT_TIMEOUT = 30.0
+    RENDER_TIMEOUT = 3600.0  # one still frame through the render engine
+    ANIMATION_TIMEOUT = 43200.0  # a whole frame range
     BUSY_RETRY_DELAY = 2.0  # seconds between retries when Blender is rendering
     BUSY_MAX_RETRIES = 150  # ~5 minutes of waiting at 2s intervals
 
@@ -95,12 +97,43 @@ class BlenderConnection:
             remaining -= len(chunk)
         return b"".join(chunks)
 
-    def send_command(self, command: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _exchange(self, message: dict[str, Any], timeout: float | None) -> Any:
+        """Send one message and return the decoded reply."""
+        if self._socket is None:
+            raise BlenderConnectionError("Not connected to Blender")
+        self._socket.settimeout(self._timeout if timeout is None else timeout)
+        self._send_raw(json.dumps(message).encode("utf-8"))
+        return json.loads(self._recv_raw().decode("utf-8"))
+
+    def _raise_unanswered(
+        self, command: str, timeout: float | None, error: Exception
+    ) -> NoReturn:
+        """Give up on a command that was delivered but not answered in time.
+
+        The socket is dropped because a late reply would be read as the answer
+        to the next command. The command is not resent: Blender may still be
+        running it, and a second copy would do the work twice.
+        """
+        self.disconnect()
+        waited = self._timeout if timeout is None else timeout
+        raise BlenderConnectionError(
+            f"Blender did not answer '{command}' within {waited:.0f}s. "
+            "The command was not resent and may still be running in Blender."
+        ) from error
+
+    def send_command(
+        self,
+        command: str,
+        params: dict[str, Any] | None = None,
+        timeout: float | None = None,
+    ) -> dict[str, Any]:
         """Send a command to Blender and return the response.
 
         Args:
             command: The command name (must be in the addon's allowlist).
             params: Optional parameters for the command.
+            timeout: Seconds to wait for the answer. Defaults to the
+                connection timeout. Pass a longer value for renders.
 
         Returns:
             Response dict with 'status' ('ok' or 'error') and 'result'.
@@ -114,18 +147,15 @@ class BlenderConnection:
                 message["params"] = params
 
             # Try up to 2 times: reconnect on stale connection
-            last_error = None
             for attempt in range(2):
                 if self._socket is None:
                     self.connect()
 
                 try:
-                    payload = json.dumps(message).encode("utf-8")
-                    self._send_raw(payload)
-                    response_data = self._recv_raw()
-                    response = json.loads(response_data.decode("utf-8"))
+                    response = self._exchange(message, timeout)
+                except TimeoutError as e:
+                    self._raise_unanswered(command, timeout, e)
                 except (OSError, json.JSONDecodeError, BlenderConnectionError) as e:
-                    last_error = e  # noqa: F841
                     self.disconnect()
                     if attempt == 0:
                         continue  # retry with fresh connection
@@ -140,6 +170,7 @@ class BlenderConnection:
 
             # If Blender is rendering, wait and retry automatically
             if response.get("status") == "busy":
+                waiting_since = time.monotonic()
                 for retry in range(self.BUSY_MAX_RETRIES):
                     logger.info(
                         "Blender is rendering, waiting %.1fs before retry %d/%d for '%s'",
@@ -148,10 +179,9 @@ class BlenderConnection:
                     time.sleep(self.BUSY_RETRY_DELAY)
 
                     try:
-                        payload = json.dumps(message).encode("utf-8")
-                        self._send_raw(payload)
-                        response_data = self._recv_raw()
-                        response = json.loads(response_data.decode("utf-8"))
+                        response = self._exchange(message, timeout)
+                    except TimeoutError as e:
+                        self._raise_unanswered(command, timeout, e)
                     except (OSError, json.JSONDecodeError, BlenderConnectionError):
                         self.disconnect()
                         self.connect()
@@ -166,7 +196,7 @@ class BlenderConnection:
                 raise BlenderConnectionError(
                     f"Blender was busy rendering for too long. "
                     f"Command '{command}' was not processed after "
-                    f"{self.BUSY_MAX_RETRIES * self.BUSY_RETRY_DELAY:.0f}s of waiting."
+                    f"{time.monotonic() - waiting_since:.0f}s of waiting."
                 )
 
             return response

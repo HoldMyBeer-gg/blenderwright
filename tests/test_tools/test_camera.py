@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
+from blenderwright.connection import BlenderConnection
 from blenderwright.validators import ValidationError
 
 
@@ -174,7 +175,7 @@ class TestCaptureViewport:
             "filepath": "",
             "width": 1920,
             "height": 1080,
-        })
+        }, timeout=BlenderConnection.RENDER_TIMEOUT)
 
     def test_capture_with_filepath(self, mock_conn):
         from blenderwright.tools.camera import capture_viewport

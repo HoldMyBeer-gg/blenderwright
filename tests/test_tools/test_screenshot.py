@@ -38,6 +38,20 @@ class TestGetViewportScreenshot:
         args = mock_conn.send_command.call_args
         assert args[0][0] == "capture_viewport"
 
+    def test_full_mode_waits_for_the_render(self, mock_conn):
+        """mode='full' renders through the engine, so it gets the render timeout."""
+        from blenderwright.connection import BlenderConnection
+
+        get_viewport_screenshot(mode="full")
+
+        timeout = mock_conn.send_command.call_args.kwargs["timeout"]
+        assert timeout == BlenderConnection.RENDER_TIMEOUT
+
+    def test_fast_mode_keeps_the_default_timeout(self, mock_conn):
+        get_viewport_screenshot(mode="fast")
+
+        assert "timeout" not in mock_conn.send_command.call_args.kwargs
+
     def test_default_mode_is_fast(self, mock_conn):
         """Default mode is 'fast'."""
         get_viewport_screenshot()

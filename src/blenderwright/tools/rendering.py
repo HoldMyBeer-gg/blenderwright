@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from blenderwright.connection import BlenderConnection
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_enum,
@@ -132,7 +133,9 @@ def render_image(filepath: str = "/tmp/render.png") -> dict[str, Any]:  # nosec 
     filepath = validate_file_path(filepath, allowed_extensions=ALLOWED_RENDER_EXTENSIONS)
 
     conn = get_connection()
-    response = conn.send_command("render_image", {"filepath": filepath})
+    response = conn.send_command(
+        "render_image", {"filepath": filepath}, timeout=BlenderConnection.RENDER_TIMEOUT
+    )
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
@@ -164,7 +167,7 @@ def render_animation(filepath: str = "/tmp/render_", format: str = "PNG") -> dic
     response = conn.send_command("render_animation", {
         "filepath": filepath,
         "format": format,
-    })
+    }, timeout=BlenderConnection.ANIMATION_TIMEOUT)
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")

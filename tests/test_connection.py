@@ -196,6 +196,80 @@ class TestBusyRetry:
         assert result["status"] == "ok"
 
 
+class TestResponseTimeout:
+    """A slow answer is not a dead connection: never send the command twice."""
+
+    def _make_response_bytes(self, response_dict: dict) -> bytes:
+        payload = json.dumps(response_dict).encode("utf-8")
+        return struct.pack(">I", len(payload)) + payload
+
+    def test_timeout_does_not_resend(self, mock_socket):
+        """Resending after a timeout would run a render a second time."""
+        mock_socket.recv.side_effect = TimeoutError("timed out")
+
+        conn = BlenderConnection()
+        conn.connect()
+        with pytest.raises(BlenderConnectionError, match="did not answer 'render_image'"):
+            conn.send_command("render_image", {"filepath": "/tmp/out.png"})
+
+        assert mock_socket.sendall.call_count == 1
+        assert not conn.is_connected
+
+    def test_timeout_message_says_command_may_still_run(self, mock_socket):
+        mock_socket.recv.side_effect = TimeoutError("timed out")
+
+        conn = BlenderConnection()
+        conn.connect()
+        with pytest.raises(BlenderConnectionError, match="may still be running"):
+            conn.send_command("render_image")
+
+    def test_stale_connection_still_retries_once(self, mock_socket):
+        """A dropped socket means the command never ran, so one resend is safe."""
+        ok = self._make_response_bytes({"status": "ok", "result": {}})
+        mock_socket.recv.side_effect = [ConnectionResetError("reset"), ok[:4], ok[4:]]
+
+        conn = BlenderConnection()
+        conn.connect()
+        result = conn.send_command("get_scene_info")
+
+        assert result["status"] == "ok"
+        assert mock_socket.sendall.call_count == 2
+
+    def test_per_call_timeout_is_applied(self, mock_socket):
+        ok = self._make_response_bytes({"status": "ok", "result": {}})
+        mock_socket.recv.side_effect = [ok[:4], ok[4:]]
+
+        conn = BlenderConnection()
+        conn.connect()
+        conn.send_command("render_image", timeout=600.0)
+
+        mock_socket.settimeout.assert_called_with(600.0)
+
+    def test_default_timeout_returns_after_a_long_call(self, mock_socket):
+        ok = self._make_response_bytes({"status": "ok", "result": {}})
+        mock_socket.recv.side_effect = [ok[:4], ok[4:], ok[:4], ok[4:]]
+
+        conn = BlenderConnection()
+        conn.connect()
+        conn.send_command("render_image", timeout=600.0)
+        conn.send_command("get_scene_info")
+
+        mock_socket.settimeout.assert_called_with(30.0)
+
+    def test_timeout_during_busy_retry_does_not_resend(self, mock_socket):
+        """Once a retry is accepted and runs long, it must not be sent again."""
+        busy = self._make_response_bytes({"status": "busy", "result": "rendering"})
+        mock_socket.recv.side_effect = [busy[:4], busy[4:], TimeoutError("timed out")]
+
+        conn = BlenderConnection()
+        conn.BUSY_RETRY_DELAY = 0.01
+        conn.connect()
+        with pytest.raises(BlenderConnectionError, match="did not answer"):
+            conn.send_command("render_image")
+
+        assert mock_socket.sendall.call_count == 2
+
+
 class TestIsConnected:
     def test_not_connected_initially(self):
         conn = BlenderConnection()

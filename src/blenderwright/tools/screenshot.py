@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from blenderwright.connection import BlenderConnection
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import validate_numeric_range, validate_enum
 
@@ -37,15 +38,13 @@ def get_viewport_screenshot(
 
     conn = get_connection()
 
+    params = {"width": width, "height": height}
     if mode == "fast":
-        command = "fast_viewport_capture"
+        response = conn.send_command("fast_viewport_capture", params)
     else:
-        command = "capture_viewport"
-
-    response = conn.send_command(command, {
-        "width": width,
-        "height": height,
-    })
+        response = conn.send_command(
+            "capture_viewport", params, timeout=BlenderConnection.RENDER_TIMEOUT
+        )
     if response.get("status") == "error":
         raise RuntimeError(f"Screenshot failed: {response.get('result')}")
 

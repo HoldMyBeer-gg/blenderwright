@@ -127,9 +127,16 @@ class BlenderServer:
                         }
                     else:
                         # Execute on main thread via thread_safety
-                        response = thread_safety.execute_on_main_thread(
-                            dispatcher.dispatch, command, params
-                        )
+                        try:
+                            response = thread_safety.execute_on_main_thread(
+                                dispatcher.dispatch, command, params
+                            )
+                        except thread_safety.MainThreadBusyError:
+                            response = {
+                                "status": "busy",
+                                "result": "Blender's main thread is busy. "
+                                          "The command was not run; send it again.",
+                            }
 
                     response_data = json.dumps(response).encode("utf-8")
                     self._send_message(client, response_data)

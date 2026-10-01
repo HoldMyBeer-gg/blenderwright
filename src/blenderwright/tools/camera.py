@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from blenderwright.connection import BlenderConnection
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_object_name,
@@ -39,10 +40,12 @@ ALLOWED_SENSOR_FIT = {"AUTO", "HORIZONTAL", "VERTICAL"}
 ALLOWED_RENDER_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif", ".exr", ".hdr"}
 
 
-def _send_camera_command(command: str, params: dict[str, Any] | None = None) -> Any:
+def _send_camera_command(
+    command: str, params: dict[str, Any] | None = None, **send_options: Any
+) -> Any:
     """Send a camera command and handle errors."""
     conn = get_connection()
-    response = conn.send_command(command, params)
+    response = conn.send_command(command, params, **send_options)
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
@@ -209,7 +212,7 @@ def capture_viewport(
         "filepath": filepath,
         "width": int(width),
         "height": int(height),
-    })
+    }, timeout=BlenderConnection.RENDER_TIMEOUT)
 
 
 @mcp.tool()

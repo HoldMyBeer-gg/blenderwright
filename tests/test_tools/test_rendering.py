@@ -205,6 +205,16 @@ class TestRenderImage:
         with pytest.raises(ValidationError):
             render_image(filepath="/tmp/render.mp4")
 
+    def test_render_image_waits_longer_than_a_normal_command(self, mock_conn):
+        """A real render outlasts the 30s default, which reported failure."""
+        from blenderwright.connection import BlenderConnection
+        from blenderwright.tools.rendering import render_image
+
+        render_image()
+        timeout = mock_conn.send_command.call_args.kwargs["timeout"]
+        assert timeout == BlenderConnection.RENDER_TIMEOUT
+        assert timeout > BlenderConnection.DEFAULT_TIMEOUT
+
 
 class TestRenderAnimation:
     def test_render_animation_default(self, mock_conn):
@@ -226,6 +236,15 @@ class TestRenderAnimation:
         # on macOS. render_image has always done this; this now agrees.
         assert sent["filepath"].replace("\\", "/").endswith("/tmp/anim_")
         assert sent["format"] == "JPEG"
+
+    def test_render_animation_waits_longer_than_a_still(self, mock_conn):
+        from blenderwright.connection import BlenderConnection
+        from blenderwright.tools.rendering import render_animation
+
+        render_animation()
+        timeout = mock_conn.send_command.call_args.kwargs["timeout"]
+        assert timeout == BlenderConnection.ANIMATION_TIMEOUT
+        assert timeout > BlenderConnection.RENDER_TIMEOUT
 
     def test_render_animation_invalid_format(self, mock_conn):
         from blenderwright.tools.rendering import render_animation
