@@ -14,6 +14,10 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ![blenderwright space shuttle launch built from one prompt](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shuttle-launch.png)
 
+<small>Then one more question: "could you animate the launch?" Keyframes lift the stack and tilt the camera after it, drivers stream the plumes and boil the smoke, and all 60 Cycles frames come back from a single `render_animation` call:</small>
+
+![blenderwright space shuttle launch, animated](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shuttle-launch.gif)
+
 <small>Fifteen procedural materials, each built by a single `create_procedural_material` call. The selected ball's node graph below was generated entirely by that one call: coordinates, mapping, noise, height mask, colour ramp, and Principled BSDF, laid out and wired:</small>
 
 ![blenderwright procedural shader preview](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shader-preview.png)
