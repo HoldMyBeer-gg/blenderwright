@@ -10,6 +10,8 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ![blenderwright space shuttle launch, animated](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shuttle-launch.gif)
 
+<small>[Watch it with sound](https://blenderwright.holdmybeer.gg/shuttle-launch.mp4). Launch audio courtesy of NASA: STS-131, "Sound of Launch."</small>
+
 <small>The still it grew from, modelled and rendered in under twenty minutes:</small>
 
 ![blenderwright space shuttle launch built from one prompt](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shuttle-launch.png)
