@@ -4,6 +4,7 @@ from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
+    coerce_scalar,
     validate_object_name,
     validate_enum,
     validate_numeric_range,
@@ -166,6 +167,7 @@ def set_annotation_stroke_property(
     layer_name = validate_object_name(layer_name)
     stroke_index = validate_numeric_range(stroke_index, min_val=0, name="stroke_index")
     validate_enum(property, ALLOWED_GP_STROKE_PROPERTIES, name="property")
+    value = coerce_scalar(value)
 
     conn = get_connection()
     response = conn.send_command("set_annotation_stroke_property", {

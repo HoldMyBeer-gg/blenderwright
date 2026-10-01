@@ -4,6 +4,7 @@ from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
+    coerce_scalar,
     validate_object_name,
     validate_enum,
     validate_vector,
@@ -147,6 +148,7 @@ def set_bone_property(
     armature_name = validate_object_name(armature_name)
     bone_name = validate_object_name(bone_name)
     validate_enum(property, ALLOWED_BONE_PROPERTIES, name="property")
+    value = coerce_scalar(value)
 
     conn = get_connection()
     response = conn.send_command("set_bone_property", {

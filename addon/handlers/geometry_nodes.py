@@ -1,7 +1,32 @@
 """Blender addon handlers for geometry nodes commands."""
 
+import math
+
 import bpy
 from .. import dispatcher
+
+
+def _from_text(value, socket_type: str):
+    """Convert a number or boolean sent as text to what the socket holds.
+
+    Only the socket knows whether "5" is the number five or a label, so the
+    conversion happens here and a String socket keeps its text.
+    """
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    try:
+        if socket_type.startswith("NodeSocketFloat"):
+            number = float(text)
+            return number if math.isfinite(number) else value
+        if socket_type.startswith("NodeSocketInt"):
+            number = float(text)
+            return int(number) if math.isfinite(number) else value
+    except ValueError:
+        return value
+    if socket_type.startswith("NodeSocketBool") and text.lower() in ("true", "false"):
+        return text.lower() == "true"
+    return value
 
 
 def handle_create_geometry_nodes(params: dict) -> dict:
@@ -200,6 +225,7 @@ def handle_set_geometry_node_input(params: dict) -> dict:
         for item in modifier.node_group.interface.items_tree:
             if item.item_type == 'SOCKET' and item.in_out == 'INPUT' and item.name == input_name:
                 input_id = item.identifier
+                value = _from_text(value, item.socket_type)
                 break
 
         if input_id is None:

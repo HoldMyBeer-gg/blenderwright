@@ -4,6 +4,7 @@ from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
+    coerce_scalar,
     validate_object_name,
     validate_enum,
     validate_numeric_range,
@@ -47,7 +48,10 @@ def _validate_data_path(data_path: str) -> str:
 
 @mcp.tool()
 def insert_keyframe(
-    object_name: str, data_path: str, frame: int, value: Any = None
+    object_name: str,
+    data_path: str,
+    frame: int,
+    value: float | list[float] | None = None,
 ) -> dict[str, Any]:
     """Insert a keyframe on an object property at a specific frame.
 
@@ -56,7 +60,8 @@ def insert_keyframe(
         data_path: Property to keyframe. Must be one of: location, rotation_euler,
             rotation_quaternion, scale, or indexed variants like location[0].
         frame: Frame number to insert the keyframe at.
-        value: Optional value to set before inserting the keyframe.
+        value: Optional value to set before inserting the keyframe: a number
+            for an indexed path like location[2], a list for a whole vector.
 
     Returns:
         Confirmation dict with keyframe details.
@@ -64,6 +69,7 @@ def insert_keyframe(
     object_name = validate_object_name(object_name)
     data_path = _validate_data_path(data_path)
     frame = validate_numeric_range(frame, min_val=0, max_val=1048574, name="frame")
+    value = coerce_scalar(value)
 
     conn = get_connection()
     response = conn.send_command("insert_keyframe", {

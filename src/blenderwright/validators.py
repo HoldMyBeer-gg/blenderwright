@@ -4,6 +4,7 @@ import math
 import re
 import os
 from pathlib import Path
+from typing import Any
 
 # Allowed file extensions for import/export
 ALLOWED_IMPORT_EXTENSIONS = {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usda", ".usdc", ".usdz", ".stl", ".ply", ".abc", ".dae", ".svg", ".x3d"}
@@ -19,6 +20,10 @@ MAX_PARTICLE_COUNT = 1000000
 
 # Safe object name pattern - alphanumeric, underscores, hyphens, spaces, dots
 SAFE_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-. ]+$")
+
+# A whole number or a decimal written as text, with nothing else around it
+INT_TEXT_PATTERN = re.compile(r"[+-]?\d+")
+FLOAT_TEXT_PATTERN = re.compile(r"[+-]?(\d+\.\d*|\.\d+|\d+)([eE][+-]?\d+)?")
 
 
 class ValidationError(Exception):
@@ -73,6 +78,28 @@ def validate_file_path(path: str, allowed_extensions: set[str] | None = None, mu
         raise ValidationError(f"File does not exist: {resolved}")
 
     return resolved
+
+
+def coerce_scalar(value: Any) -> Any:
+    """Turn a number or boolean that arrived as text back into its own type.
+
+    A client that sees no type on a parameter may send 53.0 as "53.0", and
+    Blender then refuses the string or stores it as text. Anything that is not
+    plainly a number or a boolean is returned unchanged, so enum words such as
+    "BOX" pass through.
+    """
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if text.lower() in ("true", "false"):
+        return text.lower() == "true"
+    if INT_TEXT_PATTERN.fullmatch(text):
+        return int(text)
+    if FLOAT_TEXT_PATTERN.fullmatch(text):
+        number = float(text)
+        if math.isfinite(number):
+            return number
+    return value
 
 
 def validate_numeric_range(value: float | int | str, min_val: float | int | None = None, max_val: float | int | None = None, name: str = "value") -> float | int:

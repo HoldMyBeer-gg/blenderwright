@@ -4,6 +4,7 @@ from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
+    coerce_scalar,
     validate_object_name,
     validate_enum,
     validate_numeric_range,
@@ -179,6 +180,7 @@ def set_physics_property(
     validate_enum(physics_type, ALLOWED_PHYSICS_TYPES, name="physics_type")
     if not property or not isinstance(property, str):
         raise ValidationError("property must be a non-empty string")
+    value = coerce_scalar(value)
 
     conn = get_connection()
     response = conn.send_command("set_physics_property", {
