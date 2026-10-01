@@ -10,9 +10,9 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ![blenderwright saloon built from one prompt](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/saloon.png)
 
-<small>This was created via Claude Code using the Haiku model and 20 random reference images. It took 5 minutes:</small>
+<small>A shuttle launch from one question: "do you want to have a go at the space shuttle launch?" Claude Code (Fable 5.1) modelled the orbiter, tank, boosters and service tower, lit the plumes as emissive volumes, grew the exhaust cloud from metaballs and rendered it in Cycles, all through blenderwright, in under twenty minutes with no manual modelling:</small>
 
-![blenderwright screenshot](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/screenshot.png)
+![blenderwright space shuttle launch built from one prompt](https://raw.githubusercontent.com/HoldMyBeer-gg/blenderwright/main/shuttle-launch.png)
 
 <small>Fifteen procedural materials, each built by a single `create_procedural_material` call. The selected ball's node graph below was generated entirely by that one call: coordinates, mapping, noise, height mask, colour ramp, and Principled BSDF, laid out and wired:</small>
 
