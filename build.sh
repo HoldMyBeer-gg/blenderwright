@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Build the blend-ai Blender addon zip for distribution.
+# Build the blenderwright Blender addon zip for distribution.
 # Usage: ./build.sh [version]
 # Example: ./build.sh 0.2.0
 #
 # If no version is provided, reads it from addon/blender_manifest.toml.
-# The zip contains a blend_ai/ folder so Blender installs it as the
-# "blend_ai" addon module.
+# The zip contains a blenderwright/ folder so Blender installs it as the
+# "blenderwright" addon module.
 
 set -euo pipefail
 
@@ -24,13 +24,13 @@ else
     VERSION=$(grep -m1 '^version' "$ADDON_DIR/blender_manifest.toml" | sed 's/.*"\(.*\)"/\1/')
 fi
 
-OUTPUT="$SCRIPT_DIR/blend-ai-v${VERSION}.zip"
+OUTPUT="$SCRIPT_DIR/blenderwright-v${VERSION}.zip"
 
-echo "Building blend-ai addon v${VERSION}..."
+echo "Building blenderwright addon v${VERSION}..."
 
-# Create temp dir with addon contents under blend_ai/ name
+# Create temp dir with addon contents under blenderwright/ name
 TMPDIR=$(mktemp -d)
-DEST="$TMPDIR/blend_ai"
+DEST="$TMPDIR/blenderwright"
 cp -r "$ADDON_DIR" "$DEST"
 
 # Remove __pycache__ and .pyc
@@ -40,7 +40,7 @@ find "$DEST" -name "*.pyc" -delete 2>/dev/null || true
 # Create zip from temp dir
 cd "$TMPDIR"
 rm -f "$OUTPUT"
-zip -r "$OUTPUT" blend_ai/
+zip -r "$OUTPUT" blenderwright/
 
 # Cleanup
 rm -rf "$TMPDIR"

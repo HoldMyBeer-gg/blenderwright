@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.validators import ValidationError
-from blend_ai.tools.scene import (
+from blenderwright.validators import ValidationError
+from blenderwright.tools.scene import (
     get_scene_info,
     set_scene_property,
     list_scenes,
@@ -17,7 +17,7 @@ from blend_ai.tools.scene import (
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {"some": "data"}}
-    with patch("blend_ai.tools.scene.get_connection", return_value=mock):
+    with patch("blenderwright.tools.scene.get_connection", return_value=mock):
         yield mock
 
 

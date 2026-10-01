@@ -1,6 +1,6 @@
 """Fixtures for the tool-layer tests.
 
-This file used to install a fake ``blend_ai.server`` module into sys.modules
+This file used to install a fake ``blenderwright.server`` module into sys.modules
 at collection, with sys.modules.setdefault, and never remove it. Whether any
 test saw the real server then depended on import order, which made assertions
 against the real tool registry pass alone and fail in suite, and produced

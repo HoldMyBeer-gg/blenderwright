@@ -1,6 +1,6 @@
 """Repairs for the defects analyze_mesh_quality already reports.
 
-The analyser returned five defect counts and blend-ai could act on one of
+The analyser returned five defect counts and blenderwright could act on one of
 them. An agent told its mesh had 412 loose vertices and 7 zero-area faces had
 nothing to call. See issue #25.
 
@@ -14,14 +14,14 @@ nothing to call. See issue #25.
 import pytest
 from unittest.mock import MagicMock, patch
 
-from blend_ai.validators import ValidationError
+from blenderwright.validators import ValidationError
 
 
 @pytest.fixture
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {}}
-    with patch("blend_ai.tools.mesh_quality.get_connection", return_value=mock):
+    with patch("blenderwright.tools.mesh_quality.get_connection", return_value=mock):
         yield mock
 
 
@@ -29,7 +29,7 @@ class TestRepairMesh:
     def test_defaults_to_the_safe_repairs(self, mock_conn):
         """Removing loose geometry and dissolving degenerate faces cannot
         change a well-formed mesh, so they are on by default."""
-        from blend_ai.tools.mesh_quality import repair_mesh
+        from blenderwright.tools.mesh_quality import repair_mesh
         repair_mesh("Cube")
         sent = mock_conn.send_command.call_args[0][1]
         assert sent["remove_loose"] is True
@@ -37,12 +37,12 @@ class TestRepairMesh:
 
     def test_hole_filling_is_opt_in(self, mock_conn):
         """fill_holes invents geometry, so it should be asked for."""
-        from blend_ai.tools.mesh_quality import repair_mesh
+        from blenderwright.tools.mesh_quality import repair_mesh
         repair_mesh("Cube")
         assert mock_conn.send_command.call_args[0][1]["fill_holes"] is False
 
     def test_each_repair_can_be_chosen(self, mock_conn):
-        from blend_ai.tools.mesh_quality import repair_mesh
+        from blenderwright.tools.mesh_quality import repair_mesh
         repair_mesh("Cube", remove_loose=False, dissolve_degenerate=False,
                     fill_holes=True)
         sent = mock_conn.send_command.call_args[0][1]
@@ -51,18 +51,18 @@ class TestRepairMesh:
 
     def test_doing_nothing_is_refused(self, mock_conn):
         """All three off is a no-op that would report success."""
-        from blend_ai.tools.mesh_quality import repair_mesh
+        from blenderwright.tools.mesh_quality import repair_mesh
         with pytest.raises(ValidationError):
             repair_mesh("Cube", remove_loose=False, dissolve_degenerate=False,
                         fill_holes=False)
 
     def test_object_name_is_validated(self, mock_conn):
-        from blend_ai.tools.mesh_quality import repair_mesh
+        from blenderwright.tools.mesh_quality import repair_mesh
         with pytest.raises(ValidationError):
             repair_mesh("bad<>name")
 
     def test_blender_errors_propagate(self, mock_conn):
-        from blend_ai.tools.mesh_quality import repair_mesh
+        from blenderwright.tools.mesh_quality import repair_mesh
         mock_conn.send_command.return_value = {"status": "error", "result": "nope"}
         with pytest.raises(RuntimeError):
             repair_mesh("Cube")
@@ -70,24 +70,24 @@ class TestRepairMesh:
 
 class TestDecimateMesh:
     def test_ratio_is_sent(self, mock_conn):
-        from blend_ai.tools.mesh_quality import decimate_mesh
+        from blenderwright.tools.mesh_quality import decimate_mesh
         decimate_mesh("Cube", ratio=0.5)
         assert mock_conn.send_command.call_args[0][1]["ratio"] == 0.5
 
     @pytest.mark.parametrize("bad", [0, -0.1, 1.5])
     def test_ratio_must_be_a_usable_fraction(self, mock_conn, bad):
-        from blend_ai.tools.mesh_quality import decimate_mesh
+        from blenderwright.tools.mesh_quality import decimate_mesh
         with pytest.raises(ValidationError):
             decimate_mesh("Cube", ratio=bad)
 
     def test_ratio_of_one_is_refused_as_a_no_op(self, mock_conn):
         """Keeping 100% of the faces does nothing but report success."""
-        from blend_ai.tools.mesh_quality import decimate_mesh
+        from blenderwright.tools.mesh_quality import decimate_mesh
         with pytest.raises(ValidationError):
             decimate_mesh("Cube", ratio=1.0)
 
     def test_numeric_strings_are_accepted(self, mock_conn):
-        from blend_ai.tools.mesh_quality import decimate_mesh
+        from blenderwright.tools.mesh_quality import decimate_mesh
         decimate_mesh("Cube", ratio="0.25")
         assert mock_conn.send_command.call_args[0][1]["ratio"] == 0.25
 
@@ -104,7 +104,7 @@ class TestTheAnalyserNowHasAnAnswerForEachDefect:
     }
 
     def test_every_reported_defect_has_a_tool(self):
-        from blend_ai.tools import mesh_quality, mesh_editing, modeling
+        from blenderwright.tools import mesh_quality, mesh_editing, modeling
         available = set(dir(mesh_quality)) | set(dir(mesh_editing)) | set(dir(modeling))
         for defect, tool in self.REPAIRS.items():
             assert tool in available, f"{defect} has no repair tool"

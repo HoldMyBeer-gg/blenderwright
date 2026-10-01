@@ -44,8 +44,8 @@ wheels = [
 ]
 
 [[package]]
-name = "blend-ai"
-version = "1.7.0"
+name = "blenderwright"
+version = "2.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "mcp" },

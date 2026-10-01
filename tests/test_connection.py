@@ -1,10 +1,10 @@
-"""Tests for blend_ai.connection."""
+"""Tests for blenderwright.connection."""
 
 import json
 import struct
 import pytest
 
-from blend_ai.connection import BlenderConnection, BlenderConnectionError
+from blenderwright.connection import BlenderConnection, BlenderConnectionError
 
 
 class TestConnect:

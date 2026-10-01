@@ -1,7 +1,7 @@
-"""Comprehensive tests for blend_ai.validators."""
+"""Comprehensive tests for blenderwright.validators."""
 
 import pytest
-from blend_ai.validators import (
+from blenderwright.validators import (
     ValidationError,
     validate_object_name,
     validate_file_path,
@@ -100,7 +100,7 @@ class TestValidateFilePath:
     def test_must_exist_nonexistent_raises(self):
         with pytest.raises(ValidationError, match="does not exist"):
             validate_file_path(
-                "/tmp/nonexistent_blend_ai_test_file_12345.fbx", must_exist=True
+                "/tmp/nonexistent_blenderwright_test_file_12345.fbx", must_exist=True
             )
 
     def test_empty_path_raises(self):
@@ -293,40 +293,40 @@ class TestValidateScale:
     """
 
     def test_accepts_normal_scale(self):
-        from blend_ai.validators import validate_scale
+        from blenderwright.validators import validate_scale
         assert validate_scale([1.0, 2.0, 0.5]) == (1.0, 2.0, 0.5)
 
     def test_accepts_very_small_positive_scale(self):
-        from blend_ai.validators import validate_scale
+        from blenderwright.validators import validate_scale
         assert validate_scale([0.001, 0.001, 0.001]) == (0.001, 0.001, 0.001)
 
     def test_rejects_zero_component(self):
-        from blend_ai.validators import ValidationError, validate_scale
+        from blenderwright.validators import ValidationError, validate_scale
         with pytest.raises(ValidationError) as exc:
             validate_scale([0.15, 0.2, 0])
         assert "zero" in str(exc.value).lower()
 
     def test_rejects_negative_component(self):
-        from blend_ai.validators import ValidationError, validate_scale
+        from blenderwright.validators import ValidationError, validate_scale
         with pytest.raises(ValidationError) as exc:
             validate_scale([0.5, 0.6, -1])
         assert "negative" in str(exc.value).lower()
 
     def test_negative_error_points_at_the_mirror_modifier(self):
         """Refusing is only helpful if it says what to do instead."""
-        from blend_ai.validators import ValidationError, validate_scale
+        from blenderwright.validators import ValidationError, validate_scale
         with pytest.raises(ValidationError) as exc:
             validate_scale([-1, 1, 1])
         assert "mirror" in str(exc.value).lower()
 
     def test_names_the_offending_axis(self):
-        from blend_ai.validators import ValidationError, validate_scale
+        from blenderwright.validators import ValidationError, validate_scale
         with pytest.raises(ValidationError) as exc:
             validate_scale([1, 1, 0])
         assert "component 2" in str(exc.value) or "z" in str(exc.value).lower()
 
     def test_still_enforces_three_components(self):
-        from blend_ai.validators import ValidationError, validate_scale
+        from blenderwright.validators import ValidationError, validate_scale
         with pytest.raises(ValidationError):
             validate_scale([0.3, 0.25])
 
@@ -341,31 +341,31 @@ class TestNumericStringCoercion:
     """
 
     def test_accepts_a_numeric_string(self):
-        from blend_ai.validators import validate_numeric_range
+        from blenderwright.validators import validate_numeric_range
         assert validate_numeric_range("0.55", min_val=0.0, max_val=1.0) == 0.55
 
     def test_accepts_an_integer_string(self):
-        from blend_ai.validators import validate_numeric_range
+        from blenderwright.validators import validate_numeric_range
         assert validate_numeric_range("2", min_val=0, max_val=10) == 2.0
 
     def test_coerced_value_is_still_range_checked(self):
-        from blend_ai.validators import ValidationError, validate_numeric_range
+        from blenderwright.validators import ValidationError, validate_numeric_range
         with pytest.raises(ValidationError):
             validate_numeric_range("5.0", min_val=0.0, max_val=1.0)
 
     def test_rejects_a_non_numeric_string(self):
-        from blend_ai.validators import ValidationError, validate_numeric_range
+        from blenderwright.validators import ValidationError, validate_numeric_range
         with pytest.raises(ValidationError) as exc:
             validate_numeric_range("high", min_val=0.0, max_val=1.0)
         assert "number" in str(exc.value).lower()
 
     def test_rejects_booleans_which_are_technically_ints(self):
-        from blend_ai.validators import ValidationError, validate_numeric_range
+        from blenderwright.validators import ValidationError, validate_numeric_range
         with pytest.raises(ValidationError):
             validate_numeric_range(True, min_val=0.0, max_val=1.0)
 
     def test_plain_numbers_are_unchanged(self):
-        from blend_ai.validators import validate_numeric_range
+        from blenderwright.validators import validate_numeric_range
         assert validate_numeric_range(0.5, min_val=0.0, max_val=1.0) == 0.5
         assert validate_numeric_range(3, min_val=0, max_val=10) == 3
 
@@ -379,18 +379,18 @@ class TestNullByteCheckRunsFirst:
     """
 
     def test_null_byte_raises_validation_error_not_value_error(self):
-        from blend_ai.validators import ValidationError, validate_file_path
+        from blenderwright.validators import ValidationError, validate_file_path
         with pytest.raises(ValidationError) as exc:
             validate_file_path("/tmp/out\x00evil")
         assert "null" in str(exc.value).lower()
 
     def test_null_byte_is_caught_even_with_an_extension_allowlist(self):
-        from blend_ai.validators import ValidationError, validate_file_path
+        from blenderwright.validators import ValidationError, validate_file_path
         with pytest.raises(ValidationError):
             validate_file_path("/tmp/a\x00b.png", allowed_extensions={".png"})
 
     def test_a_clean_path_is_unaffected(self):
-        from blend_ai.validators import validate_file_path
+        from blenderwright.validators import validate_file_path
         assert validate_file_path("/tmp/fine.png",
                                   allowed_extensions={".png"}).endswith("fine.png")
 
@@ -404,7 +404,7 @@ class TestOutOfRangeAngleSuggestsRadians:
     """
 
     def test_degree_sized_angle_is_told_about_radians(self):
-        from blend_ai.validators import ValidationError, validate_numeric_range
+        from blenderwright.validators import ValidationError, validate_numeric_range
         with pytest.raises(ValidationError) as exc:
             validate_numeric_range(30, min_val=0.0, max_val=3.14159, name="angle")
         message = str(exc.value)
@@ -412,18 +412,18 @@ class TestOutOfRangeAngleSuggestsRadians:
         assert "0.52" in message, "the converted value should be offered"
 
     def test_non_angle_parameters_get_no_radian_hint(self):
-        from blend_ai.validators import ValidationError, validate_numeric_range
+        from blenderwright.validators import ValidationError, validate_numeric_range
         with pytest.raises(ValidationError) as exc:
             validate_numeric_range(30, min_val=0.0, max_val=1.0, name="roughness")
         assert "radian" not in str(exc.value).lower()
 
     def test_in_range_angle_is_unaffected(self):
-        from blend_ai.validators import validate_numeric_range
+        from blenderwright.validators import validate_numeric_range
         assert validate_numeric_range(0.52, min_val=0.0, max_val=3.14159,
                                       name="angle") == 0.52
 
     def test_angle_below_range_is_not_given_a_degree_hint(self):
-        from blend_ai.validators import ValidationError, validate_numeric_range
+        from blenderwright.validators import ValidationError, validate_numeric_range
         with pytest.raises(ValidationError) as exc:
             validate_numeric_range(-5, min_val=0.0, max_val=3.14159, name="angle")
         assert "radian" not in str(exc.value).lower()
@@ -438,7 +438,7 @@ class TestModifierPropertyCaps:
     """
 
     def test_subdivision_levels_are_capped(self):
-        from blend_ai.validators import (MAX_SUBDIVISION_LEVEL, ValidationError,
+        from blenderwright.validators import (MAX_SUBDIVISION_LEVEL, ValidationError,
                                          validate_modifier_property_value)
         with pytest.raises(ValidationError) as exc:
             validate_modifier_property_value("SUBSURF", "levels",
@@ -446,33 +446,33 @@ class TestModifierPropertyCaps:
         assert str(MAX_SUBDIVISION_LEVEL) in str(exc.value)
 
     def test_subdivision_at_the_cap_is_allowed(self):
-        from blend_ai.validators import (MAX_SUBDIVISION_LEVEL,
+        from blenderwright.validators import (MAX_SUBDIVISION_LEVEL,
                                          validate_modifier_property_value)
         assert validate_modifier_property_value(
             "SUBSURF", "levels", MAX_SUBDIVISION_LEVEL) == MAX_SUBDIVISION_LEVEL
 
     def test_render_levels_are_capped_too(self):
-        from blend_ai.validators import ValidationError, validate_modifier_property_value
+        from blenderwright.validators import ValidationError, validate_modifier_property_value
         with pytest.raises(ValidationError):
             validate_modifier_property_value("SUBSURF", "render_levels", 12)
 
     def test_array_count_is_capped(self):
-        from blend_ai.validators import (MAX_ARRAY_COUNT, ValidationError,
+        from blenderwright.validators import (MAX_ARRAY_COUNT, ValidationError,
                                          validate_modifier_property_value)
         with pytest.raises(ValidationError):
             validate_modifier_property_value("ARRAY", "count", MAX_ARRAY_COUNT + 1)
 
     def test_numeric_strings_are_coerced_here_too(self):
-        from blend_ai.validators import validate_modifier_property_value
+        from blenderwright.validators import validate_modifier_property_value
         assert validate_modifier_property_value("SUBSURF", "levels", "2") == 2
 
     def test_unbounded_properties_pass_through_untouched(self):
-        from blend_ai.validators import validate_modifier_property_value
+        from blenderwright.validators import validate_modifier_property_value
         assert validate_modifier_property_value("SUBSURF", "use_limit_surface",
                                                 True) is True
         assert validate_modifier_property_value("BEVEL", "width", 0.02) == 0.02
 
     def test_unknown_modifier_type_is_not_blocked(self):
         """Only bound what we know; do not invent limits."""
-        from blend_ai.validators import validate_modifier_property_value
+        from blenderwright.validators import validate_modifier_property_value
         assert validate_modifier_property_value("WEIRD", "levels", 99) == 99

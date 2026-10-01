@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.validators import ValidationError
-from blend_ai.tools.booltool import (
+from blenderwright.validators import ValidationError
+from blenderwright.tools.booltool import (
     booltool_auto_union,
     booltool_auto_difference,
     booltool_auto_intersect,
@@ -16,7 +16,7 @@ from blend_ai.tools.booltool import (
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {"some": "data"}}
-    with patch("blend_ai.tools.booltool.get_connection", return_value=mock):
+    with patch("blenderwright.tools.booltool.get_connection", return_value=mock):
         yield mock
 
 

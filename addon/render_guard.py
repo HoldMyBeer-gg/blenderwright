@@ -1,4 +1,4 @@
-"""Render state tracking for the blend-ai addon.
+"""Render state tracking for the blenderwright addon.
 
 Tracks whether Blender is currently rendering so that the server
 can return a "busy" response instead of queueing commands that

@@ -1,10 +1,10 @@
-# Build the blend-ai Blender addon zip for distribution.
+# Build the blenderwright Blender addon zip for distribution.
 # Usage: .\build.ps1 [version]
 # Example: .\build.ps1 0.2.0
 #
 # If no version is provided, reads it from addon\blender_manifest.toml.
-# The zip contains a blend_ai\ folder so Blender installs it as the
-# "blend_ai" addon module.
+# The zip contains a blenderwright\ folder so Blender installs it as the
+# "blenderwright" addon module.
 
 param(
     [string]$Version
@@ -32,18 +32,18 @@ if (-not $Version) {
     }
 }
 
-$Output = Join-Path $ScriptDir "blend-ai-v${Version}.zip"
+$Output = Join-Path $ScriptDir "blenderwright-v${Version}.zip"
 
-Write-Host "Building blend-ai addon v${Version}..."
+Write-Host "Building blenderwright addon v${Version}..."
 
 # Remove old zip if it exists
 if (Test-Path $Output) {
     Remove-Item $Output
 }
 
-# Create temp dir with addon contents under blend_ai\ name
-$tempDir = Join-Path $env:TEMP "blend-ai-build-$(Get-Random)"
-$destDir = Join-Path $tempDir "blend_ai"
+# Create temp dir with addon contents under blenderwright\ name
+$tempDir = Join-Path $env:TEMP "blenderwright-build-$(Get-Random)"
+$destDir = Join-Path $tempDir "blenderwright"
 New-Item -ItemType Directory -Path $destDir -Force | Out-Null
 
 # Copy addon files, excluding __pycache__ and .pyc

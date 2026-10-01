@@ -1,17 +1,17 @@
-"""Blender N-panel UI for blend-ai server control."""
+"""Blender N-panel UI for blenderwright server control."""
 
 import bpy
 
 from . import server as addon_server
 
 
-class BLENDAI_PT_MainPanel(bpy.types.Panel):
-    """blend-ai MCP Server Control Panel"""
-    bl_label = "blend-ai"
-    bl_idname = "BLENDAI_PT_main_panel"
+class BLENDERWRIGHT_PT_MainPanel(bpy.types.Panel):
+    """blenderwright MCP Server Control Panel"""
+    bl_label = "blenderwright"
+    bl_idname = "BLENDERWRIGHT_PT_main_panel"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "blend-ai"
+    bl_category = "blenderwright"
 
     def draw(self, context):
         layout = self.layout
@@ -20,40 +20,40 @@ class BLENDAI_PT_MainPanel(bpy.types.Panel):
         if srv.is_running:
             port = srv._port
             layout.label(text=f"Server: Running (port {port})", icon="CHECKMARK")
-            layout.operator("blendai.stop_server", text="Stop Server", icon="CANCEL")
+            layout.operator("blenderwright.stop_server", text="Stop Server", icon="CANCEL")
         else:
             layout.label(text="Server: Stopped", icon="X")
-            layout.prop(context.scene, "blendai_port", text="Port")
-            layout.operator("blendai.start_server", text="Start Server", icon="PLAY")
+            layout.prop(context.scene, "blenderwright_port", text="Port")
+            layout.operator("blenderwright.start_server", text="Start Server", icon="PLAY")
 
 
-class BLENDAI_OT_StartServer(bpy.types.Operator):
-    """Start the blend-ai MCP server"""
-    bl_idname = "blendai.start_server"
-    bl_label = "Start blend-ai Server"
+class BLENDERWRIGHT_OT_StartServer(bpy.types.Operator):
+    """Start the blenderwright MCP server"""
+    bl_idname = "blenderwright.start_server"
+    bl_label = "Start blenderwright Server"
 
     def execute(self, context):
-        port = context.scene.blendai_port
+        port = context.scene.blenderwright_port
         addon_server.start_server(port=port)
-        self.report({"INFO"}, f"blend-ai server started on 127.0.0.1:{port}")
+        self.report({"INFO"}, f"blenderwright server started on 127.0.0.1:{port}")
         return {"FINISHED"}
 
 
-class BLENDAI_OT_StopServer(bpy.types.Operator):
-    """Stop the blend-ai MCP server"""
-    bl_idname = "blendai.stop_server"
-    bl_label = "Stop blend-ai Server"
+class BLENDERWRIGHT_OT_StopServer(bpy.types.Operator):
+    """Stop the blenderwright MCP server"""
+    bl_idname = "blenderwright.stop_server"
+    bl_label = "Stop blenderwright Server"
 
     def execute(self, context):
         addon_server.stop_server()
-        self.report({"INFO"}, "blend-ai server stopped")
+        self.report({"INFO"}, "blenderwright server stopped")
         return {"FINISHED"}
 
 
 classes = (
-    BLENDAI_PT_MainPanel,
-    BLENDAI_OT_StartServer,
-    BLENDAI_OT_StopServer,
+    BLENDERWRIGHT_PT_MainPanel,
+    BLENDERWRIGHT_OT_StartServer,
+    BLENDERWRIGHT_OT_StopServer,
 )
 
 
@@ -61,9 +61,9 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Scene.blendai_port = bpy.props.IntProperty(
+    bpy.types.Scene.blenderwright_port = bpy.props.IntProperty(
         name="Port",
-        description="TCP port for the blend-ai server",
+        description="TCP port for the blenderwright server",
         default=9876,
         min=1024,
         max=65535,
@@ -71,8 +71,8 @@ def register():
 
 
 def unregister():
-    if hasattr(bpy.types.Scene, "blendai_port"):
-        del bpy.types.Scene.blendai_port
+    if hasattr(bpy.types.Scene, "blenderwright_port"):
+        del bpy.types.Scene.blenderwright_port
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.tools.scene import suggest_extensions
+from blenderwright.tools.scene import suggest_extensions
 
 
 @pytest.fixture
@@ -11,7 +11,7 @@ def mock_conn():
     mock = MagicMock()
     # Default: no extensions installed
     mock.send_command.return_value = {"status": "ok", "result": {"installed": []}}
-    with patch("blend_ai.tools.scene.get_connection", return_value=mock):
+    with patch("blenderwright.tools.scene.get_connection", return_value=mock):
         yield mock
 
 
@@ -102,7 +102,7 @@ class TestInstalledSkipped:
         Taken from the catalog rather than written out, so adding an extension
         cannot silently leave this test asserting over a stale subset.
         """
-        from blend_ai.tools.scene import EXTENSION_CATALOG
+        from blenderwright.tools.scene import EXTENSION_CATALOG
         mock_conn.send_command.return_value = {
             "status": "ok",
             "result": {"installed": list(EXTENSION_CATALOG)},

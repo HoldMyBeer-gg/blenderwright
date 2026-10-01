@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.validators import ValidationError
-from blend_ai.tools.gpencil import (
+from blenderwright.validators import ValidationError
+from blenderwright.tools.gpencil import (
     create_annotation,
     add_annotation_layer,
     remove_annotation_layer,
@@ -17,7 +17,7 @@ from blend_ai.tools.gpencil import (
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {"some": "data"}}
-    with patch("blend_ai.tools.gpencil.get_connection", return_value=mock):
+    with patch("blenderwright.tools.gpencil.get_connection", return_value=mock):
         yield mock
 
 
@@ -53,7 +53,7 @@ class TestCreateAnnotation:
     def test_no_location_parameter(self, mock_conn):
         """create_annotation must NOT have a location parameter."""
         import inspect
-        from blend_ai.tools.gpencil import create_annotation as fn
+        from blenderwright.tools.gpencil import create_annotation as fn
         sig = inspect.signature(fn)
         assert "location" not in sig.parameters, (
             "create_annotation must not have a 'location' parameter "
@@ -138,7 +138,7 @@ class TestAddAnnotationStroke:
     def test_add_annotation_stroke_no_strength_param(self, mock_conn):
         """The MCP tool function signature must NOT have a 'strength' parameter."""
         import inspect
-        from blend_ai.tools.gpencil import add_annotation_stroke as fn
+        from blenderwright.tools.gpencil import add_annotation_stroke as fn
         sig = inspect.signature(fn)
         assert "strength" not in sig.parameters, (
             "add_annotation_stroke must not have 'strength' parameter "

@@ -13,26 +13,26 @@ deselecting the object, and is saved in the .blend. Verified against Blender
 import pytest
 from unittest.mock import MagicMock, patch
 
-from blend_ai.validators import ValidationError
+from blenderwright.validators import ValidationError
 
 
 @pytest.fixture
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {}}
-    with patch("blend_ai.tools.selection.get_connection", return_value=mock):
+    with patch("blenderwright.tools.selection.get_connection", return_value=mock):
         yield mock
 
 
 class TestSelectAllGeometry:
     @pytest.mark.parametrize("action", ["SELECT", "DESELECT", "INVERT"])
     def test_actions_are_passed_through(self, mock_conn, action):
-        from blend_ai.tools.selection import select_all_geometry
+        from blenderwright.tools.selection import select_all_geometry
         select_all_geometry("Cube", action=action)
         assert mock_conn.send_command.call_args[0][1]["action"] == action
 
     def test_unknown_action_is_rejected(self, mock_conn):
-        from blend_ai.tools.selection import select_all_geometry
+        from blenderwright.tools.selection import select_all_geometry
         with pytest.raises(ValidationError):
             select_all_geometry("Cube", action="TOGGLE_MAYBE")
 
@@ -45,7 +45,7 @@ class TestSelectByIndex:
     """
 
     def test_indices_and_element_are_sent(self, mock_conn):
-        from blend_ai.tools.selection import select_by_index
+        from blenderwright.tools.selection import select_by_index
         select_by_index("Cube", element="FACE", indices=[0, 3])
         sent = mock_conn.send_command.call_args[0][1]
         assert sent["element"] == "FACE"
@@ -53,79 +53,79 @@ class TestSelectByIndex:
 
     @pytest.mark.parametrize("element", ["VERTEX", "EDGE", "FACE"])
     def test_each_element_type_is_allowed(self, mock_conn, element):
-        from blend_ai.tools.selection import select_by_index
+        from blenderwright.tools.selection import select_by_index
         select_by_index("Cube", element=element, indices=[0])
         assert mock_conn.send_command.called
 
     def test_unknown_element_is_rejected(self, mock_conn):
-        from blend_ai.tools.selection import select_by_index
+        from blenderwright.tools.selection import select_by_index
         with pytest.raises(ValidationError):
             select_by_index("Cube", element="POLYGON", indices=[0])
 
     def test_empty_indices_is_rejected(self, mock_conn):
         """Selecting nothing would report success having done nothing."""
-        from blend_ai.tools.selection import select_by_index
+        from blenderwright.tools.selection import select_by_index
         with pytest.raises(ValidationError):
             select_by_index("Cube", element="FACE", indices=[])
 
     def test_negative_index_is_rejected(self, mock_conn):
-        from blend_ai.tools.selection import select_by_index
+        from blenderwright.tools.selection import select_by_index
         with pytest.raises(ValidationError):
             select_by_index("Cube", element="FACE", indices=[0, -2])
 
     def test_extends_by_default_is_false(self, mock_conn):
         """Replacing is the predictable default; extending is opt-in."""
-        from blend_ai.tools.selection import select_by_index
+        from blenderwright.tools.selection import select_by_index
         select_by_index("Cube", element="FACE", indices=[1])
         assert mock_conn.send_command.call_args[0][1]["extend"] is False
 
 
 class TestSelectByAxis:
     def test_axis_and_sign_are_sent(self, mock_conn):
-        from blend_ai.tools.selection import select_by_axis
+        from blenderwright.tools.selection import select_by_axis
         select_by_axis("Cube", axis="Z", sign="POS")
         sent = mock_conn.send_command.call_args[0][1]
         assert sent["axis"] == "Z" and sent["sign"] == "POS"
 
     @pytest.mark.parametrize("bad", [("W", "POS"), ("Z", "UPWARDS")])
     def test_invalid_values_are_rejected(self, mock_conn, bad):
-        from blend_ai.tools.selection import select_by_axis
+        from blenderwright.tools.selection import select_by_axis
         with pytest.raises(ValidationError):
             select_by_axis("Cube", axis=bad[0], sign=bad[1])
 
 
 class TestSelectSimilar:
     def test_type_is_sent(self, mock_conn):
-        from blend_ai.tools.selection import select_similar
+        from blenderwright.tools.selection import select_similar
         select_similar("Cube", type="FACE_AREA")
         assert mock_conn.send_command.call_args[0][1]["type"] == "FACE_AREA"
 
     def test_the_enum_matches_blender(self, mock_conn):
         """Verified against Blender 5.1: FACE_AREA, not AREA."""
-        from blend_ai.tools.selection import ALLOWED_SIMILAR_TYPES
+        from blenderwright.tools.selection import ALLOWED_SIMILAR_TYPES
         assert "FACE_AREA" in ALLOWED_SIMILAR_TYPES
         assert "AREA" not in ALLOWED_SIMILAR_TYPES
 
     def test_unknown_type_is_rejected(self, mock_conn):
-        from blend_ai.tools.selection import select_similar
+        from blenderwright.tools.selection import select_similar
         with pytest.raises(ValidationError):
             select_similar("Cube", type="AREA")
 
 
 class TestSelectFacesBySides:
     def test_quads(self, mock_conn):
-        from blend_ai.tools.selection import select_faces_by_sides
+        from blenderwright.tools.selection import select_faces_by_sides
         select_faces_by_sides("Cube", number=4, comparison="EQUAL")
         sent = mock_conn.send_command.call_args[0][1]
         assert sent["number"] == 4 and sent["comparison"] == "EQUAL"
 
     def test_ngons_via_greater(self, mock_conn):
-        from blend_ai.tools.selection import select_faces_by_sides
+        from blenderwright.tools.selection import select_faces_by_sides
         select_faces_by_sides("Cube", number=4, comparison="GREATER")
         assert mock_conn.send_command.call_args[0][1]["comparison"] == "GREATER"
 
     def test_a_face_needs_at_least_three_sides(self, mock_conn):
-        from blend_ai.tools.selection import select_faces_by_sides
+        from blenderwright.tools.selection import select_faces_by_sides
         with pytest.raises(ValidationError):
             select_faces_by_sides("Cube", number=2)
 
@@ -134,7 +134,7 @@ class TestGetSelection:
     """Without this an agent cannot see what it selected."""
 
     def test_reports_the_object(self, mock_conn):
-        from blend_ai.tools.selection import get_selection
+        from blenderwright.tools.selection import get_selection
         get_selection("Cube")
         assert mock_conn.send_command.call_args[0][1] == {"object_name": "Cube"}
 
@@ -146,5 +146,5 @@ class TestLoopSelectIsNotOffered:
         Verified: it raises "Operator bpy.ops.mesh.loop_select.poll() Expected
         a view3d region". Offering it would be a tool that always fails.
         """
-        from blend_ai.tools import selection
+        from blenderwright.tools import selection
         assert not any("loop" in name for name in dir(selection))

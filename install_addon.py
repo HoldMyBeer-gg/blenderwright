@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Installer and maintenance tool for the blend-ai Blender addon.
+Installer and maintenance tool for the blenderwright Blender addon.
 
 Subcommands:
-    doctor      report every blend-ai install found, across all Blender versions
+    doctor      report every blenderwright install found, across all Blender versions
     uninstall   remove them (dry run unless --yes)
     upgrade     uninstall, rebuild the zip, install fresh
     install     pick a Blender install and install the addon
@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
-MODULE_NAME = "blend_ai"
+MODULE_NAME = "blenderwright"
 
 
 class BlenderRunningError(RuntimeError):
@@ -144,7 +144,7 @@ async def _get_blender_version(blender: str | Path) -> str | None:
 # ---------------------------------------------------------------------------
 
 def find_zip() -> Path | None:
-    zips = sorted(SCRIPT_DIR.glob("blend-ai-v*.zip"), key=lambda p: p.stat().st_mtime, reverse=True)
+    zips = sorted(SCRIPT_DIR.glob("blenderwright-v*.zip"), key=lambda p: p.stat().st_mtime, reverse=True)
     return zips[0] if zips else None
 
 
@@ -174,7 +174,7 @@ def build_zip(log_fn) -> Path | None:
         return None
 
     version = _read_manifest_version(addon_dir)
-    output = SCRIPT_DIR / f"blend-ai-v{version}.zip"
+    output = SCRIPT_DIR / f"blenderwright-v{version}.zip"
     log_fn(f"Building addon zip v{version}...")
 
     import tempfile
@@ -222,7 +222,7 @@ except Exception as e:
     sys.exit(1)
 
 bpy.ops.wm.save_userpref()
-print('SUCCESS: blend_ai extension installed and preferences saved.')
+print('SUCCESS: blenderwright extension installed and preferences saved.')
 """
 
 
@@ -275,42 +275,48 @@ def blender_version_dirs(root: Path) -> list[Path]:
     return out
 
 
-def _looks_like_blend_ai(path: Path) -> bool:
-    """Return True if a directory or file appears to belong to blend-ai.
+# Names the addon has shipped under; the old ones stay so maintenance finds them.
+_ALL_NAMES = ("blenderwright", "blend_ai", "blend-ai")
+
+
+def _looks_like_blenderwright(path: Path) -> bool:
+    """Return True if a directory or file appears to belong to blenderwright.
 
     Checks (without following symlinks into the target for dir contents):
-    - `blender_manifest.toml` containing `id = "blend_ai"` or `name = "blend-ai"`
-    - `__init__.py` containing a `bl_info` with `name` == `blend-ai` / `blend_ai`
+    - `blender_manifest.toml` whose `id` or `name` is blenderwright, or the
+      pre-2.0 names blend_ai / blend-ai, so doctor and upgrade still find and
+      clean up installs made under the old name
+    - `__init__.py` containing a `bl_info` naming either
     """
     try:
         if path.is_file():
             if path.name == "__init__.py":
                 text = path.read_text(encoding="utf-8", errors="replace")
-                return "blend-ai" in text and "bl_info" in text
+                return "bl_info" in text and any(n in text for n in _ALL_NAMES)
             if path.name == "blender_manifest.toml":
                 text = path.read_text(encoding="utf-8", errors="replace")
-                return 'id = "blend_ai"' in text or 'name = "blend-ai"' in text
+                return any(f'id = "{n}"' in text or f'name = "{n}"' in text for n in _ALL_NAMES)
             return False
         if path.is_dir():
             manifest = path / "blender_manifest.toml"
-            if manifest.exists() and _looks_like_blend_ai(manifest):
+            if manifest.exists() and _looks_like_blenderwright(manifest):
                 return True
             init = path / "__init__.py"
-            if init.exists() and _looks_like_blend_ai(init):
+            if init.exists() and _looks_like_blenderwright(init):
                 return True
     except OSError:
         return False
     return False
 
 
-def find_blend_ai_installs(version_dir: Path) -> list[dict]:
-    """Scan one Blender version dir for blend-ai leftovers.
+def find_blenderwright_installs(version_dir: Path) -> list[dict]:
+    """Scan one Blender version dir for blenderwright leftovers.
 
     Returns a list of finding dicts with keys: path, kind, version.
     Kinds:
-      - "legacy_dir"    : directory under scripts/addons/ identified as blend-ai
-      - "extension_dir" : directory under extensions/user_default/ identified as blend-ai
-      - "symlink"       : symlink (legacy dev install) identified as blend-ai without following
+      - "legacy_dir"    : directory under scripts/addons/ identified as blenderwright
+      - "extension_dir" : directory under extensions/user_default/ identified as blenderwright
+      - "symlink"       : symlink (legacy dev install) identified as blenderwright without following
       - "orphan_file"   : loose file directly in scripts/addons/ from a botched install
     """
     findings: list[dict] = []
@@ -326,7 +332,7 @@ def find_blend_ai_installs(version_dir: Path) -> list[dict]:
                     target = entry.resolve()
                 except OSError:
                     continue
-                if target.exists() and _looks_like_blend_ai(target):
+                if target.exists() and _looks_like_blenderwright(target):
                     findings.append({
                         "path": entry,
                         "kind": "symlink",
@@ -334,7 +340,7 @@ def find_blend_ai_installs(version_dir: Path) -> list[dict]:
                     })
                 continue
             if entry.is_dir():
-                if _looks_like_blend_ai(entry):
+                if _looks_like_blenderwright(entry):
                     findings.append({
                         "path": entry,
                         "kind": "legacy_dir",
@@ -342,7 +348,7 @@ def find_blend_ai_installs(version_dir: Path) -> list[dict]:
                     })
                 continue
             # Loose file directly in addons/: botched install artifact.
-            if entry.is_file() and _looks_like_blend_ai(entry):
+            if entry.is_file() and _looks_like_blenderwright(entry):
                 findings.append({
                     "path": entry,
                     "kind": "orphan_file",
@@ -357,14 +363,14 @@ def find_blend_ai_installs(version_dir: Path) -> list[dict]:
                     target = entry.resolve()
                 except OSError:
                     continue
-                if target.exists() and _looks_like_blend_ai(target):
+                if target.exists() and _looks_like_blenderwright(target):
                     findings.append({
                         "path": entry,
                         "kind": "symlink",
                         "version": version,
                     })
                 continue
-            if entry.is_dir() and _looks_like_blend_ai(entry):
+            if entry.is_dir() and _looks_like_blenderwright(entry):
                 findings.append({
                     "path": entry,
                     "kind": "extension_dir",
@@ -395,21 +401,21 @@ def is_blender_running() -> bool:
 
 
 def doctor() -> dict:
-    """Scan every Blender version dir for blend-ai leftovers.
+    """Scan every Blender version dir for blenderwright leftovers.
 
     Returns a dict with:
-      - installs: list of finding dicts (see find_blend_ai_installs)
+      - installs: list of finding dicts (see find_blenderwright_installs)
       - blender_running: bool
     """
     installs: list[dict] = []
     for root in blender_user_config_dirs():
         for vdir in blender_version_dirs(root):
-            installs.extend(find_blend_ai_installs(vdir))
+            installs.extend(find_blenderwright_installs(vdir))
     return {"installs": installs, "blender_running": is_blender_running()}
 
 
 def uninstall(dry_run: bool = True) -> list[dict]:
-    """Remove every blend-ai leftover across all Blender versions.
+    """Remove every blenderwright leftover across all Blender versions.
 
     With dry_run=True (default), only returns what would be removed.
     With dry_run=False, actually removes them. Raises BlenderRunningError
@@ -468,9 +474,9 @@ def _cmd_doctor(_args) -> int:
     if report["blender_running"]:
         print("Warning: Blender is currently running.")
     if not installs:
-        print("No blend-ai installs found. System is clean.")
+        print("No blenderwright installs found. System is clean.")
         return 0
-    print(f"Found {len(installs)} blend-ai install(s):")
+    print(f"Found {len(installs)} blenderwright install(s):")
     for f in installs:
         print(f"  [{f['kind']}] {f['path']} (Blender {f['version']})")
     return 0
@@ -573,10 +579,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="install_addon.py", description=__doc__)
     sub = parser.add_subparsers(dest="command")
 
-    p_doctor = sub.add_parser("doctor", help="Scan for blend-ai installs and report")
+    p_doctor = sub.add_parser("doctor", help="Scan for blenderwright installs and report")
     p_doctor.set_defaults(func=_cmd_doctor)
 
-    p_uninstall = sub.add_parser("uninstall", help="Remove blend-ai from all Blender versions")
+    p_uninstall = sub.add_parser("uninstall", help="Remove blenderwright from all Blender versions")
     p_uninstall.add_argument("--yes", action="store_true", help="Actually delete (default is dry run)")
     p_uninstall.set_defaults(func=_cmd_uninstall)
 

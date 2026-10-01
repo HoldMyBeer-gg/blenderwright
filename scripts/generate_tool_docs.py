@@ -22,10 +22,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TOOLS_DIR = ROOT / "src" / "blend_ai" / "tools"
+TOOLS_DIR = ROOT / "src" / "blenderwright" / "tools"
 OUT_DIR = ROOT / "docs"
-SITE_URL = "https://blend-ai.holdmybeer.gg/"
-REPO_URL = "https://github.com/HoldMyBeer-gg/blend-ai"
+SITE_URL = "https://blenderwright.holdmybeer.gg/"
+REPO_URL = "https://github.com/HoldMyBeer-gg/blenderwright"
 
 # Module file name -> the heading it appears under.
 MODULE_TITLES = {
@@ -176,7 +176,7 @@ def render(tools: list[Tool]) -> str:
     count = len(tools)
 
     description = (
-        f"Complete reference for all {count} tools in blend-ai, the MCP server "
+        f"Complete reference for all {count} tools in blenderwright, the MCP server "
         f"for Blender. Modeling, mesh editing, materials, shader nodes, lighting, "
         f"camera, animation, rendering, sculpting, UV mapping, physics, geometry "
         f"nodes and rigging, driven by Claude or any MCP client."
@@ -235,11 +235,11 @@ TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blend-ai tool reference: {count} Blender MCP tools</title>
+<title>blenderwright tool reference: {count} Blender MCP tools</title>
 <meta name="description" content="{description}">
 <link rel="canonical" href="{site}">
 <meta name="robots" content="index, follow">
-<meta property="og:title" content="blend-ai tool reference">
+<meta property="og:title" content="blenderwright tool reference">
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{site}">
 <meta property="og:type" content="website">
@@ -338,8 +338,8 @@ footer a {{ color: var(--accent); }}
 <body>
 <div class="wrap">
 <header>
-  <h1>blend-ai tool reference</h1>
-  <p class="tag">Every tool the blend-ai MCP server exposes to Blender, generated
+  <h1>blenderwright tool reference</h1>
+  <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
     <span><b>{count}</b> tools</span>
@@ -358,8 +358,8 @@ footer a {{ color: var(--accent); }}
   </main>
 </div>
 <footer>
-  <p>Generated from the blend-ai source tree.
-  <a href="{repo}">github.com/HoldMyBeer-gg/blend-ai</a></p>
+  <p>Generated from the blenderwright source tree.
+  <a href="{repo}">github.com/HoldMyBeer-gg/blenderwright</a></p>
 </footer>
 </div>
 <script>
@@ -428,7 +428,7 @@ def main() -> int:
 
     OUT_DIR.mkdir(exist_ok=True)
     target.write_text(page, encoding="utf-8")
-    (OUT_DIR / "CNAME").write_text("blend-ai.holdmybeer.gg\n", encoding="utf-8")
+    (OUT_DIR / "CNAME").write_text("blenderwright.holdmybeer.gg\n", encoding="utf-8")
     (OUT_DIR / ".nojekyll").write_text("", encoding="utf-8")
     (OUT_DIR / "sitemap.xml").write_text(render_sitemap(), encoding="utf-8")
     (OUT_DIR / "robots.txt").write_text(render_robots(), encoding="utf-8")

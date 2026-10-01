@@ -13,8 +13,8 @@ indirect_light_intensity, with no per-lobe split.
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.tools.rendering import set_eevee_light_path
-from blend_ai.validators import ValidationError
+from blenderwright.tools.rendering import set_eevee_light_path
+from blenderwright.validators import ValidationError
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def mock_conn():
         "status": "ok",
         "result": {"direct_intensity": 1.0, "indirect_intensity": 1.0},
     }
-    with patch("blend_ai.tools.rendering.get_connection", return_value=mock):
+    with patch("blenderwright.tools.rendering.get_connection", return_value=mock):
         yield mock
 
 
@@ -75,7 +75,7 @@ class TestTheOldPropertiesAreGone:
     def test_tool_no_longer_mentions_light_path_properties(self):
         """Guard against the dead property names creeping back."""
         import inspect
-        from blend_ai.tools import rendering
+        from blenderwright.tools import rendering
         source = inspect.getsource(rendering)
         for dead in ("light_path_diffuse_intensity", "light_path_glossy_intensity",
                      "light_path_transmission_intensity"):

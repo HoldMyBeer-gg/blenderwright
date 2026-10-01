@@ -1,6 +1,6 @@
 """Unit tests for auto-critique workflow prompt."""
 
-from blend_ai.prompts.workflows import auto_critique_workflow
+from blenderwright.prompts.workflows import auto_critique_workflow
 
 
 

@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.validators import ValidationError
-from blend_ai.tools.modeling import (
+from blenderwright.validators import ValidationError
+from blenderwright.tools.modeling import (
     add_modifier,
     remove_modifier,
     apply_modifier,
@@ -25,7 +25,7 @@ from blend_ai.tools.modeling import (
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {"some": "data"}}
-    with patch("blend_ai.tools.modeling.get_connection", return_value=mock):
+    with patch("blenderwright.tools.modeling.get_connection", return_value=mock):
         yield mock
 
 
@@ -454,25 +454,25 @@ class TestExtrudeOffsetValidation:
     """
 
     def test_numeric_string_is_coerced(self, mock_conn):
-        from blend_ai.tools.modeling import extrude_faces
+        from blenderwright.tools.modeling import extrude_faces
         extrude_faces("Cube", offset="0.5")
         assert mock_conn.send_command.call_args[0][1]["offset"] == 0.5
 
     def test_zero_offset_is_rejected(self, mock_conn):
-        from blend_ai.tools.modeling import extrude_faces
-        from blend_ai.validators import ValidationError
+        from blenderwright.tools.modeling import extrude_faces
+        from blenderwright.validators import ValidationError
         with pytest.raises(ValidationError) as exc:
             extrude_faces("Cube", offset=0)
         assert "no-op" in str(exc.value).lower() or "zero" in str(exc.value).lower()
 
     def test_negative_offset_is_allowed(self, mock_conn):
         """Extruding inward is legitimate; only zero is meaningless."""
-        from blend_ai.tools.modeling import extrude_faces
+        from blenderwright.tools.modeling import extrude_faces
         extrude_faces("Cube", offset=-0.2)
         assert mock_conn.send_command.call_args[0][1]["offset"] == -0.2
 
     def test_absurd_offset_is_rejected(self, mock_conn):
-        from blend_ai.tools.modeling import extrude_faces
-        from blend_ai.validators import ValidationError
+        from blenderwright.tools.modeling import extrude_faces
+        from blenderwright.validators import ValidationError
         with pytest.raises(ValidationError):
             extrude_faces("Cube", offset=1e9)

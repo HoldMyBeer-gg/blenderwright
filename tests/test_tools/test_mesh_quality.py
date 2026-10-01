@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.validators import ValidationError
-from blend_ai.tools.mesh_quality import analyze_mesh_quality
+from blenderwright.validators import ValidationError
+from blenderwright.tools.mesh_quality import analyze_mesh_quality
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def mock_conn():
             "issues_found": False,
         },
     }
-    with patch("blend_ai.tools.mesh_quality.get_connection", return_value=mock):
+    with patch("blenderwright.tools.mesh_quality.get_connection", return_value=mock):
         yield mock
 
 

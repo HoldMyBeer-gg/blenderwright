@@ -8,8 +8,8 @@ only build the graph topology; these drive what the nodes actually do.
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.validators import ValidationError
-from blend_ai.tools.materials import (
+from blenderwright.validators import ValidationError
+from blenderwright.tools.materials import (
     set_shader_node_input,
     set_shader_node_property,
     add_color_ramp_element,
@@ -24,7 +24,7 @@ from blend_ai.tools.materials import (
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {"some": "data"}}
-    with patch("blend_ai.tools.materials.get_connection", return_value=mock):
+    with patch("blenderwright.tools.materials.get_connection", return_value=mock):
         yield mock
 
 

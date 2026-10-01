@@ -1,6 +1,6 @@
 """Tests for SLIM UV unwrap method (Blender 5.1)."""
 
-from blend_ai.tools.uv import ALLOWED_UNWRAP_METHODS
+from blenderwright.tools.uv import ALLOWED_UNWRAP_METHODS
 
 
 class TestSlimUnwrapMethod:
@@ -18,6 +18,6 @@ class TestSlimUnwrapMethod:
 
     def test_slim_passes_validation(self):
         """SLIM passes validate_enum."""
-        from blend_ai.validators import validate_enum
+        from blenderwright.validators import validate_enum
         result = validate_enum("SLIM", ALLOWED_UNWRAP_METHODS, name="method")
         assert result == "SLIM"

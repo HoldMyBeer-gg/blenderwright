@@ -3,22 +3,23 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "blend-ai"
-version = "1.7.0"
+name = "blenderwright"
+version = "2.0.0"
 description = "The most intuitive and efficient MCP Server for Blender"
 readme = "README.md"
 requires-python = ">=3.10"
-license = "AGPL-3.0-or-later"
+license = "MIT"
 dependencies = [
     "mcp>=1.26.0,<2",
     "pydantic>=2.0",
 ]
 
 [project.scripts]
-blend-ai = "blend_ai.server:main"
+blenderwright = "blenderwright.server:main"
+blend-ai = "blenderwright.server:main"  # legacy alias, remove in 3.0
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/blend_ai"]
+packages = ["src/blenderwright"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -29,7 +30,7 @@ target-version = "py310"
 line-length = 100
 
 [project.optional-dependencies]
-# blend_ai.ollama_chat drives Blender from a local Ollama model. The import is
+# blenderwright.ollama_chat drives Blender from a local Ollama model. The import is
 # optional so the MCP server itself stays dependency-light.
 chat = [
     "ollama>=0.4",
@@ -45,7 +46,7 @@ dev = [
 # pytest. Without it, pytest is only in the optional dev extra, uv does not
 # install it, and the command silently falls through to whatever pytest is on
 # PATH. That interpreter had mcp 2.x, where FastMCP was renamed, so every test
-# importing blend_ai.server errored and the failures looked unexplained.
+# importing blenderwright.server errored and the failures looked unexplained.
 # The extra above stays for CI, which installs with pip.
 [dependency-groups]
 dev = [

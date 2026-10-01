@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.tools.screenshot import get_viewport_screenshot
+from blenderwright.tools.screenshot import get_viewport_screenshot
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def mock_conn():
             "mode": "fast",
         },
     }
-    with patch("blend_ai.tools.screenshot.get_connection", return_value=mock):
+    with patch("blenderwright.tools.screenshot.get_connection", return_value=mock):
         yield mock
 
 
@@ -74,21 +74,21 @@ class TestGetViewportScreenshot:
 
     def test_max_size_validation_too_small(self):
         """max_size below 64 raises ValidationError."""
-        from blend_ai.validators import ValidationError
+        from blenderwright.validators import ValidationError
 
         with pytest.raises(ValidationError):
             get_viewport_screenshot(max_size=10)
 
     def test_max_size_validation_too_large(self):
         """max_size above 4096 raises ValidationError."""
-        from blend_ai.validators import ValidationError
+        from blenderwright.validators import ValidationError
 
         with pytest.raises(ValidationError):
             get_viewport_screenshot(max_size=10000)
 
     def test_invalid_mode_raises(self):
         """Invalid mode raises ValidationError."""
-        from blend_ai.validators import ValidationError
+        from blenderwright.validators import ValidationError
 
         with pytest.raises(ValidationError):
             get_viewport_screenshot(mode="invalid")

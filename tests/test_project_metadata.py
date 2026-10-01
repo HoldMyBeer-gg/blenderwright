@@ -17,7 +17,7 @@ import re
 import tomllib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOOLS_DIR = os.path.join(ROOT, "src", "blend_ai", "tools")
+TOOLS_DIR = os.path.join(ROOT, "src", "blenderwright", "tools")
 
 
 def _read(*parts):
@@ -48,12 +48,12 @@ def _bl_info_version():
 
 
 def _lock_version():
-    """The blend-ai entry in uv.lock, which uv regenerates from pyproject."""
+    """The blenderwright entry in uv.lock, which uv regenerates from pyproject."""
     lock = _read("uv.lock")
     match = re.search(
-        r'\[\[package\]\]\s*\nname = "blend-ai"\s*\nversion = "([^"]+)"', lock
+        r'\[\[package\]\]\s*\nname = "blenderwright"\s*\nversion = "([^"]+)"', lock
     )
-    assert match, "blend-ai package entry not found in uv.lock"
+    assert match, "blenderwright package entry not found in uv.lock"
     return match.group(1)
 
 
@@ -185,7 +185,7 @@ def test_mcp_dependency_excludes_the_breaking_major():
     server.py imports `from mcp.server.fastmcp import FastMCP`. That module
     does not exist in mcp 2.x, where it became MCPServer. The lockfile keeps
     this checkout on 1.26.0, but anyone following the README's
-    `uv pip install -e .` resolves the newest mcp and cannot start blend-ai.
+    `uv pip install -e .` resolves the newest mcp and cannot start blenderwright.
     """
     with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
         deps = tomllib.load(f)["project"]["dependencies"]
@@ -193,17 +193,17 @@ def test_mcp_dependency_excludes_the_breaking_major():
     assert mcp_pin, "mcp is no longer a declared dependency"
     assert "<2" in mcp_pin.replace(" ", ""), (
         f"mcp pin is {mcp_pin!r}, which allows mcp 2.x. FastMCP was renamed to "
-        f"MCPServer there, so src/blend_ai/server.py cannot import."
+        f"MCPServer there, so src/blenderwright/server.py cannot import."
     )
 
 
 def test_server_still_imports_fastmcp_from_the_pinned_path():
     """If this import ever moves, the pin above can be relaxed deliberately."""
-    assert "from mcp.server.fastmcp import FastMCP" in _read("src", "blend_ai", "server.py")
+    assert "from mcp.server.fastmcp import FastMCP" in _read("src", "blenderwright", "server.py")
 
 
 def test_ollama_chat_dependency_is_declared():
-    """blend_ai.ollama_chat needs the ollama package; say so.
+    """blenderwright.ollama_chat needs the ollama package; say so.
 
     The import is guarded and main() prints an install hint, but nothing in
     the project metadata asks for it, so a fresh checkout has no way to
@@ -213,7 +213,7 @@ def test_ollama_chat_dependency_is_declared():
         extras = tomllib.load(f)["project"].get("optional-dependencies", {})
     declared = [d for group in extras.values() for d in group]
     assert any(d.replace(" ", "").startswith("ollama") for d in declared), (
-        "src/blend_ai/ollama_chat.py imports ollama, but no extra provides it."
+        "src/blenderwright/ollama_chat.py imports ollama, but no extra provides it."
     )
 
 
@@ -226,7 +226,7 @@ def test_numeric_validation_results_are_not_discarded():
     Calling it as a bare statement is now always a bug.
     """
     offenders = []
-    for root, _, files in os.walk(os.path.join(ROOT, "src", "blend_ai")):
+    for root, _, files in os.walk(os.path.join(ROOT, "src", "blenderwright")):
         for filename in sorted(files):
             if not filename.endswith(".py"):
                 continue
@@ -254,7 +254,7 @@ def test_dev_tools_are_in_a_group_uv_installs_by_default():
     pytest lived only in the optional `dev` extra, which uv does not install,
     so the command fell through to the pyenv pytest. That interpreter had
     mcp 2.x, where FastMCP was renamed, so every test importing
-    blend_ai.server errored and the failures looked unexplained and
+    blenderwright.server errored and the failures looked unexplained and
     pre-existing.
     """
     with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
@@ -287,7 +287,7 @@ def test_the_two_dev_lists_agree():
 
 
 def test_no_conftest_permanently_fakes_the_server_module():
-    """A fake blend_ai.server in sys.modules makes results depend on import order.
+    """A fake blenderwright.server in sys.modules makes results depend on import order.
 
     tests/test_tools/conftest.py used sys.modules.setdefault and never cleaned
     up, so the real registry was visible to some tests and not others, and
@@ -303,9 +303,9 @@ def test_no_conftest_permanently_fakes_the_server_module():
             with open(path, encoding="utf-8") as f:
                 body = f.read()
             offending = re.findall(
-                r"sys\.modules(?:\.setdefault\(|\[)\s*[\"']blend_ai\.server[\"']", body)
+                r"sys\.modules(?:\.setdefault\(|\[)\s*[\"']blenderwright\.server[\"']", body)
             assert not offending, (
-                f"{os.path.relpath(path, ROOT)} installs a fake blend_ai.server "
+                f"{os.path.relpath(path, ROOT)} installs a fake blenderwright.server "
                 f"at collection; that makes test results depend on import order."
             )
 

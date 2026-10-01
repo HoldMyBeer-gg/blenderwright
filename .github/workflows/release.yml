@@ -35,13 +35,13 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: blend-ai-extension
-          path: dist/blend_ai-*.zip
+          name: blenderwright-extension
+          path: dist/blenderwright-*.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/blend_ai-*.zip
+          files: dist/blenderwright-*.zip
           generate_release_notes: true
           draft: false
           prerelease: false

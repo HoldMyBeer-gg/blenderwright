@@ -1,6 +1,6 @@
 """Tests for new Blender 5.1 shader node types."""
 
-from blend_ai.tools.materials import ALLOWED_SHADER_NODE_TYPES
+from blenderwright.tools.materials import ALLOWED_SHADER_NODE_TYPES
 
 
 class TestNew51ShaderNodes:
@@ -16,7 +16,7 @@ class TestNew51ShaderNodes:
 
     def test_raycast_passes_validation(self):
         """ShaderNodeRaycast passes validate_enum."""
-        from blend_ai.validators import validate_enum
+        from blenderwright.validators import validate_enum
         result = validate_enum(
             "ShaderNodeRaycast", ALLOWED_SHADER_NODE_TYPES, name="node_type"
         )

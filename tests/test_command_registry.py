@@ -17,7 +17,7 @@ import collections
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOOLS_DIR = os.path.join(ROOT, "src", "blend_ai", "tools")
+TOOLS_DIR = os.path.join(ROOT, "src", "blenderwright", "tools")
 HANDLERS_DIR = os.path.join(ROOT, "addon", "handlers")
 
 

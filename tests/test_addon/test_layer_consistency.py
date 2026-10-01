@@ -39,7 +39,7 @@ def _load_handler(name):
 
 @pytest.fixture(scope="module")
 def tools():
-    from blend_ai.tools import materials
+    from blenderwright.tools import materials
 
     return materials
 
@@ -177,17 +177,17 @@ class TestModifierLimitsMatchAcrossLayers:
         return _load_handler("modeling")
 
     def test_tables_cover_the_same_modifiers(self, handler):
-        from blend_ai.validators import MODIFIER_PROPERTY_LIMITS
+        from blenderwright.validators import MODIFIER_PROPERTY_LIMITS
         assert set(handler.MODIFIER_PROPERTY_LIMITS) == set(MODIFIER_PROPERTY_LIMITS)
 
     def test_tables_agree_on_every_bound(self, handler):
-        from blend_ai.validators import MODIFIER_PROPERTY_LIMITS
+        from blenderwright.validators import MODIFIER_PROPERTY_LIMITS
         for mod_type, props in MODIFIER_PROPERTY_LIMITS.items():
             assert handler.MODIFIER_PROPERTY_LIMITS[mod_type] == props, (
                 f"{mod_type} limits differ between the tool and addon layers"
             )
 
     def test_subdivision_cap_is_the_shared_constant(self, handler):
-        from blend_ai.validators import MAX_SUBDIVISION_LEVEL
+        from blenderwright.validators import MAX_SUBDIVISION_LEVEL
         assert handler.MODIFIER_PROPERTY_LIMITS["SUBSURF"]["levels"][1] == \
             MAX_SUBDIVISION_LEVEL

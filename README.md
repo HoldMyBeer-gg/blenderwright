@@ -1,24 +1,26 @@
-# blend-ai
+# blenderwright
+
+<small>Formerly blend-ai. Same project, new name, nothing else changed.</small>
 
 The most intuitive and efficient MCP Server for Blender. Control Blender entirely through AI assistants like Claude: create 3D models, set up scenes, animate, render, and more, all through natural language.
 
-**blend-ai goes beyond tool exposure: it guides the LLM to produce professional 3D results** through expert prompts, proven workflows, visual feedback, and mesh quality analysis.
+**blenderwright goes beyond tool exposure: it guides the LLM to produce professional 3D results** through expert prompts, proven workflows, visual feedback, and mesh quality analysis.
 
-<small>A two-storey Western saloon from a single sentence: "create a Western style 2-story saloon, the outside is more important than any inside detail." Claude Code (Fable 5.1) built the false front, plank siding, balcony, batwing doors and street dressing, then relit it for dusk, all through blend-ai, in about twenty minutes with no manual modelling:</small>
+<small>A two-storey Western saloon from a single sentence: "create a Western style 2-story saloon, the outside is more important than any inside detail." Claude Code (Fable 5.1) built the false front, plank siding, balcony, batwing doors and street dressing, then relit it for dusk, all through blenderwright, in about twenty minutes with no manual modelling:</small>
 
-![blend-ai saloon built from one prompt](./saloon.png)
+![blenderwright saloon built from one prompt](./saloon.png)
 
 <small>This was created via Claude Code using the Haiku model and 20 random reference images. It took 5 minutes:</small>
 
-![blend-ai screenshot](./screenshot.png)
+![blenderwright screenshot](./screenshot.png)
 
 <small>Fifteen procedural materials, each built by a single `create_procedural_material` call. The selected ball's node graph below was generated entirely by that one call: coordinates, mapping, noise, height mask, colour ramp, and Principled BSDF, laid out and wired:</small>
 
-![blend-ai procedural shader preview](./shader-preview.png)
+![blenderwright procedural shader preview](./shader-preview.png)
 
 ## Key Features
 
-- **[186 tools](https://blend-ai.holdmybeer.gg/)** across 27 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **[186 tools](https://blenderwright.holdmybeer.gg/)** across 27 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **12 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -37,35 +39,35 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 ### 1. Install the MCP server
 
 ```bash
-git clone https://github.com/HoldMyBeer-gg/blend-ai.git
-cd blend-ai
+git clone https://github.com/HoldMyBeer-gg/blenderwright.git
+cd blenderwright
 uv pip install -e .
 ```
 
 ### 2. Install the Blender addon
 
-1. Download the latest addon zip from [GitHub Releases](https://github.com/HoldMyBeer-gg/blend-ai/releases)
+1. Download the latest addon zip from [GitHub Releases](https://github.com/HoldMyBeer-gg/blenderwright/releases)
 2. Open Blender 4.2 or later
 3. Go to **Edit > Preferences > Get Extensions**, click the dropdown (▾) top-right, and choose **Install from Disk...**
 4. Select the downloaded `.zip` file
-5. Enable **"blend-ai"** in the extensions list
+5. Enable **"blenderwright"** in the extensions list
 
-> **Blender 4.0 / 4.1 users:** Not supported. blend-ai ships as a Blender Extension, which requires Blender 4.2 (LTS) or later. Please upgrade Blender from [blender.org/download](https://www.blender.org/download/).
+> **Blender 4.0 / 4.1 users:** Not supported. blenderwright ships as a Blender Extension, which requires Blender 4.2 (LTS) or later. Please upgrade Blender from [blender.org/download](https://www.blender.org/download/).
 
 <details>
 <summary><strong>Developer install (symlink)</strong></summary>
 
-If you're developing on blend-ai, symlink the addon folder into Blender's user extensions directory instead. Replace `<ver>` with your Blender version (e.g. `4.2`, `5.1`).
+If you're developing on blenderwright, symlink the addon folder into Blender's user extensions directory instead. Replace `<ver>` with your Blender version (e.g. `4.2`, `5.1`).
 
 ```bash
 # macOS
-ln -s "$(pwd)/addon" ~/Library/Application\ Support/Blender/<ver>/extensions/user_default/blend_ai
+ln -s "$(pwd)/addon" ~/Library/Application\ Support/Blender/<ver>/extensions/user_default/blenderwright
 
 # Linux
-ln -s "$(pwd)/addon" ~/.config/blender/<ver>/extensions/user_default/blend_ai
+ln -s "$(pwd)/addon" ~/.config/blender/<ver>/extensions/user_default/blenderwright
 
 # Windows (run as admin)
-mklink /D "%APPDATA%\Blender Foundation\Blender\<ver>\extensions\user_default\blend_ai" "%cd%\addon"
+mklink /D "%APPDATA%\Blender Foundation\Blender\<ver>\extensions\user_default\blenderwright" "%cd%\addon"
 ```
 
 Then enable the extension in Blender preferences under **Get Extensions > User**.
@@ -74,7 +76,7 @@ Then enable the extension in Blender preferences under **Get Extensions > User**
 
 ### 3. Start the server in Blender
 
-In Blender's 3D Viewport, open the **N-panel** (press `N`), find the **blend-ai** tab. Set your preferred port (default: 9876), then click **Start Server**.
+In Blender's 3D Viewport, open the **N-panel** (press `N`), find the **blenderwright** tab. Set your preferred port (default: 9876), then click **Start Server**.
 
 ### 4. Connect your AI assistant
 
@@ -82,10 +84,10 @@ In Blender's 3D Viewport, open the **N-panel** (press `N`), find the **blend-ai*
 <summary><strong>Claude Code</strong></summary>
 
 ```bash
-claude mcp add blend-ai -- uv run --directory /path/to/blend-ai blend-ai
+claude mcp add blenderwright -- uv run --directory /path/to/blenderwright blenderwright
 ```
 
-Replace `/path/to/blend-ai` with the actual path to your clone. Make sure Blender is running with the addon server started before using the tools.
+Replace `/path/to/blenderwright` with the actual path to your clone. Make sure Blender is running with the addon server started before using the tools.
 
 **Usage:**
 
@@ -106,20 +108,20 @@ $ claude
 <details>
 <summary><strong>Claude Desktop</strong></summary>
 
-Add blend-ai to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add blenderwright to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
 ```json
 {
   "mcpServers": {
-    "blend-ai": {
+    "blenderwright": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/blend-ai", "blend-ai"]
+      "args": ["run", "--directory", "/path/to/blenderwright", "blenderwright"]
     }
   }
 }
 ```
 
-Replace `/path/to/blend-ai` with the actual path to your clone.
+Replace `/path/to/blenderwright` with the actual path to your clone.
 
 Restart Claude Desktop. The Blender tools will appear in the tool list.
 
@@ -128,14 +130,14 @@ Restart Claude Desktop. The Blender tools will appear in the tool list.
 <details>
 <summary><strong>Other MCP Clients</strong></summary>
 
-blend-ai is a standard MCP server using stdio transport. Any MCP-compatible client can connect by running the server directly:
+blenderwright is a standard MCP server using stdio transport. Any MCP-compatible client can connect by running the server directly:
 
 ```bash
-uv run --directory /path/to/blend-ai blend-ai
-# or: python -m blend_ai.server
+uv run --directory /path/to/blenderwright blenderwright
+# or: python -m blenderwright.server
 ```
 
-The exact config location and format vary by client (typically JSON or TOML under `~/.<client>/`). The `command` is `uv` and the `args` are `["run", "--directory", "/path/to/blend-ai", "blend-ai"]`.
+The exact config location and format vary by client (typically JSON or TOML under `~/.<client>/`). The `command` is `uv` and the `args` are `["run", "--directory", "/path/to/blenderwright", "blenderwright"]`.
 
 The server communicates over stdin/stdout using the MCP protocol. It connects to Blender's addon over TCP on `127.0.0.1:9876` (or your configured port).
 
@@ -168,7 +170,7 @@ python install_addon.py upgrade "C:\Program Files\Blender Foundation\Blender 4.2
 ```
 
 It refuses to run while Blender is open, checks the path before touching anything,
-removes every blend-ai install across *all* Blender version directories, rebuilds the
+removes every blenderwright install across *all* Blender version directories, rebuilds the
 zip from `addon/`, and installs it through Blender's own extension machinery. It also
 handles the case that bites people most: an older copy left behind under a previous
 Blender version.
@@ -176,7 +178,7 @@ Blender version.
 Two companion commands:
 
 ```bash
-python install_addon.py doctor          # list every blend-ai install found, and where
+python install_addon.py doctor          # list every blenderwright install found, and where
 python install_addon.py uninstall --yes # remove them all (omit --yes for a dry run)
 ```
 
@@ -194,16 +196,16 @@ you have; it reports symlinks distinctly.
 <details>
 <summary><strong>Manual steps, if you would rather not run the script</strong></summary>
 
-1. If the server is running, open the N-panel **blend-ai** tab and click **Stop Server**.
-2. In Blender, open **Edit > Preferences > Get Extensions**, find **blend-ai**, and click **Uninstall**.
-3. Quit and restart Blender (this clears cached `blend_ai` modules).
+1. If the server is running, open the N-panel **blenderwright** tab and click **Stop Server**.
+2. In Blender, open **Edit > Preferences > Get Extensions**, find **blenderwright**, and click **Uninstall**.
+3. Quit and restart Blender (this clears cached `blenderwright` modules).
 4. Install the new `.zip` via the **▾ > Install from Disk...** menu and enable it.
 
 </details>
 
 ## Expert Guidance
 
-blend-ai includes 12 MCP prompts that guide the LLM toward professional-quality results:
+blenderwright includes 12 MCP prompts that guide the LLM toward professional-quality results:
 
 | Prompt | What It Teaches |
 |--------|----------------|
@@ -225,7 +227,7 @@ blend-ai includes 12 MCP prompts that guide the LLM toward professional-quality 
 <details>
 <summary><strong>All 186 tools across 27 modules</strong></summary>
 
-Full reference with every parameter: **[blend-ai.holdmybeer.gg](https://blend-ai.holdmybeer.gg/)**
+Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://blenderwright.holdmybeer.gg/)**
 
 | Domain | Tools | Highlights |
 |--------|-------|-----------|
@@ -262,13 +264,13 @@ Full reference with every parameter: **[blend-ai.holdmybeer.gg](https://blend-ai
 ## Architecture
 
 ```
-AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--bpy--> Blender
+AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon <--bpy--> Blender
 ```
 
 <details>
 <summary><strong>How it works</strong></summary>
 
-- **MCP Server** (`src/blend_ai/`): Python process using the `mcp` SDK. Exposes tools, resources, and prompts over stdio. Validates all inputs before forwarding to Blender.
+- **MCP Server** (`src/blenderwright/`): Python process using the `mcp` SDK. Exposes tools, resources, and prompts over stdio. Validates all inputs before forwarding to Blender.
 - **Blender Addon** (`addon/`): Runs a TCP socket server inside Blender on a background thread. Commands are queued and executed on the main thread via `bpy.app.timers` to respect Blender's threading model.
 - **Render Guard**: Tracks render state via `bpy.app.handlers`. During renders, the server immediately returns a "busy" status. Automatically recovers from crashed renders via `load_post` handler. Can be force-reset via MCP command.
 - **Protocol**: Length-prefixed JSON messages over TCP with SO_KEEPALIVE for stale connection detection. Each message is a 4-byte big-endian length header followed by a UTF-8 JSON payload.
@@ -280,7 +282,7 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 <details>
 <summary><strong>Privacy</strong></summary>
 
-- **Zero telemetry**: blend-ai collects no usage data, sends no analytics, and makes no network requests beyond the local TCP connection to Blender.
+- **Zero telemetry**: blenderwright collects no usage data, sends no analytics, and makes no network requests beyond the local TCP connection to Blender.
 - **Fully local**: all communication stays on your machine. No cloud services, no external APIs, no phone-home behavior.
 - **Open source**: the entire codebase is auditable. What you see is what runs.
 
@@ -324,7 +326,7 @@ uv pip install -e ".[dev]"
 uv run --extra dev pytest
 
 # Run tests with coverage
-uv run --extra dev pytest --cov=blend_ai
+uv run --extra dev pytest --cov=blenderwright
 
 # Lint
 ruff check src/ tests/
@@ -337,8 +339,8 @@ ruff format src/ tests/
 <summary><strong>Project structure</strong></summary>
 
 ```
-blend-ai/
-├── src/blend_ai/          # MCP server
+blenderwright/
+├── src/blenderwright/          # MCP server
 │   ├── server.py           # FastMCP entry point
 │   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
@@ -361,6 +363,6 @@ blend-ai/
 
 ## License
 
-AGPL-3.0-or-later. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
 
 Copyright © 2026 jabberwock.

@@ -14,7 +14,7 @@ import pytest
 from mcp.server.fastmcp import FastMCP
 from pydantic import ValidationError
 
-from blend_ai.strict import forbid_unknown_parameters
+from blenderwright.strict import forbid_unknown_parameters
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ class TestUnknownParametersAreRejected:
 
     def test_every_real_tool_forbids_extras(self):
         """The property that matters in production, checked on the real server."""
-        import blend_ai.server as server
+        import blenderwright.server as server
         lenient = [
             name for name, tool in server.mcp._tool_manager._tools.items()
             if tool.fn_metadata.arg_model.model_config.get("extra") != "forbid"
@@ -102,13 +102,13 @@ class TestRequiredVectorsDeclareTheirLength:
 
     These exercise the alias and the registry directly. Asserting against the
     live server is unreliable here: tests/test_tools/conftest.py installs a
-    fake blend_ai.server into sys.modules at collection and never removes it,
+    fake blenderwright.server into sys.modules at collection and never removes it,
     so what the global holds depends on import order.
     """
 
     def test_the_vector_alias_constrains_length(self):
         from pydantic import BaseModel, ValidationError
-        from blend_ai.tools.transforms import Vector3
+        from blenderwright.tools.transforms import Vector3
 
         class M(BaseModel):
             v: Vector3
@@ -121,7 +121,7 @@ class TestRequiredVectorsDeclareTheirLength:
 
     def test_the_alias_publishes_its_length_in_the_schema(self):
         from pydantic import BaseModel
-        from blend_ai.tools.transforms import Vector3
+        from blenderwright.tools.transforms import Vector3
 
         class M(BaseModel):
             v: Vector3
@@ -132,7 +132,7 @@ class TestRequiredVectorsDeclareTheirLength:
     def test_the_three_transform_tools_use_the_alias(self):
         """Source-level check, immune to how the server module is loaded."""
         import inspect
-        from blend_ai.tools import transforms
+        from blenderwright.tools import transforms
         for name, param in (("set_location", "location"),
                             ("set_rotation", "rotation"),
                             ("set_scale", "scale")):
@@ -144,7 +144,7 @@ class TestRequiredVectorsDeclareTheirLength:
 
     def test_the_registry_passes_length_constraints_through(self):
         """Previously it only added minItems via the 3-number-default guess."""
-        from blend_ai.tool_registry import get_ollama_tools
+        from blenderwright.tool_registry import get_ollama_tools
 
         class _Tool:
             name = "t"

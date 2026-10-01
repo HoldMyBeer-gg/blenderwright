@@ -128,10 +128,10 @@ class TestPurgeSubmodulesFromCache:
 
     def test_works_with_extension_style_prefix(self):
         """When installed as a Blender extension, the package name is
-        something like 'bl_ext.user_default.blend_ai', so purge must follow
+        something like 'bl_ext.user_default.blenderwright', so purge must follow
         whatever __name__ resolves to, not a hardcoded string."""
         addon_init = _load_addon_init()
-        pkg = "bl_ext.user_default.blend_ai"
+        pkg = "bl_ext.user_default.blenderwright"
         fake = {
             pkg: object(),
             f"{pkg}.handlers": object(),

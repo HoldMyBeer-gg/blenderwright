@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.validators import ValidationError
-from blend_ai.tools.materials import (
+from blenderwright.validators import ValidationError
+from blenderwright.tools.materials import (
     RASTER_PATTERNS,
     MAX_RASTER_SIZE,
     create_raster_texture,
@@ -15,7 +15,7 @@ from blend_ai.tools.materials import (
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {"image": "Runes"}}
-    with patch("blend_ai.tools.materials.get_connection", return_value=mock):
+    with patch("blenderwright.tools.materials.get_connection", return_value=mock):
         yield mock
 
 
@@ -25,7 +25,7 @@ class TestPatternTable:
 
     def test_does_not_duplicate_shader_patterns(self):
         """Anything a shader node can do belongs in create_procedural_material."""
-        from blend_ai.tools.materials import PROCEDURAL_PATTERNS
+        from blenderwright.tools.materials import PROCEDURAL_PATTERNS
 
         assert not (RASTER_PATTERNS & PROCEDURAL_PATTERNS)
 

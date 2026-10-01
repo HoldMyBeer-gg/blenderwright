@@ -120,9 +120,9 @@ def handle_point_camera_at(params: dict) -> dict:
         camera_name = params["camera_name"]
         cam_obj = _get_camera_object(camera_name)
 
-        # Remove existing Track To constraints named "BlendAI_TrackTo"
+        # Remove existing Track To constraints named "Blenderwright_TrackTo"
         for c in cam_obj.constraints:
-            if c.name == "BlendAI_TrackTo":
+            if c.name == "Blenderwright_TrackTo":
                 cam_obj.constraints.remove(c)
 
         if "target" in params and params["target"]:
@@ -132,7 +132,7 @@ def handle_point_camera_at(params: dict) -> dict:
                 raise ValueError(f"Target object '{target_name}' not found")
 
             constraint = cam_obj.constraints.new(type='TRACK_TO')
-            constraint.name = "BlendAI_TrackTo"
+            constraint.name = "Blenderwright_TrackTo"
             constraint.target = target_obj
             constraint.track_axis = 'TRACK_NEGATIVE_Z'
             constraint.up_axis = 'UP_Y'
@@ -146,14 +146,14 @@ def handle_point_camera_at(params: dict) -> dict:
             target_loc = tuple(params["location"])
 
             # Create an empty at the target location to track
-            empty = bpy.data.objects.new("BlendAI_CameraTarget", None)
+            empty = bpy.data.objects.new("Blenderwright_CameraTarget", None)
             empty.location = target_loc
             empty.empty_display_size = 0.25
             empty.empty_display_type = 'PLAIN_AXES'
             bpy.context.collection.objects.link(empty)
 
             constraint = cam_obj.constraints.new(type='TRACK_TO')
-            constraint.name = "BlendAI_TrackTo"
+            constraint.name = "Blenderwright_TrackTo"
             constraint.target = empty
             constraint.track_axis = 'TRACK_NEGATIVE_Z'
             constraint.up_axis = 'UP_Y'

@@ -21,9 +21,9 @@ import pathlib
 
 import pytest
 
-from blend_ai.aliases import RENAMED_FROM_NAME
+from blenderwright.aliases import RENAMED_FROM_NAME
 
-TOOLS_DIR = pathlib.Path(__file__).parent.parent / "src" / "blend_ai" / "tools"
+TOOLS_DIR = pathlib.Path(__file__).parent.parent / "src" / "blenderwright" / "tools"
 
 # The single source of truth lives beside the implementation.
 RENAMED = set(RENAMED_FROM_NAME)
@@ -132,7 +132,7 @@ class TestAliasing:
 
     @pytest.fixture(scope="class")
     def server(self):
-        from blend_ai.server import mcp
+        from blenderwright.server import mcp
         return mcp
 
     @pytest.mark.parametrize("tool", sorted(RENAMED))

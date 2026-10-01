@@ -71,7 +71,7 @@ def handle_apply_modifier(params):
     return {"object": obj.name, "applied_modifier": modifier_name}
 
 
-# Duplicated from blend_ai.validators on purpose: the socket is reachable by
+# Duplicated from blenderwright.validators on purpose: the socket is reachable by
 # any local process, so the handler cannot trust the tool layer. The tool layer
 # also cannot apply these, because set_modifier_property is given a modifier's
 # name and not its type. tests/test_addon/test_layer_consistency.py pins the

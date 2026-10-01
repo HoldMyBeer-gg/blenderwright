@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.tools.code_exec import execute_blender_code
+from blenderwright.tools.code_exec import execute_blender_code
 
 
 @pytest.fixture
@@ -13,7 +13,7 @@ def mock_conn():
         "status": "ok",
         "result": {"output": "hello", "success": True},
     }
-    with patch("blend_ai.tools.code_exec.get_connection", return_value=mock):
+    with patch("blenderwright.tools.code_exec.get_connection", return_value=mock):
         yield mock
 
 

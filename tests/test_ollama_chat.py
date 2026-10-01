@@ -1,10 +1,10 @@
-"""Tests for blend_ai.ollama_chat."""
+"""Tests for blenderwright.ollama_chat."""
 
 import json
 import pytest
 from unittest.mock import MagicMock, patch
 
-from blend_ai.ollama_chat import (
+from blenderwright.ollama_chat import (
     BlenderChatSession,
     _build_tool_list,
     _format_args,
@@ -23,7 +23,7 @@ from blend_ai.ollama_chat import (
 @pytest.fixture
 def mock_ollama_client():
     """Mock the OllamaClient instance."""
-    with patch("blend_ai.ollama_chat.OllamaClient") as mock_cls:
+    with patch("blenderwright.ollama_chat.OllamaClient") as mock_cls:
         mock_client = MagicMock()
         mock_cls.return_value = mock_client
         yield mock_client
@@ -32,13 +32,13 @@ def mock_ollama_client():
 @pytest.fixture
 def mock_blender_connection():
     """Mock BlenderConnection for chat session."""
-    with patch("blend_ai.connection.BlenderConnection") as mock_cls:
+    with patch("blenderwright.connection.BlenderConnection") as mock_cls:
         mock_conn = MagicMock()
         mock_conn.send_command.return_value = {"status": "ok", "result": {"name": "Cube"}}
         mock_cls.return_value = mock_conn
         # Also patch the server module's connection
-        with patch("blend_ai.server._connection", mock_conn, create=True):
-            with patch("blend_ai.server.get_connection", return_value=mock_conn):
+        with patch("blenderwright.server._connection", mock_conn, create=True):
+            with patch("blenderwright.server.get_connection", return_value=mock_conn):
                 yield mock_conn
 
 
@@ -67,13 +67,13 @@ def mock_mcp_tools():
             },
         },
     ]
-    with patch("blend_ai.ollama_chat.get_ollama_tools", return_value=sample_tools):
+    with patch("blenderwright.ollama_chat.get_ollama_tools", return_value=sample_tools):
         yield sample_tools
 
 
 class TestConstants:
     def test_max_tool_rounds_is_25(self):
-        from blend_ai.ollama_chat import MAX_TOOL_ROUNDS
+        from blenderwright.ollama_chat import MAX_TOOL_ROUNDS
         assert MAX_TOOL_ROUNDS == 25
 
     def test_system_prompt_has_modeling_strategy(self):
@@ -106,7 +106,7 @@ class TestContextWindow:
     """
 
     def test_default_context_has_room_for_the_tool_schemas(self):
-        from blend_ai.ollama_chat import DEFAULT_NUM_CTX
+        from blenderwright.ollama_chat import DEFAULT_NUM_CTX
         assert DEFAULT_NUM_CTX >= 65536, (
             "The tool schemas alone are ~31k tokens; anything near 32k leaves "
             "no working room for tool results."
@@ -114,26 +114,26 @@ class TestContextWindow:
 
     def test_num_ctx_is_configurable(self):
         from unittest.mock import MagicMock, patch
-        from blend_ai.ollama_chat import BlenderChatSession
+        from blenderwright.ollama_chat import BlenderChatSession
         # ollama is an optional extra; the client is irrelevant to this.
-        with patch("blend_ai.ollama_chat.OllamaClient", MagicMock()):
+        with patch("blenderwright.ollama_chat.OllamaClient", MagicMock()):
             session = BlenderChatSession(num_ctx=12345)
         assert session.num_ctx == 12345
 
     def test_missing_ollama_package_says_how_to_install_it(self):
         from unittest.mock import patch
         import pytest as _pytest
-        from blend_ai.ollama_chat import BlenderChatSession
-        with patch("blend_ai.ollama_chat.OllamaClient", None):
+        from blenderwright.ollama_chat import BlenderChatSession
+        with patch("blenderwright.ollama_chat.OllamaClient", None):
             with _pytest.raises(RuntimeError) as exc:
                 BlenderChatSession()
         assert "[chat]" in str(exc.value)
 
     def test_session_sends_the_configured_context(self):
         from unittest.mock import MagicMock, patch
-        from blend_ai.ollama_chat import BlenderChatSession
+        from blenderwright.ollama_chat import BlenderChatSession
 
-        with patch("blend_ai.ollama_chat.OllamaClient", MagicMock()):
+        with patch("blenderwright.ollama_chat.OllamaClient", MagicMock()):
             session = BlenderChatSession(num_ctx=99999)
         session.tools = []
         session._tool_names = set()
@@ -159,7 +159,7 @@ class TestContextWindow:
     def test_context_budget_is_reported(self):
         """Silent truncation is the failure mode; make the number visible."""
         import inspect
-        from blend_ai import ollama_chat
+        from blenderwright import ollama_chat
         src = inspect.getsource(ollama_chat)
         assert "prompt_tokens" in src or "context budget" in src.lower(), (
             "Startup should report how much of the window the tools consume."
@@ -231,12 +231,12 @@ class TestBlenderChatSession:
         assert session.vision_model == "llava:34b"
 
     def test_init_ollama_host(self):
-        with patch("blend_ai.ollama_chat.OllamaClient") as mock_cls:
+        with patch("blenderwright.ollama_chat.OllamaClient") as mock_cls:
             BlenderChatSession(ollama_host="http://myserver:11434")
             mock_cls.assert_called_with(host="http://myserver:11434")
 
     def test_initialize(self, mock_ollama_client, mock_blender_connection, mock_mcp_tools):
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             mock_blender_connection.connect.assert_called_once()
@@ -254,7 +254,7 @@ class TestBlenderChatSession:
         async def _fake_call_tool(name, args):
             return [mock_text]
 
-        with patch("blend_ai.server.mcp") as mock_mcp:
+        with patch("blenderwright.server.mcp") as mock_mcp:
             mock_mcp.call_tool = _fake_call_tool
             session = BlenderChatSession()
             result = session.execute_tool("create_object", {"type": "CUBE"})
@@ -266,7 +266,7 @@ class TestBlenderChatSession:
         async def _failing_call_tool(name, args):
             raise RuntimeError("Blender error: not found")
 
-        with patch("blend_ai.server.mcp") as mock_mcp:
+        with patch("blenderwright.server.mcp") as mock_mcp:
             mock_mcp.call_tool = _failing_call_tool
             session = BlenderChatSession()
             result = session.execute_tool("create_object", {"type": "CUBE"})
@@ -282,7 +282,7 @@ class TestBlenderChatSession:
         mock_response.message.content = "I'll help you with Blender!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             result = session.chat("Hello")
@@ -306,7 +306,7 @@ class TestBlenderChatSession:
 
         mock_ollama_client.chat.side_effect = [tool_response, final_response]
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(BlenderChatSession, "execute_tool", return_value='{"name": "Cube"}'):
                 session = BlenderChatSession()
                 session.initialize()
@@ -331,7 +331,7 @@ class TestBlenderChatSession:
 
         mock_ollama_client.chat.side_effect = [text_response, final_response]
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(BlenderChatSession, "execute_tool", return_value='{"name": "Cube"}'):
                 session = BlenderChatSession()
                 session.initialize()
@@ -358,7 +358,7 @@ class TestBlenderChatSession:
 
         mock_ollama_client.chat.side_effect = [tool_response, final_response]
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(
                 BlenderChatSession, "execute_tool", return_value=screenshot_result
             ):
@@ -389,7 +389,7 @@ class TestBlenderChatSession:
         assert result == "A 3D scene with a cube and a light."
 
     def test_close(self, mock_ollama_client, mock_blender_connection):
-        with patch("blend_ai.server._connection", mock_blender_connection):
+        with patch("blenderwright.server._connection", mock_blender_connection):
             session = BlenderChatSession()
             session.close()
             mock_blender_connection.disconnect.assert_called_once()
@@ -401,7 +401,7 @@ class TestBlenderChatSession:
 
         session = BlenderChatSession()
 
-        with patch("blend_ai.server.mcp") as mock_mcp:
+        with patch("blenderwright.server.mcp") as mock_mcp:
             # Make call_tool return a coroutine-compatible value via run_until_complete
             async def _fake_call_tool(name, args):
                 return [mock_text]
@@ -436,7 +436,7 @@ class TestBlenderChatSession:
 
         mock_ollama_client.chat.side_effect = [tool_response, final_response]
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(BlenderChatSession, "execute_tool", return_value=screenshot_result):
                 with patch.object(
                     BlenderChatSession, "analyze_screenshot", return_value=analysis_text
@@ -494,7 +494,7 @@ class TestBlenderChatSession:
 
         screenshot_json = json.dumps({"image": "data", "width": 100, "height": 100})
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             with patch.object(
                 BlenderChatSession, "execute_tool", return_value=screenshot_json
             ):
@@ -514,7 +514,7 @@ class TestBlenderChatSession:
                             raise json.JSONDecodeError("forced", "", 0)
                         return original_loads(s, **kwargs)
 
-                    with patch("blend_ai.ollama_chat.json.loads", side_effect=selective_loads):
+                    with patch("blenderwright.ollama_chat.json.loads", side_effect=selective_loads):
                         session = BlenderChatSession()
                         session.initialize()
                         session.chat("Take a screenshot")
@@ -766,10 +766,10 @@ class TestImageCommandRouting:
         mock_response.message.content = "I'll sculpt this!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
-            with patch("blend_ai.ollama_chat.load_image_as_base64", return_value="base64data"):
+            with patch("blenderwright.ollama_chat.load_image_as_base64", return_value="base64data"):
                 with patch.object(session, "analyze_screenshot", return_value=vision_description) as mock_analyze:
                     session._handle_image_command("/ref.png", "build this")
                     mock_analyze.assert_called_once_with("base64data", context="build this")
@@ -784,10 +784,10 @@ class TestImageCommandRouting:
         mock_response.message.content = "Got it!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
-            with patch("blend_ai.ollama_chat.load_image_as_base64", return_value="base64data"):
+            with patch("blenderwright.ollama_chat.load_image_as_base64", return_value="base64data"):
                 with patch.object(session, "analyze_screenshot", return_value=vision_description):
                     session._handle_image_command("/ref.png", "make this")
 
@@ -807,7 +807,7 @@ class TestChatWithImages:
         mock_response.message.content = "I see the reference image!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             session.chat("Build this", images=["base64imagedata"])
@@ -825,7 +825,7 @@ class TestChatWithImages:
         mock_response.message.content = "Sure!"
         mock_ollama_client.chat.return_value = mock_response
 
-        with patch("blend_ai.connection.BlenderConnection", return_value=mock_blender_connection):
+        with patch("blenderwright.connection.BlenderConnection", return_value=mock_blender_connection):
             session = BlenderChatSession()
             session.initialize()
             session.chat("Hello")
@@ -843,7 +843,7 @@ class TestToolSchemaConstraints:
     model as one blob of text attached to the tool, not as structure on the
     parameter it constrains. Each rejection costs a full round trip.
 
-    These build their own server stub rather than reading blend_ai.server.mcp,
+    These build their own server stub rather than reading blenderwright.server.mcp,
     which other tests in this file replace with a MagicMock.
     """
 
@@ -863,7 +863,7 @@ class TestToolSchemaConstraints:
         return _Server()
 
     def _create_object_params(self):
-        from blend_ai.tool_registry import get_ollama_tools
+        from blenderwright.tool_registry import get_ollama_tools
         description = (
             "Create a primitive object in the scene.\n"
             "\n"
@@ -919,7 +919,7 @@ class TestToolSchemaConstraints:
 
     def test_scalar_and_short_arrays_are_untouched(self):
         """Only arrays with a 3-number default describe an XYZ vector."""
-        from blend_ai.tool_registry import get_ollama_tools
+        from blenderwright.tool_registry import get_ollama_tools
         description = (
             "Do a thing.\n\nArgs:\n"
             "    names: Objects to act on.\n"
@@ -944,11 +944,11 @@ class TestToolSchemaConstraints:
             )
 
     def test_arg_parser_ignores_a_missing_args_section(self):
-        from blend_ai.tool_registry import _parse_arg_docs
+        from blenderwright.tool_registry import _parse_arg_docs
         assert _parse_arg_docs("Just a summary, no sections.") == {}
 
     def test_arg_parser_stops_at_returns(self):
-        from blend_ai.tool_registry import _parse_arg_docs
+        from blenderwright.tool_registry import _parse_arg_docs
         docs = _parse_arg_docs(
             "Summary.\n\nArgs:\n    a: First.\n\nReturns:\n    Something else.\n"
         )
@@ -967,7 +967,7 @@ class TestSchemaTypeFidelity:
 
     @staticmethod
     def _convert(schema):
-        from blend_ai.tool_registry import get_ollama_tools
+        from blenderwright.tool_registry import get_ollama_tools
 
         class _Tool:
             name = "t"

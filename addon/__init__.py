@@ -1,16 +1,16 @@
-"""blend-ai: MCP Server addon for Blender.
+"""blenderwright: MCP Server addon for Blender.
 
 This addon runs a TCP socket server inside Blender that receives
-commands from the blend-ai MCP server and executes them using
+commands from the blenderwright MCP server and executes them using
 Blender's Python API.
 """
 
 bl_info = {
-    "name": "blend-ai",
-    "author": "blend-ai",
-    "version": (1, 7, 0),
+    "name": "blenderwright",
+    "author": "blenderwright",
+    "version": (2, 0, 0),
     "blender": (4, 2, 0),
-    "location": "View3D > Sidebar > blend-ai",
+    "location": "View3D > Sidebar > blenderwright",
     "description": "MCP Server integration for AI-assisted 3D workflows",
     "category": "Interface",
 }
@@ -30,8 +30,8 @@ def _purge_submodules_from_cache(pkg_name: str, modules: dict | None = None) -> 
 
     Important subtlety: clearing sys.modules alone is NOT sufficient. After a
     package is imported, its submodules are also set as attributes on the
-    parent package object (e.g. `blend_ai.handlers` as an attribute of the
-    `blend_ai` module). The `from . import handlers` statement prefers the
+    parent package object (e.g. `blenderwright.handlers` as an attribute of the
+    `blenderwright` module). The `from . import handlers` statement prefers the
     parent's attribute over a fresh import when both exist, so we must also
     delete the submodule attributes from the parent module, otherwise disable/
     enable keeps returning the cached bytecode.
@@ -55,8 +55,8 @@ def _purge_submodules_from_cache(pkg_name: str, modules: dict | None = None) -> 
     parent = modules.get(pkg_name)
     for name in to_remove:
         # Also strip the submodule attribute from the parent package, if the
-        # submodule is a direct child (e.g. "blend_ai.handlers" but not
-        # "blend_ai.handlers.objects", deeper children hang off intermediate
+        # submodule is a direct child (e.g. "blenderwright.handlers" but not
+        # "blenderwright.handlers.objects", deeper children hang off intermediate
         # packages that are themselves being purged).
         suffix = name[len(prefix):]
         if parent is not None and "." not in suffix and hasattr(parent, suffix):

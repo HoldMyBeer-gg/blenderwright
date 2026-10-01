@@ -13,7 +13,7 @@ state Blender keeps on the mesh regardless.
 import pytest
 from unittest.mock import MagicMock, patch
 
-from blend_ai.validators import ValidationError
+from blenderwright.validators import ValidationError
 
 # Tools whose handler used to select the whole mesh first.
 SELECTION_AWARE = [
@@ -38,7 +38,7 @@ def conns():
         mock = MagicMock()
         mock.send_command.return_value = {"status": "ok", "result": {}}
         mocks[module] = mock
-        patches.append(patch(f"blend_ai.tools.{module}.get_connection",
+        patches.append(patch(f"blenderwright.tools.{module}.get_connection",
                              return_value=mock))
     for p in patches:
         p.start()
@@ -50,25 +50,25 @@ def conns():
 class TestSelectionParameter:
     @pytest.mark.parametrize("module,tool,kwargs", SELECTION_AWARE)
     def test_defaults_to_all_so_nothing_changes(self, conns, module, tool, kwargs):
-        mod = __import__(f"blend_ai.tools.{module}", fromlist=[tool])
+        mod = __import__(f"blenderwright.tools.{module}", fromlist=[tool])
         getattr(mod, tool)(**kwargs)
         assert conns[module].send_command.call_args[0][1]["selection"] == "ALL"
 
     @pytest.mark.parametrize("module,tool,kwargs", SELECTION_AWARE)
     def test_current_is_passed_through(self, conns, module, tool, kwargs):
-        mod = __import__(f"blend_ai.tools.{module}", fromlist=[tool])
+        mod = __import__(f"blenderwright.tools.{module}", fromlist=[tool])
         getattr(mod, tool)(selection="CURRENT", **kwargs)
         assert conns[module].send_command.call_args[0][1]["selection"] == "CURRENT"
 
     @pytest.mark.parametrize("module,tool,kwargs", SELECTION_AWARE)
     def test_an_unknown_selection_is_rejected(self, conns, module, tool, kwargs):
-        mod = __import__(f"blend_ai.tools.{module}", fromlist=[tool])
+        mod = __import__(f"blenderwright.tools.{module}", fromlist=[tool])
         with pytest.raises(ValidationError):
             getattr(mod, tool)(selection="SOME", **kwargs)
 
     def test_the_allowed_values_are_documented_as_an_enum(self):
         """A model should not have to guess between two strings."""
-        from blend_ai.tools.mesh_editing import ALLOWED_SELECTION_MODES
+        from blenderwright.tools.mesh_editing import ALLOWED_SELECTION_MODES
         assert ALLOWED_SELECTION_MODES == {"ALL", "CURRENT"}
 
 
@@ -105,7 +105,7 @@ class TestEveryClobberingHandlerWasCovered:
 
     def test_separate_mesh_honours_selection_through_its_own_parameter(self, conns):
         """type="SELECTED" is how separate_mesh has always read the selection."""
-        from blend_ai.tools.modeling import separate_mesh
+        from blenderwright.tools.modeling import separate_mesh
         separate_mesh("Cube", type="SELECTED")
         assert conns["modeling"].send_command.call_args[0][1]["type"] == "SELECTED"
 
@@ -119,7 +119,7 @@ class TestEveryClobberingHandlerWasCovered:
         available: it costs no round trip, so nothing signals the mistake.
         """
         import inspect
-        mod = __import__(f"blend_ai.tools.{module}", fromlist=[tool])
+        mod = __import__(f"blenderwright.tools.{module}", fromlist=[tool])
         assert "selection" not in inspect.signature(getattr(mod, tool)).parameters
 
 
@@ -139,7 +139,7 @@ class TestInsetWasANoOpOnClosedMeshes:
     """
 
     def test_the_docstring_warns_about_closed_meshes(self):
-        from blend_ai.tools.mesh_editing import inset_faces
+        from blenderwright.tools.mesh_editing import inset_faces
         doc = inset_faces.__doc__ or ""
         assert "closed" in doc.lower(), (
             "a caller insetting a cube with the default gets silence; say so"

@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "blend-ai": {
+    "blenderwright": {
       "command": "uv",
       "args": [
         "run",
         "--directory",
-        "/Users/michael/code/blend-ai",
-        "blend-ai"
+        "/Users/michael/code/blenderwright",
+        "blenderwright"
       ]
     }
   }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the blend-ai Blender addon.
+# Install the blenderwright Blender addon.
 # Usage: ./install-addon.sh [path/to/blender]
 #
 # With no argument, Blender installations are auto-detected and offered

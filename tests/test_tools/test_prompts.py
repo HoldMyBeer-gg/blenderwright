@@ -1,6 +1,6 @@
 """Unit tests for expert prompt functions in workflows.py."""
 
-from blend_ai.prompts.workflows import (
+from blenderwright.prompts.workflows import (
     topology_best_practices,
     scale_reference_guide,
     lighting_principles,

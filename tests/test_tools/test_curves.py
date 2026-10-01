@@ -3,20 +3,20 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from blend_ai.validators import ValidationError
+from blenderwright.validators import ValidationError
 
 
 @pytest.fixture
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {"name": "BezierCurve"}}
-    with patch("blend_ai.tools.curves.get_connection", return_value=mock):
+    with patch("blenderwright.tools.curves.get_connection", return_value=mock):
         yield mock
 
 
 class TestCreateCurve:
     def test_create_bezier_default(self, mock_conn):
-        from blend_ai.tools.curves import create_curve
+        from blenderwright.tools.curves import create_curve
 
         result = create_curve()
         mock_conn.send_command.assert_called_once_with("create_curve", {
@@ -27,7 +27,7 @@ class TestCreateCurve:
         assert result == {"name": "BezierCurve"}
 
     def test_create_nurbs(self, mock_conn):
-        from blend_ai.tools.curves import create_curve
+        from blenderwright.tools.curves import create_curve
 
         create_curve(type="NURBS", name="MyCurve", location=(1, 2, 3))
         mock_conn.send_command.assert_called_once_with("create_curve", {
@@ -37,19 +37,19 @@ class TestCreateCurve:
         })
 
     def test_create_path(self, mock_conn):
-        from blend_ai.tools.curves import create_curve
+        from blenderwright.tools.curves import create_curve
 
         create_curve(type="PATH")
         mock_conn.send_command.assert_called_once()
 
     def test_invalid_type(self, mock_conn):
-        from blend_ai.tools.curves import create_curve
+        from blenderwright.tools.curves import create_curve
 
         with pytest.raises(ValidationError):
             create_curve(type="POLY")
 
     def test_invalid_location(self, mock_conn):
-        from blend_ai.tools.curves import create_curve
+        from blenderwright.tools.curves import create_curve
 
         with pytest.raises(ValidationError):
             create_curve(location=(1, 2))
@@ -57,7 +57,7 @@ class TestCreateCurve:
 
 class TestAddCurvePoint:
     def test_add_point(self, mock_conn):
-        from blend_ai.tools.curves import add_curve_point
+        from blenderwright.tools.curves import add_curve_point
 
         add_curve_point("BezierCurve", location=(1, 0, 0), handle_type="AUTO")
         mock_conn.send_command.assert_called_once_with("add_curve_point", {
@@ -67,7 +67,7 @@ class TestAddCurvePoint:
         })
 
     def test_handle_types(self, mock_conn):
-        from blend_ai.tools.curves import add_curve_point
+        from blenderwright.tools.curves import add_curve_point
 
         for ht in ("AUTO", "VECTOR", "ALIGNED", "FREE"):
             mock_conn.send_command.reset_mock()
@@ -75,13 +75,13 @@ class TestAddCurvePoint:
             mock_conn.send_command.assert_called_once()
 
     def test_invalid_handle_type(self, mock_conn):
-        from blend_ai.tools.curves import add_curve_point
+        from blenderwright.tools.curves import add_curve_point
 
         with pytest.raises(ValidationError):
             add_curve_point("BezierCurve", handle_type="SMOOTH")
 
     def test_invalid_curve_name(self, mock_conn):
-        from blend_ai.tools.curves import add_curve_point
+        from blenderwright.tools.curves import add_curve_point
 
         with pytest.raises(ValidationError):
             add_curve_point("", location=(0, 0, 0))
@@ -89,7 +89,7 @@ class TestAddCurvePoint:
 
 class TestSetCurveProperty:
     def test_set_resolution_u(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         set_curve_property("BezierCurve", "resolution_u", 12)
         mock_conn.send_command.assert_called_once_with("set_curve_property", {
@@ -99,25 +99,25 @@ class TestSetCurveProperty:
         })
 
     def test_set_fill_mode(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         set_curve_property("BezierCurve", "fill_mode", "FULL")
         mock_conn.send_command.assert_called_once()
 
     def test_invalid_fill_mode(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         with pytest.raises(ValidationError):
             set_curve_property("BezierCurve", "fill_mode", "PARTIAL")
 
     def test_invalid_property_name(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         with pytest.raises(ValidationError):
             set_curve_property("BezierCurve", "color", "red")
 
     def test_resolution_u_out_of_range(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         with pytest.raises(ValidationError):
             set_curve_property("BezierCurve", "resolution_u", 0)
@@ -125,25 +125,25 @@ class TestSetCurveProperty:
             set_curve_property("BezierCurve", "resolution_u", 1025)
 
     def test_use_fill_caps_not_bool(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         with pytest.raises(ValidationError, match="use_fill_caps must be a boolean"):
             set_curve_property("BezierCurve", "use_fill_caps", 1)
 
     def test_set_twist_mode_valid(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         set_curve_property("BezierCurve", "twist_mode", "MINIMUM")
         mock_conn.send_command.assert_called_once()
 
     def test_set_twist_mode_invalid(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         with pytest.raises(ValidationError):
             set_curve_property("BezierCurve", "twist_mode", "CUSTOM")
 
     def test_bevel_depth_negative(self, mock_conn):
-        from blend_ai.tools.curves import set_curve_property
+        from blenderwright.tools.curves import set_curve_property
 
         with pytest.raises(ValidationError):
             set_curve_property("BezierCurve", "bevel_depth", -0.1)
@@ -151,7 +151,7 @@ class TestSetCurveProperty:
 
 class TestConvertCurveToMesh:
     def test_convert(self, mock_conn):
-        from blend_ai.tools.curves import convert_curve_to_mesh
+        from blenderwright.tools.curves import convert_curve_to_mesh
 
         convert_curve_to_mesh("BezierCurve")
         mock_conn.send_command.assert_called_once_with("convert_curve_to_mesh", {
@@ -159,7 +159,7 @@ class TestConvertCurveToMesh:
         })
 
     def test_convert_invalid_name(self, mock_conn):
-        from blend_ai.tools.curves import convert_curve_to_mesh
+        from blenderwright.tools.curves import convert_curve_to_mesh
 
         with pytest.raises(ValidationError):
             convert_curve_to_mesh("")
@@ -167,7 +167,7 @@ class TestConvertCurveToMesh:
 
 class TestCreateText:
     def test_create_text_basic(self, mock_conn):
-        from blend_ai.tools.curves import create_text
+        from blenderwright.tools.curves import create_text
 
         create_text("Hello World")
         mock_conn.send_command.assert_called_once_with("create_text", {
@@ -179,7 +179,7 @@ class TestCreateText:
         })
 
     def test_create_text_custom(self, mock_conn):
-        from blend_ai.tools.curves import create_text
+        from blenderwright.tools.curves import create_text
 
         create_text("Test", name="MyText", location=(1, 2, 3), size=2.5)
         mock_conn.send_command.assert_called_once_with("create_text", {
@@ -191,19 +191,19 @@ class TestCreateText:
         })
 
     def test_create_text_empty_string(self, mock_conn):
-        from blend_ai.tools.curves import create_text
+        from blenderwright.tools.curves import create_text
 
         with pytest.raises(ValidationError, match="text must be a non-empty string"):
             create_text("")
 
     def test_create_text_too_long(self, mock_conn):
-        from blend_ai.tools.curves import create_text
+        from blenderwright.tools.curves import create_text
 
         with pytest.raises(ValidationError, match="10000 characters"):
             create_text("x" * 10001)
 
     def test_create_text_size_out_of_range(self, mock_conn):
-        from blend_ai.tools.curves import create_text
+        from blenderwright.tools.curves import create_text
 
         with pytest.raises(ValidationError):
             create_text("Hello", size=0.0)
@@ -213,7 +213,7 @@ class TestCreateText:
 
 class TestSwitchCurveDirection:
     def test_valid(self, mock_conn):
-        from blend_ai.tools.curves import switch_curve_direction
+        from blenderwright.tools.curves import switch_curve_direction
 
         result = switch_curve_direction("BezierCurve")
         mock_conn.send_command.assert_called_once_with("switch_curve_direction", {
@@ -222,13 +222,13 @@ class TestSwitchCurveDirection:
         assert result == {"name": "BezierCurve"}
 
     def test_empty_name_raises(self, mock_conn):
-        from blend_ai.tools.curves import switch_curve_direction
+        from blenderwright.tools.curves import switch_curve_direction
 
         with pytest.raises(ValidationError):
             switch_curve_direction("")
 
     def test_error_response_raises(self, mock_conn):
-        from blend_ai.tools.curves import switch_curve_direction
+        from blenderwright.tools.curves import switch_curve_direction
 
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError, match="Blender error"):
@@ -237,7 +237,7 @@ class TestSwitchCurveDirection:
 
 class TestSetHandleType:
     def test_valid(self, mock_conn):
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
 
         result = set_handle_type("BezierCurve", handle_type="VECTOR")
         mock_conn.send_command.assert_called_once_with("set_handle_type", {
@@ -247,7 +247,7 @@ class TestSetHandleType:
         assert result == {"name": "BezierCurve"}
 
     def test_default_handle_type(self, mock_conn):
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
 
         set_handle_type("BezierCurve")
         mock_conn.send_command.assert_called_once_with("set_handle_type", {
@@ -256,19 +256,19 @@ class TestSetHandleType:
         })
 
     def test_empty_name_raises(self, mock_conn):
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
 
         with pytest.raises(ValidationError):
             set_handle_type("")
 
     def test_invalid_handle_type_raises(self, mock_conn):
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
 
         with pytest.raises(ValidationError):
             set_handle_type("BezierCurve", handle_type="SMOOTH")
 
     def test_all_valid_handle_types(self, mock_conn):
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
 
         for ht in ("AUTO", "VECTOR", "ALIGNED", "FREE_ALIGN"):
             mock_conn.send_command.reset_mock()
@@ -276,7 +276,7 @@ class TestSetHandleType:
             mock_conn.send_command.assert_called_once()
 
     def test_error_response_raises(self, mock_conn):
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
 
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError, match="Blender error"):
@@ -285,7 +285,7 @@ class TestSetHandleType:
 
 class TestToggleCyclic:
     def test_valid(self, mock_conn):
-        from blend_ai.tools.curves import toggle_cyclic
+        from blenderwright.tools.curves import toggle_cyclic
 
         result = toggle_cyclic("BezierCurve")
         mock_conn.send_command.assert_called_once_with("toggle_cyclic", {
@@ -294,13 +294,13 @@ class TestToggleCyclic:
         assert result == {"name": "BezierCurve"}
 
     def test_empty_name_raises(self, mock_conn):
-        from blend_ai.tools.curves import toggle_cyclic
+        from blenderwright.tools.curves import toggle_cyclic
 
         with pytest.raises(ValidationError):
             toggle_cyclic("")
 
     def test_error_response_raises(self, mock_conn):
-        from blend_ai.tools.curves import toggle_cyclic
+        from blenderwright.tools.curves import toggle_cyclic
 
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError, match="Blender error"):
@@ -309,7 +309,7 @@ class TestToggleCyclic:
 
 class TestSubdivideCurve:
     def test_valid(self, mock_conn):
-        from blend_ai.tools.curves import subdivide_curve
+        from blenderwright.tools.curves import subdivide_curve
 
         result = subdivide_curve("BezierCurve", number_cuts=3)
         mock_conn.send_command.assert_called_once_with("subdivide_curve", {
@@ -319,7 +319,7 @@ class TestSubdivideCurve:
         assert result == {"name": "BezierCurve"}
 
     def test_default_number_cuts(self, mock_conn):
-        from blend_ai.tools.curves import subdivide_curve
+        from blenderwright.tools.curves import subdivide_curve
 
         subdivide_curve("BezierCurve")
         mock_conn.send_command.assert_called_once_with("subdivide_curve", {
@@ -328,25 +328,25 @@ class TestSubdivideCurve:
         })
 
     def test_empty_name_raises(self, mock_conn):
-        from blend_ai.tools.curves import subdivide_curve
+        from blenderwright.tools.curves import subdivide_curve
 
         with pytest.raises(ValidationError):
             subdivide_curve("")
 
     def test_number_cuts_too_low(self, mock_conn):
-        from blend_ai.tools.curves import subdivide_curve
+        from blenderwright.tools.curves import subdivide_curve
 
         with pytest.raises(ValidationError):
             subdivide_curve("BezierCurve", number_cuts=0)
 
     def test_number_cuts_too_high(self, mock_conn):
-        from blend_ai.tools.curves import subdivide_curve
+        from blenderwright.tools.curves import subdivide_curve
 
         with pytest.raises(ValidationError):
             subdivide_curve("BezierCurve", number_cuts=101)
 
     def test_error_response_raises(self, mock_conn):
-        from blend_ai.tools.curves import subdivide_curve
+        from blenderwright.tools.curves import subdivide_curve
 
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError, match="Blender error"):
@@ -355,7 +355,7 @@ class TestSubdivideCurve:
 
 class TestSmoothCurve:
     def test_valid(self, mock_conn):
-        from blend_ai.tools.curves import smooth_curve
+        from blenderwright.tools.curves import smooth_curve
 
         result = smooth_curve("BezierCurve")
         mock_conn.send_command.assert_called_once_with("smooth_curve", {
@@ -364,13 +364,13 @@ class TestSmoothCurve:
         assert result == {"name": "BezierCurve"}
 
     def test_empty_name_raises(self, mock_conn):
-        from blend_ai.tools.curves import smooth_curve
+        from blenderwright.tools.curves import smooth_curve
 
         with pytest.raises(ValidationError):
             smooth_curve("")
 
     def test_error_response_raises(self, mock_conn):
-        from blend_ai.tools.curves import smooth_curve
+        from blenderwright.tools.curves import smooth_curve
 
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError, match="Blender error"):
@@ -379,7 +379,7 @@ class TestSmoothCurve:
 
 class TestBlenderErrorHandling:
     def test_blender_error_raises_runtime(self, mock_conn):
-        from blend_ai.tools.curves import create_curve
+        from blenderwright.tools.curves import create_curve
 
         mock_conn.send_command.return_value = {"status": "error", "result": "Curve error"}
         with pytest.raises(RuntimeError, match="Blender error"):
@@ -400,15 +400,15 @@ class TestHandleTypeEnumMatchesBlender:
                     "TOGGLE_FREE_ALIGN"}
 
     def test_every_accepted_value_maps_to_a_real_blender_value(self):
-        from blend_ai.tools.curves import ALLOWED_CURVE_HANDLE_TYPES
-        from blend_ai.tools.curves import HANDLE_TYPE_ALIASES
+        from blenderwright.tools.curves import ALLOWED_CURVE_HANDLE_TYPES
+        from blenderwright.tools.curves import HANDLE_TYPE_ALIASES
         invalid = {v for v in ALLOWED_CURVE_HANDLE_TYPES
                    if v not in self.BLENDER_ENUM and v not in HANDLE_TYPE_ALIASES}
         assert not invalid, f"not accepted by Blender: {sorted(invalid)}"
 
     def test_the_default_is_accepted(self, mock_conn):
         """The commonest call of all: no handle_type given."""
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
         set_handle_type("Curve")
         sent = mock_conn.send_command.call_args[0][1]
         assert sent["handle_type"] in self.BLENDER_ENUM, (
@@ -417,17 +417,17 @@ class TestHandleTypeEnumMatchesBlender:
 
     def test_auto_is_accepted_as_an_alias(self, mock_conn):
         """AUTO is the natural word and was the documented default."""
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
         set_handle_type("Curve", handle_type="AUTO")
         assert mock_conn.send_command.call_args[0][1]["handle_type"] == "AUTOMATIC"
 
     def test_real_values_pass_through(self, mock_conn):
-        from blend_ai.tools.curves import set_handle_type
+        from blenderwright.tools.curves import set_handle_type
         set_handle_type("Curve", handle_type="VECTOR")
         assert mock_conn.send_command.call_args[0][1]["handle_type"] == "VECTOR"
 
     def test_add_curve_point_agrees_on_the_same_enum(self, mock_conn):
         """Two tools, one concept: FREE vs FREE_ALIGN was a trap."""
-        from blend_ai.tools.curves import add_curve_point
+        from blenderwright.tools.curves import add_curve_point
         add_curve_point("Curve", [0, 0, 0], handle_type="FREE_ALIGN")
         assert mock_conn.send_command.call_args[0][1]["handle_type"] == "FREE_ALIGN"

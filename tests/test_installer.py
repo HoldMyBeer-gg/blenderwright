@@ -1,4 +1,4 @@
-"""Tests for the blend-ai addon installer (install_addon.py)."""
+"""Tests for the blenderwright addon installer (install_addon.py)."""
 
 from __future__ import annotations
 
@@ -113,8 +113,8 @@ class TestGetBlenderVersion:
 
 class TestFindZip:
     def test_returns_most_recent_zip(self, tmp_path):
-        z1 = tmp_path / "blend-ai-v0.9.0.zip"
-        z2 = tmp_path / "blend-ai-v1.0.0.zip"
+        z1 = tmp_path / "blenderwright-v0.9.0.zip"
+        z2 = tmp_path / "blenderwright-v1.0.0.zip"
         z1.write_bytes(b"old")
         z2.write_bytes(b"new")
         import time
@@ -138,13 +138,13 @@ class TestBuildZip:
         addon.mkdir()
         (addon / "blender_manifest.toml").write_text(
             'schema_version = "1.0.0"\n'
-            'id = "blend_ai"\n'
+            'id = "blenderwright"\n'
             'version = "1.0.0"\n'
-            'name = "blend-ai"\n'
+            'name = "blenderwright"\n'
             'type = "add-on"\n'
         )
         (addon / "__init__.py").write_text(
-            'bl_info = {"name": "blend-ai", "version": (1, 0, 0), "blender": (4, 2, 0)}\n'
+            'bl_info = {"name": "blenderwright", "version": (1, 0, 0), "blender": (4, 2, 0)}\n'
         )
         (addon / "server.py").write_text("# server\n")
         return addon
@@ -155,7 +155,7 @@ class TestBuildZip:
         with patch.object(installer, "SCRIPT_DIR", tmp_path):
             result = installer.build_zip(log_calls.append)
         assert result is not None
-        assert result.name == "blend-ai-v1.0.0.zip"
+        assert result.name == "blenderwright-v1.0.0.zip"
         assert result.exists()
         assert any("Building" in str(m) for m in log_calls)
 
@@ -168,7 +168,7 @@ class TestBuildZip:
         with zipfile.ZipFile(result) as zf:
             names = zf.namelist()
         assert "blender_manifest.toml" in names
-        assert not any(n.startswith("blend_ai/") for n in names)
+        assert not any(n.startswith("blenderwright/") for n in names)
         assert not any(n.startswith("addon/") for n in names)
 
     def test_zip_excludes_pycache(self, tmp_path):
@@ -188,14 +188,14 @@ class TestBuildZip:
         addon.mkdir()
         (addon / "blender_manifest.toml").write_text(
             'schema_version = "1.0.0"\n'
-            'id = "blend_ai"\n'
+            'id = "blenderwright"\n'
             'version = "2.3.4"\n'
-            'name = "blend-ai"\n'
+            'name = "blenderwright"\n'
             'type = "add-on"\n'
         )
         with patch.object(installer, "SCRIPT_DIR", tmp_path):
             result = installer.build_zip(lambda m: None)
-        assert result.name == "blend-ai-v2.3.4.zip"
+        assert result.name == "blenderwright-v2.3.4.zip"
 
     def test_returns_none_when_addon_dir_missing(self, tmp_path):
         log_calls = []
@@ -206,14 +206,14 @@ class TestBuildZip:
 
 class TestInstall:
     def test_success_detected(self, tmp_path):
-        zip_path = tmp_path / "blend-ai-v1.0.0.zip"
+        zip_path = tmp_path / "blenderwright-v1.0.0.zip"
         zip_path.write_bytes(b"zip")
         log_calls = []
 
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
-                stdout="Installed: ...\nSUCCESS: blend_ai enabled and preferences saved.\n",
+                stdout="Installed: ...\nSUCCESS: blenderwright enabled and preferences saved.\n",
                 stderr="",
             )
             result = installer.install("/usr/bin/blender", zip_path, log_calls.append)
@@ -221,7 +221,7 @@ class TestInstall:
         assert result is True
 
     def test_failure_detected(self, tmp_path):
-        zip_path = tmp_path / "blend-ai-v1.0.0.zip"
+        zip_path = tmp_path / "blenderwright-v1.0.0.zip"
         zip_path.write_bytes(b"zip")
         log_calls = []
 
@@ -236,7 +236,7 @@ class TestInstall:
         assert result is False
 
     def test_escapes_windows_backslashes(self, tmp_path):
-        zip_path = Path(r"C:\Users\test\blend-ai-v1.0.0.zip")
+        zip_path = Path(r"C:\Users\test\blenderwright-v1.0.0.zip")
         log_calls = []
 
         with patch("subprocess.run") as mock_run:
@@ -247,7 +247,7 @@ class TestInstall:
         assert "\\\\" in script_arg  # backslashes escaped
 
     def test_flatpak_splits_command(self, tmp_path):
-        zip_path = tmp_path / "blend-ai-v1.0.0.zip"
+        zip_path = tmp_path / "blenderwright-v1.0.0.zip"
         zip_path.write_bytes(b"zip")
         log_calls = []
 
@@ -308,8 +308,8 @@ class TestBlenderVersionDirs:
         assert result == []
 
 
-class TestFindBlendAiInstalls:
-    """find_blend_ai_installs(version_dir) returns leftover findings."""
+class TestFindBlenderwrightInstalls:
+    """find_blenderwright_installs(version_dir) returns leftover findings."""
 
     def _mk_version_dir(self, tmp_path):
         vdir = tmp_path / "5.1"
@@ -319,26 +319,26 @@ class TestFindBlendAiInstalls:
 
     def test_clean_version_dir_returns_empty(self, tmp_path):
         vdir = self._mk_version_dir(tmp_path)
-        assert installer.find_blend_ai_installs(vdir) == []
+        assert installer.find_blenderwright_installs(vdir) == []
 
-    def test_detects_legacy_blend_ai_directory(self, tmp_path):
+    def test_detects_legacy_blenderwright_directory(self, tmp_path):
         vdir = self._mk_version_dir(tmp_path)
-        target = vdir / "scripts" / "addons" / "blend_ai"
+        target = vdir / "scripts" / "addons" / "blenderwright"
         target.mkdir()
         (target / "__init__.py").write_text(
-            'bl_info = {"name": "blend-ai", "version": (1, 0, 0)}\n'
+            'bl_info = {"name": "blenderwright", "version": (1, 0, 0)}\n'
         )
-        found = installer.find_blend_ai_installs(vdir)
+        found = installer.find_blenderwright_installs(vdir)
         assert len(found) == 1
         assert found[0]["kind"] == "legacy_dir"
         assert found[0]["path"] == target
 
     def test_detects_extension_user_default_directory(self, tmp_path):
         vdir = self._mk_version_dir(tmp_path)
-        target = vdir / "extensions" / "user_default" / "blend_ai"
+        target = vdir / "extensions" / "user_default" / "blenderwright"
         target.mkdir()
-        (target / "blender_manifest.toml").write_text('id = "blend_ai"\nname = "blend-ai"\n')
-        found = installer.find_blend_ai_installs(vdir)
+        (target / "blender_manifest.toml").write_text('id = "blenderwright"\nname = "blenderwright"\n')
+        found = installer.find_blenderwright_installs(vdir)
         assert len(found) == 1
         assert found[0]["kind"] == "extension_dir"
         assert found[0]["path"] == target
@@ -352,11 +352,11 @@ class TestFindBlendAiInstalls:
         real = tmp_path / "real_source"
         real.mkdir()
         (real / "__init__.py").write_text(
-            'bl_info = {"name": "blend-ai", "version": (1, 0, 0)}\n'
+            'bl_info = {"name": "blenderwright", "version": (1, 0, 0)}\n'
         )
-        link = vdir / "scripts" / "addons" / "blend_ai"
+        link = vdir / "scripts" / "addons" / "blenderwright"
         link.symlink_to(real)
-        found = installer.find_blend_ai_installs(vdir)
+        found = installer.find_blenderwright_installs(vdir)
         assert len(found) == 1
         assert found[0]["kind"] == "symlink"
         assert found[0]["path"] == link
@@ -366,9 +366,9 @@ class TestFindBlendAiInstalls:
         target = vdir / "scripts" / "addons" / "addon"  # wrong name
         target.mkdir()
         (target / "__init__.py").write_text(
-            'bl_info = {"name": "blend-ai", "version": (1, 0, 0)}\n'
+            'bl_info = {"name": "blenderwright", "version": (1, 0, 0)}\n'
         )
-        found = installer.find_blend_ai_installs(vdir)
+        found = installer.find_blenderwright_installs(vdir)
         assert len(found) == 1
         assert found[0]["kind"] == "legacy_dir"
 
@@ -377,13 +377,13 @@ class TestFindBlendAiInstalls:
         other = vdir / "scripts" / "addons" / "some_other_addon"
         other.mkdir()
         (other / "__init__.py").write_text('bl_info = {"name": "other"}\n')
-        assert installer.find_blend_ai_installs(vdir) == []
+        assert installer.find_blenderwright_installs(vdir) == []
 
     def test_detects_orphan_top_level_init(self, tmp_path):
         vdir = self._mk_version_dir(tmp_path)
         orphan = vdir / "scripts" / "addons" / "__init__.py"
-        orphan.write_text('bl_info = {"name": "blend-ai"}\n')
-        found = installer.find_blend_ai_installs(vdir)
+        orphan.write_text('bl_info = {"name": "blenderwright"}\n')
+        found = installer.find_blenderwright_installs(vdir)
         assert len(found) == 1
         assert found[0]["kind"] == "orphan_file"
         assert found[0]["path"] == orphan
@@ -436,13 +436,13 @@ class TestDoctor:
 
     def test_scans_every_version_dir(self, tmp_path):
         root = tmp_path / "Blender"
-        (root / "4.2" / "scripts" / "addons" / "blend_ai").mkdir(parents=True)
-        (root / "4.2" / "scripts" / "addons" / "blend_ai" / "__init__.py").write_text(
-            'bl_info = {"name": "blend-ai"}\n'
+        (root / "4.2" / "scripts" / "addons" / "blenderwright").mkdir(parents=True)
+        (root / "4.2" / "scripts" / "addons" / "blenderwright" / "__init__.py").write_text(
+            'bl_info = {"name": "blenderwright"}\n'
         )
-        (root / "5.1" / "extensions" / "user_default" / "blend_ai").mkdir(parents=True)
-        (root / "5.1" / "extensions" / "user_default" / "blend_ai" / "blender_manifest.toml").write_text(
-            'id = "blend_ai"\n'
+        (root / "5.1" / "extensions" / "user_default" / "blenderwright").mkdir(parents=True)
+        (root / "5.1" / "extensions" / "user_default" / "blenderwright" / "blender_manifest.toml").write_text(
+            'id = "blenderwright"\n'
         )
         with patch.object(installer, "blender_user_config_dirs", return_value=[root]), \
              patch.object(installer, "is_blender_running", return_value=False):
@@ -454,12 +454,12 @@ class TestDoctor:
 class TestUninstall:
     def _seed_leftovers(self, tmp_path):
         root = tmp_path / "Blender"
-        legacy = root / "5.1" / "scripts" / "addons" / "blend_ai"
+        legacy = root / "5.1" / "scripts" / "addons" / "blenderwright"
         legacy.mkdir(parents=True)
-        (legacy / "__init__.py").write_text('bl_info = {"name": "blend-ai"}\n')
-        ext = root / "5.1" / "extensions" / "user_default" / "blend_ai"
+        (legacy / "__init__.py").write_text('bl_info = {"name": "blenderwright"}\n')
+        ext = root / "5.1" / "extensions" / "user_default" / "blenderwright"
         ext.mkdir(parents=True)
-        (ext / "blender_manifest.toml").write_text('id = "blend_ai"\n')
+        (ext / "blender_manifest.toml").write_text('id = "blenderwright"\n')
         return root, legacy, ext
 
     def test_dry_run_leaves_files_in_place(self, tmp_path):
@@ -489,8 +489,8 @@ class TestUninstall:
         addons.mkdir(parents=True)
         real = tmp_path / "real_source"
         real.mkdir()
-        (real / "__init__.py").write_text('bl_info = {"name": "blend-ai"}\n')
-        link = addons / "blend_ai"
+        (real / "__init__.py").write_text('bl_info = {"name": "blenderwright"}\n')
+        link = addons / "blenderwright"
         link.symlink_to(real)
 
         with patch.object(installer, "blender_user_config_dirs", return_value=[root]), \
@@ -518,7 +518,7 @@ def _fake_blender(tmp_path):
 
 class TestUpgrade:
     def test_upgrade_calls_uninstall_then_install(self, tmp_path):
-        zip_path = tmp_path / "blend-ai-v1.0.0.zip"
+        zip_path = tmp_path / "blenderwright-v1.0.0.zip"
         zip_path.write_bytes(b"zip")
         calls = []
         with patch.object(installer, "is_blender_running", return_value=False), \
@@ -528,7 +528,7 @@ class TestUpgrade:
         assert calls == ["uninstall", "install"]
 
     def test_upgrade_refuses_when_blender_running(self, tmp_path):
-        zip_path = tmp_path / "blend-ai-v1.0.0.zip"
+        zip_path = tmp_path / "blenderwright-v1.0.0.zip"
         zip_path.write_bytes(b"zip")
         with patch.object(installer, "is_blender_running", return_value=True):
             with pytest.raises(installer.BlenderRunningError):
@@ -552,7 +552,7 @@ class TestCliSubcommands:
         with patch.object(installer, "doctor", return_value={"installs": [], "blender_running": False}):
             installer.main(["doctor"])
         out = capsys.readouterr().out
-        assert "blend-ai" in out.lower() or "clean" in out.lower() or "no " in out.lower()
+        assert "blenderwright" in out.lower() or "clean" in out.lower() or "no " in out.lower()
 
     def test_uninstall_subcommand_calls_uninstall(self):
         with patch.object(installer, "uninstall", return_value=[]) as mock_u, \

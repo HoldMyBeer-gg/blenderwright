@@ -72,4 +72,4 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
       - name: Run tests with coverage
-        run: pytest tests/ --cov=src/blend_ai --cov-report=term-missing --ignore=tests/test_addon
+        run: pytest tests/ --cov=src/blenderwright --cov-report=term-missing --ignore=tests/test_addon
