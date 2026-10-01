@@ -94,7 +94,7 @@ def _do_boolean(params, operation, booltool_op_name):
             else:
                 raise RuntimeError("operator not found")
         except Exception as e:
-            # Bool Tool operator failed (e.g. no viewport context) — fall back
+            # Bool Tool operator failed (e.g. no viewport context): fall back
             _native_boolean(obj, target, operation)
             warning = (
                 f"Bool Tool operator '{booltool_op_name}' failed: {e}. "

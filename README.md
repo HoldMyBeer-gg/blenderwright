@@ -1,6 +1,6 @@
 # blend-ai
 
-The most intuitive and efficient MCP Server for Blender. Control Blender entirely through AI assistants like Claude — create 3D models, set up scenes, animate, render, and more, all through natural language.
+The most intuitive and efficient MCP Server for Blender. Control Blender entirely through AI assistants like Claude: create 3D models, set up scenes, animate, render, and more, all through natural language.
 
 **blend-ai goes beyond tool exposure: it guides the LLM to produce professional 3D results** through expert prompts, proven workflows, visual feedback, and mesh quality analysis.
 
@@ -12,25 +12,25 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ![blend-ai screenshot](./screenshot.png)
 
-<small>Fifteen procedural materials, each built by a single `create_procedural_material` call. The selected ball's node graph below was generated entirely by that one call — coordinates, mapping, noise, height mask, colour ramp, and Principled BSDF, laid out and wired:</small>
+<small>Fifteen procedural materials, each built by a single `create_procedural_material` call. The selected ball's node graph below was generated entirely by that one call: coordinates, mapping, noise, height mask, colour ramp, and Principled BSDF, laid out and wired:</small>
 
 ![blend-ai procedural shader preview](./shader-preview.png)
 
 ## Key Features
 
 - **[186 tools](https://blend-ai.holdmybeer.gg/)** across 27 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
-- **12 expert prompts** — topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
-- **Visual feedback loop** — fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
-- **Mesh quality analysis** — structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
-- **Extension suggestions** — proactively recommends Bool Tool, LoopTools, and Node Wrangler when a task would benefit from them (skips already-installed extensions)
-- **Sandboxed code execution** — `execute_blender_code` blocks dangerous imports (`os`, `subprocess`, `socket`, etc.) and dangerous builtins (`exec`, `eval`, `open`) while allowing safe Blender operations
-- **Render-aware** — automatically detects when Blender is rendering and queues commands. Recovers from stuck render guards via `load_post` handler and reset command
-- **Blender 4.2+ compatible** — ships as a Blender Extension; tested against Blender 5.1 with EEVEE identifier, Annotation API, sculpt stroke_method, SLIM UV unwrap, Raycast shader node, and EEVEE light path intensity controls
-- **Custom port** — configure the server port from the N-panel UI (default: 9876, range: 1024–65535)
-- **Zero telemetry** — no usage tracking, no analytics, no data collection. Everything runs locally on `127.0.0.1`
-- **Zero-dependency addon** — the Blender addon uses only Python stdlib + `bpy`. Nothing to pip install inside Blender
-- **Thread-safe architecture** — background TCP server with queue-based main-thread execution, TCP keepalive for stale connection detection
-- **1190 tests** — comprehensive coverage across tools, handlers, validators, prompts, and the cross-platform installer (ubuntu/macos/windows × py3.11/3.13 in CI)
+- **12 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
+- **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
+- **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
+- **Extension suggestions**: proactively recommends Bool Tool, LoopTools, and Node Wrangler when a task would benefit from them (skips already-installed extensions)
+- **Sandboxed code execution**: `execute_blender_code` blocks dangerous imports (`os`, `subprocess`, `socket`, etc.) and dangerous builtins (`exec`, `eval`, `open`) while allowing safe Blender operations
+- **Render-aware**: automatically detects when Blender is rendering and queues commands. Recovers from stuck render guards via `load_post` handler and reset command
+- **Blender 4.2+ compatible**: ships as a Blender Extension; tested against Blender 5.1 with EEVEE identifier, Annotation API, sculpt stroke_method, SLIM UV unwrap, Raycast shader node, and EEVEE light path intensity controls
+- **Custom port**: configure the server port from the N-panel UI (default: 9876, range: 1024–65535)
+- **Zero telemetry**: no usage tracking, no analytics, no data collection. Everything runs locally on `127.0.0.1`
+- **Zero-dependency addon**: the Blender addon uses only Python stdlib + `bpy`. Nothing to pip install inside Blender
+- **Thread-safe architecture**: background TCP server with queue-based main-thread execution, TCP keepalive for stale connection detection
+- **1190 tests**: coverage across tools, handlers, validators, prompts, and the cross-platform installer (ubuntu/macos/windows × py3.11/3.13 in CI)
 
 ## Quickstart
 
@@ -143,7 +143,7 @@ The server communicates over stdin/stdout using the MCP protocol. It connects to
 
 ## Updating
 
-Whichever way you installed, **Blender must be fully restarted** — not "Reload Scripts".
+Whichever way you installed, **Blender must be fully restarted**, not "Reload Scripts".
 The addon runs a background TCP server thread that survives a script reload, so reloading
 leaves a stale handler registered and the old socket still bound.
 
@@ -180,7 +180,7 @@ python install_addon.py doctor          # list every blend-ai install found, and
 python install_addon.py uninstall --yes # remove them all (omit --yes for a dry run)
 ```
 
-Start with `doctor` if the addon is behaving strangely — a duplicate install under an
+Start with `doctor` if the addon is behaving strangely: a duplicate install under an
 old Blender version is the usual cause.
 
 ### Developer symlink installs
@@ -214,7 +214,7 @@ blend-ai includes 12 MCP prompts that guide the LLM toward professional-quality 
 | `studio_lighting_setup` | 6-step studio lighting workflow with specific energy values |
 | `character_basemesh_workflow` | 7-step character base mesh from cube with mirror + subdivision |
 | `material_workflow_guide` | PBR materials, Principled BSDF recipes, texture color spaces |
-| `auto_critique_workflow` | Visual feedback loop — when to screenshot, what to check, token budget |
+| `auto_critique_workflow` | Visual feedback loop: when to screenshot, what to check, token budget |
 | `product_shot_setup` | Professional product shot setup guide |
 | `character_base_mesh` | Character modeling guide |
 | `scene_cleanup` | Scene organization workflow |
@@ -280,21 +280,21 @@ AI Assistant <--stdio/MCP--> blend-ai server <--TCP socket--> Blender addon <--b
 <details>
 <summary><strong>Privacy</strong></summary>
 
-- **Zero telemetry** — blend-ai collects no usage data, sends no analytics, and makes no network requests beyond the local TCP connection to Blender.
-- **Fully local** — all communication stays on your machine. No cloud services, no external APIs, no phone-home behavior.
-- **Open source** — the entire codebase is auditable. What you see is what runs.
+- **Zero telemetry**: blend-ai collects no usage data, sends no analytics, and makes no network requests beyond the local TCP connection to Blender.
+- **Fully local**: all communication stays on your machine. No cloud services, no external APIs, no phone-home behavior.
+- **Open source**: the entire codebase is auditable. What you see is what runs.
 
 </details>
 
 <details>
 <summary><strong>Security</strong></summary>
 
-- **Localhost only**: The TCP socket binds to `127.0.0.1` — never exposed to the network.
+- **Localhost only**: The TCP socket binds to `127.0.0.1`, never exposed to the network.
 - **Sandboxed code execution**: `execute_blender_code` blocks 25 dangerous imports (`os`, `subprocess`, `socket`, `shutil`, `sys`, `ctypes`, `importlib`, `pathlib`, `signal`, `multiprocessing`, `pickle`, `shelve`, `tempfile`, `http`, `urllib`, `ftplib`, `smtplib`, `xmlrpc`, `code`, `codeop`, `compileall`, `webbrowser`, `antigravity`, `turtle`, `tkinter`) and removes dangerous builtins (`__import__`, `exec`, `eval`, `compile`, `open`, `globals`, `locals`, `vars`, `input`, `breakpoint`, `exit`, `quit`, `help`, `memoryview`). Safe Blender imports (`bpy`, `bmesh`, `mathutils`, `math`, `json`) are allowed.
-- **Input validation**: All inputs pass through validators before reaching Blender — name sanitization, path traversal prevention, numeric range checks, enum allowlists.
+- **Input validation**: All inputs pass through validators before reaching Blender: name sanitization, path traversal prevention, numeric range checks, enum allowlists.
 - **File safety**: Import operations disable `use_scripts_auto_execute` to prevent script injection from imported files. File extensions are checked against allowlists.
 - **Command allowlist**: The addon dispatcher only processes explicitly registered commands. Unknown commands are rejected.
-- **Shader node allowlist**: Only 64 known shader node types can be created — prevents arbitrary type injection.
+- **Shader node allowlist**: Only 64 known shader node types can be created, which prevents arbitrary type injection.
 
 </details>
 

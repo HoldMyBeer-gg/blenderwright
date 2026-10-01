@@ -1,4 +1,4 @@
-"""Tests for rendering handler — validates 5.1 API compliance."""
+"""Tests for rendering handler: validates 5.1 API compliance."""
 
 import os
 import sys

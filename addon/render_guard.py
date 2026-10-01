@@ -5,7 +5,7 @@ can return a "busy" response instead of queueing commands that
 will time out while the main thread is blocked.
 
 The flag is set from bpy.app.handlers callbacks on the main thread
-and read from the server's background thread — threading.Event
+and read from the server's background thread: threading.Event
 provides the necessary thread safety.
 """
 
@@ -45,5 +45,5 @@ class RenderGuard:
         return was_rendering
 
 
-# Global instance — imported by server.py and registered by __init__.py
+# Global instance, imported by server.py and registered by __init__.py
 render_guard = RenderGuard()

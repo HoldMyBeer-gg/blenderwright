@@ -141,7 +141,7 @@ def handle_set_modifier_property(params):
     current = getattr(mod, prop)
     if current is not None and not isinstance(current, (list, tuple)):
         target_type = type(current)
-        # Check bool before int — bool is a subclass of int
+        # Check bool before int: bool is a subclass of int
         if target_type is bool:
             if isinstance(value, str):
                 value = value.lower() in ("true", "1", "yes")

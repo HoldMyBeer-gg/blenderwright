@@ -1,4 +1,4 @@
-"""Tests for addon.handlers.raster — generated image textures.
+"""Tests for addon.handlers.raster: generated image textures.
 
 Covers the patterns that shader nodes cannot express because they place
 discrete marks: runes, and anything else needing per-element stamping.

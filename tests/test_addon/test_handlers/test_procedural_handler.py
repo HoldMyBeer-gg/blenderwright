@@ -1,4 +1,4 @@
-"""Tests for addon.handlers.procedural — procedural material graph building.
+"""Tests for addon.handlers.procedural: procedural material graph building.
 
 The handler assembles a whole texture node graph in one main-thread call, so
 these tests assert on the resulting graph: which nodes exist, how they are
@@ -452,7 +452,7 @@ class TestParameters:
         ignored. Sparks shipped with its exponent on the linked input,
         rendering as x**0.5 instead of x**8.
 
-        A Math node whose inputs are both linked is fine — it needs no
+        A Math node whose inputs are both linked is fine: it needs no
         constant. What must never happen is a non-default value sitting on
         a linked socket, which means the write went to the wrong place.
         """

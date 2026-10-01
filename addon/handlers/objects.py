@@ -109,7 +109,7 @@ def handle_create_threaded_shaft(params: dict) -> dict:
     """Create a threaded cylindrical shaft: solid core + helical V-ridge union.
 
     The Screw modifier revolves a 2D profile along a helix. Feeding it a filled
-    profile does NOT create a solid revolved body — it creates a thick-walled
+    profile does NOT create a solid revolved body: it creates a thick-walled
     helical tube, because adjacent rotation steps are connected only by side
     walls. That leaves the interior hollow.
 
@@ -136,7 +136,7 @@ def handle_create_threaded_shaft(params: dict) -> dict:
 
     if thread_depth <= 0:
         thread_depth = pitch * 0.54
-    # thread_runout < 0 is "auto" — threads go as high as they fit. For a
+    # thread_runout < 0 is "auto": threads go as high as they fit. For a
     # printed fastener this is what you want structurally: threads continue
     # up to ~z=length, where a boolean-unioned head overlaps them, giving
     # one continuous stress path. A smooth-cylinder runout leaves a
@@ -153,7 +153,7 @@ def handle_create_threaded_shaft(params: dict) -> dict:
     try:
         # --- 1) Solid core cylinder at exactly [0, length] ---
         # Thread ridges will overhang by half_base (~0.156 of pitch) on each
-        # end — cosmetic, real screws have ragged thread ends anyway. Keeping
+        # end: cosmetic, real screws have ragged thread ends anyway. Keeping
         # the core at exact length means no trim-boolean is needed, which
         # avoided a class of Blender boolean-solver failures that collapsed
         # the mesh or erased thread peaks.
@@ -179,7 +179,7 @@ def handle_create_threaded_shaft(params: dict) -> dict:
         # A filled face would make the Screw modifier stamp the face at every
         # rotation step, creating internal divider faces that break manifoldness.
         # With edges only, the sweep produces just the 3 outer walls of a
-        # triangular tube — which fill_holes then caps to close the volume.
+        # triangular tube, which fill_holes then caps to close the volume.
         ridge_verts = [
             (minor_r, 0.0, pitch / 2.0 - half_base),  # lower minor corner
             (major_r, 0.0, pitch / 2.0),              # V peak
@@ -234,7 +234,7 @@ def handle_create_threaded_shaft(params: dict) -> dict:
         bool_mod.solver = "EXACT"
         bpy.ops.object.modifier_apply(modifier=bool_mod.name)
 
-        # Ridge is consumed — remove the now-unused helper object.
+        # Ridge is consumed: remove the now-unused helper object.
         bpy.data.objects.remove(ridge, do_unlink=True)
 
         # --- 5) Final cleanup: merge tight duplicates, recalc normals. ---

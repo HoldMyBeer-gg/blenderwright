@@ -1,4 +1,4 @@
-"""Tests for addon.handlers.objects — polygon prism and threaded shaft geometry math.
+"""Tests for addon.handlers.objects: polygon prism and threaded shaft geometry math.
 
 Validates the non-trivial logic in handle_create_polygon_prism and
 handle_create_threaded_shaft: Screw-modifier parameter derivation, V-profile
@@ -230,7 +230,7 @@ class TestCreateThreadedShaft:
         assert verts[2][0] == pytest.approx(minor_r)
 
     def test_core_cylinder_has_minor_radius(self, objects_handler):
-        """Core cylinder is the shaft body at minor_r — the V ridge adds the
+        """Core cylinder is the shaft body at minor_r, the V ridge adds the
         thread peaks up to major_r via the boolean union."""
         h = _setup_threaded_shaft_mocks(objects_handler)
         objects_handler.handle_create_threaded_shaft({
@@ -243,7 +243,7 @@ class TestCreateThreadedShaft:
 
     def test_core_cylinder_spans_exact_length(self, objects_handler):
         """Core is built at exactly the requested length, centered so its base
-        sits at location.z. Thread ridges overhang by half_base on each end —
+        sits at location.z. Thread ridges overhang by half_base on each end,
         cosmetic, and avoids the boolean trim failures that collapsed the mesh
         or erased thread peaks."""
         h = _setup_threaded_shaft_mocks(objects_handler)
@@ -269,7 +269,7 @@ class TestCreateThreadedShaft:
         assert bpy.ops.mesh.primitive_cube_add.call_count == 0
 
     def test_only_ridge_is_removed(self, objects_handler):
-        """Only the ridge helper is removed — no trim cubes any more."""
+        """Only the ridge helper is removed: no trim cubes any more."""
         import bpy
         _setup_threaded_shaft_mocks(objects_handler)
         objects_handler.handle_create_threaded_shaft({
@@ -325,7 +325,7 @@ class TestCreateThreadedShaft:
         assert h["ridge_screw"].merge_threshold > 0
 
     def test_iterations_default_runout_is_zero(self, objects_handler):
-        """Default thread_runout (-1 sentinel) resolves to 0 — threads run
+        """Default thread_runout (-1 sentinel) resolves to 0: threads run
         full length for FDM printability. A smooth runout creates a weak
         neck at minor_r that snaps under torque."""
         h = _setup_threaded_shaft_mocks(objects_handler)
@@ -398,7 +398,7 @@ class TestCreateThreadedShaft:
         assert bool_mod.solver == "EXACT"
 
     def test_ridge_consumed_after_union(self, objects_handler):
-        """The ridge helper object must be deleted — otherwise the scene
+        """The ridge helper object must be deleted, otherwise the scene
         keeps a duplicate mesh sitting inside the shaft."""
         import bpy
         h = _setup_threaded_shaft_mocks(objects_handler)

@@ -92,7 +92,7 @@ DEFAULT_PALETTES = {
 def _out(node, *names):
     """Get the first output socket matching any of the given names.
 
-    Blender renames sockets between versions — 'Fac' became 'Factor' on the
+    Blender renames sockets between versions: 'Fac' became 'Factor' on the
     Noise, Gradient, Wave and ColorRamp nodes in 5.x. Indexing by name alone
     breaks on one version or the other, so try each known spelling and fall
     back to the first output rather than failing the whole build.

@@ -1,4 +1,4 @@
-"""Tests for BlenderServer — SO_KEEPALIVE and stale client cleanup."""
+"""Tests for BlenderServer: SO_KEEPALIVE and stale client cleanup."""
 
 import os
 import sys
@@ -50,7 +50,7 @@ class TestSOKeepalive:
 
         mock_client = MagicMock(spec=socket.socket)
         # _accept_loop spawns a real handler thread for this client. Without a
-        # realistic disconnect, recv() returns a MagicMock — truthy, so the
+        # realistic disconnect, recv() returns a MagicMock, which is truthy, so the
         # `if not chunk` guard never fires, but len() == 0, so _recv_exactly
         # loops forever. The thread then spins for the rest of the session,
         # growing the heap until pytest's teardown gc collect crawls.
@@ -64,7 +64,7 @@ class TestSOKeepalive:
         server._server_socket = mock_server_socket
         server._running = True
 
-        # Run accept loop — it will accept one client then hit OSError to exit
+        # Run accept loop: it will accept one client then hit OSError to exit
         server._accept_loop()
 
         # Verify SO_KEEPALIVE was set on the accepted client

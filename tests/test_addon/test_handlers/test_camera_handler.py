@@ -1,4 +1,4 @@
-"""Tests for fast viewport capture handler — validates render.opengl usage."""
+"""Tests for fast viewport capture handler: validates render.opengl usage."""
 
 import os
 import sys

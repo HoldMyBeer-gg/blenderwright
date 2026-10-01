@@ -15,7 +15,7 @@ bl_info = {
     "category": "Interface",
 }
 
-# Module-level reference set in register() — holds the @persistent load_post handler
+# Module-level reference set in register(): holds the @persistent load_post handler
 _clear_render_guard_on_load = None
 
 
@@ -24,7 +24,7 @@ def _purge_submodules_from_cache(pkg_name: str, modules: dict | None = None) -> 
 
     Blender's addon disable/enable calls register()/unregister() but does not
     evict cached submodules. Without this purge, editing e.g. handlers/objects.py
-    and re-enabling the addon returns the pre-edit bytecode from sys.modules —
+    and re-enabling the addon returns the pre-edit bytecode from sys.modules,
     a trap for anyone iterating on handler code. Purging submodules forces a
     fresh import on the next `from . import ...` inside register().
 
@@ -32,7 +32,7 @@ def _purge_submodules_from_cache(pkg_name: str, modules: dict | None = None) -> 
     package is imported, its submodules are also set as attributes on the
     parent package object (e.g. `blend_ai.handlers` as an attribute of the
     `blend_ai` module). The `from . import handlers` statement prefers the
-    parent's attribute over a fresh import when both exist — so we must also
+    parent's attribute over a fresh import when both exist, so we must also
     delete the submodule attributes from the parent module, otherwise disable/
     enable keeps returning the cached bytecode.
 
@@ -56,7 +56,7 @@ def _purge_submodules_from_cache(pkg_name: str, modules: dict | None = None) -> 
     for name in to_remove:
         # Also strip the submodule attribute from the parent package, if the
         # submodule is a direct child (e.g. "blend_ai.handlers" but not
-        # "blend_ai.handlers.objects" — deeper children hang off intermediate
+        # "blend_ai.handlers.objects", deeper children hang off intermediate
         # packages that are themselves being purged).
         suffix = name[len(prefix):]
         if parent is not None and "." not in suffix and hasattr(parent, suffix):
@@ -85,7 +85,7 @@ def register():
     bpy.app.handlers.render_complete.append(render_guard.on_render_complete)
     bpy.app.handlers.render_cancel.append(render_guard.on_render_cancel)
 
-    # Clear render guard when a .blend file loads — recovers from crashed renders
+    # Clear render guard when a .blend file loads: recovers from crashed renders
     @persistent
     def _on_load_post(filepath):
         render_guard.on_render_complete(None)

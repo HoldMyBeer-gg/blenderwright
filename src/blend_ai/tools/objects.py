@@ -160,7 +160,7 @@ def create_threaded_shaft(
 ) -> dict[str, Any]:
     """Create a cylindrical shaft with helical external threads.
 
-    Produces a single mesh object — a threaded rod at the given diameter and
+    Produces a single mesh object: a threaded rod at the given diameter and
     length, with helical thread ridges following the specified pitch. Suitable
     for boolean-union onto a screw-head or direct use as a threaded fastener.
 
@@ -178,7 +178,7 @@ def create_threaded_shaft(
         segments: Rotational resolution of the helix (steps per revolution).
             Range: 3-256. Higher = smoother helix, more geometry.
         thread_runout: Smooth (unthreaded) region at the top of the shaft.
-            Defaults to 0 (full-length threads) — gives the strongest print
+            Defaults to 0 (full-length threads), which gives the strongest print
             because threads under the head form a continuous stress path.
             Leaving a smooth runout creates a thin-walled neck at minor_r that
             snaps under torque in FDM prints. Pass a positive value only if
@@ -195,16 +195,16 @@ def create_threaded_shaft(
     pitch = validate_numeric_range(pitch, min_val=1e-9, name="pitch")
     if pitch > length:
         raise ValidationError(
-            f"pitch ({pitch}) must be <= length ({length}) — "
+            f"pitch ({pitch}) must be <= length ({length}): "
             f"a thread can't advance further than the shaft is long"
         )
-    # thread_depth=0 is a sentinel meaning "auto" — handler computes it.
+    # thread_depth=0 is a sentinel meaning "auto": handler computes it.
     if thread_depth != 0:
         thread_depth = validate_numeric_range(thread_depth, min_val=1e-9, name="thread_depth")
         if thread_depth >= diameter / 2.0:
             raise ValidationError(
                 f"thread_depth ({thread_depth}) must be < diameter/2 "
-                f"({diameter / 2.0}) — threads can't eat through the shaft centerline"
+                f"({diameter / 2.0}), threads can't eat through the shaft centerline"
             )
     if not isinstance(segments, int) or isinstance(segments, bool):
         raise ValidationError("segments must be an integer")
@@ -411,7 +411,7 @@ def join_objects(names: list[str]) -> dict[str, Any]:
     The meshes remain separate inside the object (no boolean merge).
 
     TIP: If you want to truly fuse overlapping meshes into one solid shape,
-    use booltool_auto_union instead — it performs a boolean union that merges
+    use booltool_auto_union instead: it performs a boolean union that merges
     the geometry and removes internal faces.
 
     Args:

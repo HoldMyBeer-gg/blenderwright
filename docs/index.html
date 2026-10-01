@@ -371,9 +371,9 @@ bunched toward the top; rust needs a hard break between metal and oxide.</p><tab
 <tr><th>transmission</th><td>Transmission weight 0.0-1.0, default 0.0.</td></tr>
 <tr><th>ior</th><td>Index of refraction, default 1.45.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with material name and all set properties.</p></article><article class="tool" id="create_procedural_material" data-search="create_procedural_material build a complete procedural texture as a material, in one call.
 
-prefer this over hand-wiring texture nodes. it creates the full graph —
+prefer this over hand-wiring texture nodes. it creates the full graph (
 coordinates, mapping, the pattern&#x27;s texture nodes, a tuned colour ramp,
-and the principled bsdf — and returns the node names so you can adjust
+and the principled bsdf) and returns the node names so you can adjust
 anything afterwards with set_shader_node_input or the colour ramp tools.
 
 procedural beats image textures here: no files, no uv unwrap needed, and
@@ -381,9 +381,9 @@ it stays sharp at any camera distance.
 
 call list_procedural_patterns() to see what each pattern looks like."><h3><a href="#create_procedural_material">create_procedural_material</a></h3><pre class="sig"><code>create_procedural_material(name: str, pattern: str, scale: float = 5.0, detail: float = 2.0, distortion: float = 0.0, roughness: float = 0.5, metallic: float = 0.0, colors: list | None = None, banded: bool = False, connect_to_bsdf: bool = True)</code></pre><p>Build a complete procedural texture as a material, in one call.
 
-Prefer this over hand-wiring texture nodes. It creates the full graph —
+Prefer this over hand-wiring texture nodes. It creates the full graph (
 coordinates, mapping, the pattern&#x27;s texture nodes, a tuned colour ramp,
-and the Principled BSDF — and returns the node names so you can adjust
+and the Principled BSDF) and returns the node names so you can adjust
 anything afterwards with set_shader_node_input or the colour ramp tools.
 
 Procedural beats image textures here: no files, no UV unwrap needed, and
@@ -447,11 +447,11 @@ Blender requires at least one stop to remain; removing the last one fails.</p><t
 <tr><th>node_name</th><td>Name of the node to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_color_ramp_element" data-search="set_color_ramp_element move or recolor an existing colorramp stop.
 
 at least one of position or color must be given. moving a stop past a
-neighbour reorders the ramp, so indices may shift after this call — read
+neighbour reorders the ramp, so indices may shift after this call. read
 the ramp back with get_color_ramp if you need certainty."><h3><a href="#set_color_ramp_element">set_color_ramp_element</a></h3><pre class="sig"><code>set_color_ramp_element(material_name: str, node_name: str, index: int, position: float | None = None, color: list | None = None)</code></pre><p>Move or recolor an existing ColorRamp stop.
 
 At least one of position or color must be given. Moving a stop past a
-neighbour reorders the ramp, so indices may shift after this call — read
+neighbour reorders the ramp, so indices may shift after this call. Read
 the ramp back with get_color_ramp if you need certainty.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
 <tr><th>node_name</th><td>Name of the ColorRamp node.</td></tr>
 <tr><th>index</th><td>Zero-based index of the stop to edit.</td></tr>
@@ -487,7 +487,7 @@ Mapping &#x27;Scale&#x27; and &#x27;Rotation&#x27;, a Principled BSDF &#x27;Roug
 A socket that has a link into it ignores its default value, so disconnect
 it first if you want the default to take effect.</p><table class="args"><tbody><tr><th>material_name</th><td>Name of the material.</td></tr>
 <tr><th>node_name</th><td>Name of the node.</td></tr>
-<tr><th>socket</th><td>Socket name, or a zero-based index. Use the index when names are ambiguous — a Math node has two inputs both called &#x27;Value&#x27;.</td></tr>
+<tr><th>socket</th><td>Socket name, or a zero-based index. Use the index when names are ambiguous: a Math node has two inputs both called &#x27;Value&#x27;.</td></tr>
 <tr><th>value</th><td>A number, a boolean, or a 2-4 component list for vectors and colors (colors are RGBA).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the node, socket, and the value that was applied.</p></article><article class="tool" id="set_shader_node_property" data-search="set_shader_node_property set a node-level property (not a socket) on a shader node.
 
 these are the dropdowns and checkboxes on the node body rather than its
@@ -629,10 +629,10 @@ vases, columns, or wheels.</p><table class="args"><tbody><tr><th>object_name</th
 <tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="tris_to_quads" data-search="tris_to_quads convert adjacent triangle pairs to quad faces where possible.
 
 improves topology for subdivision and deformation. not all triangles
-can be merged — only adjacent pairs with compatible angles."><h3><a href="#tris_to_quads">tris_to_quads</a></h3><pre class="sig"><code>tris_to_quads(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Convert adjacent triangle pairs to quad faces where possible.
+can be merged: only adjacent pairs with compatible angles."><h3><a href="#tris_to_quads">tris_to_quads</a></h3><pre class="sig"><code>tris_to_quads(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Convert adjacent triangle pairs to quad faces where possible.
 
 Improves topology for subdivision and deformation. Not all triangles
-can be merged — only adjacent pairs with compatible angles.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+can be merged: only adjacent pairs with compatible angles.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
 <section class="module" id="mesh_quality" data-module="mesh quality"><h2>Mesh Quality <span class="n">3</span></h2><article class="tool" id="analyze_mesh_quality" data-search="analyze_mesh_quality analyze mesh topology quality and return a structured defect report.
 
@@ -668,11 +668,11 @@ default. Filling holes creates new geometry and is opt-in.</p><table class="args
 <section class="module" id="modeling" data-module="modeling"><h2>Modeling <span class="n">13</span></h2><article class="tool" id="add_modifier" data-search="add_modifier add a modifier to a mesh object (non-destructive workflow).
 
 tip: for boolean type, consider using booltool_auto_union/difference/intersect/slice
-instead — they apply the boolean immediately and handle cutter cleanup automatically.
+instead: they apply the boolean immediately and handle cutter cleanup automatically.
 only use add_modifier with boolean when you want a non-destructive modifier stack."><h3><a href="#add_modifier">add_modifier</a></h3><pre class="sig"><code>add_modifier(object_name: str, modifier_type: str, name: str = &#x27;&#x27;)</code></pre><p>Add a modifier to a mesh object (non-destructive workflow).
 
 TIP: For BOOLEAN type, consider using booltool_auto_union/difference/intersect/slice
-instead — they apply the boolean immediately and handle cutter cleanup automatically.
+instead: they apply the boolean immediately and handle cutter cleanup automatically.
 Only use add_modifier with BOOLEAN when you want a non-destructive modifier stack.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to add the modifier to.</td></tr>
 <tr><th>modifier_type</th><td>Type of modifier. Must be one of: SUBSURF, MIRROR, ARRAY, BEVEL, BOOLEAN, SOLIDIFY, DECIMATE, REMESH, WIREFRAME, SHRINKWRAP, SMOOTH, EDGE_SPLIT, TRIANGULATE, WEIGHTED_NORMAL, SIMPLE_DEFORM, LATTICE, CURVE, CAST, WAVE, DISPLACE, SCREW, SKIN, MASK, WELD, CORRECTIVE_SMOOTH, LAPLACIAN_SMOOTH, SURFACE_DEFORM, MESH_DEFORM, HOOK.</td></tr>
 <tr><th>name</th><td>Optional custom name for the modifier.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with modifier details.</p></article><article class="tool" id="apply_modifier" data-search="apply_modifier apply a modifier to an object, making its effect permanent."><h3><a href="#apply_modifier">apply_modifier</a></h3><pre class="sig"><code>apply_modifier(object_name: str, modifier_name: str)</code></pre><p>Apply a modifier to an object, making its effect permanent.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
@@ -715,11 +715,11 @@ creating holes between surfaces, or building tube-like geometry.</p><table class
 <tr><th>value</th><td>The value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with updated property.</p></article><article class="tool" id="set_smooth_shading" data-search="set_smooth_shading set smooth or flat shading on an object.
 
 tip: for production use, prefer shade_auto_smooth which provides angle-based
-auto-smooth shading — it gives better results on hard-surface models by only
+auto-smooth shading: it gives better results on hard-surface models by only
 smoothing faces within the angle threshold."><h3><a href="#set_smooth_shading">set_smooth_shading</a></h3><pre class="sig"><code>set_smooth_shading(object_name: str, smooth: bool = True)</code></pre><p>Set smooth or flat shading on an object.
 
 TIP: For production use, prefer shade_auto_smooth which provides angle-based
-auto-smooth shading — it gives better results on hard-surface models by only
+auto-smooth shading: it gives better results on hard-surface models by only
 smoothing faces within the angle threshold.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>smooth</th><td>True for smooth shading, False for flat shading.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="subdivide_mesh" data-search="subdivide_mesh subdivide a mesh."><h3><a href="#subdivide_mesh">subdivide_mesh</a></h3><pre class="sig"><code>subdivide_mesh(object_name: str, cuts: int = 1, selection: str = &#x27;ALL&#x27;)</code></pre><p>Subdivide a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to subdivide.</td></tr>
 <tr><th>cuts</th><td>Number of cuts per edge. Range: 1-100.</td></tr>
@@ -747,14 +747,14 @@ sides=6.</p><table class="args"><tbody><tr><th>sides</th><td>Number of sides for
 <tr><th>rotation</th><td>XYZ Euler rotation in radians as a 3-element list/tuple.</td></tr>
 <tr><th>scale</th><td>XYZ scale as a 3-element list/tuple. Defaults to (1,1,1).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created object&#x27;s name, type, location, and sides.</p></article><article class="tool" id="create_threaded_shaft" data-search="create_threaded_shaft create a cylindrical shaft with helical external threads.
 
-produces a single mesh object — a threaded rod at the given diameter and
+produces a single mesh object: a threaded rod at the given diameter and
 length, with helical thread ridges following the specified pitch. suitable
 for boolean-union onto a screw-head or direct use as a threaded fastener.
 
 thread geometry: a 60-degree v profile swept along a z-axis helix via
 the screw modifier."><h3><a href="#create_threaded_shaft">create_threaded_shaft</a></h3><pre class="sig"><code>create_threaded_shaft(diameter: float, length: float, pitch: float, thread_depth: float = 0.0, segments: int = 32, thread_runout: float = -1.0, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Create a cylindrical shaft with helical external threads.
 
-Produces a single mesh object — a threaded rod at the given diameter and
+Produces a single mesh object: a threaded rod at the given diameter and
 length, with helical thread ridges following the specified pitch. Suitable
 for boolean-union onto a screw-head or direct use as a threaded fastener.
 
@@ -764,7 +764,7 @@ the Screw modifier.</p><table class="args"><tbody><tr><th>diameter</th><td>Major
 <tr><th>pitch</th><td>Distance between thread peaks along the axis. Must be &gt; 0 and &lt;= length.</td></tr>
 <tr><th>thread_depth</th><td>Radial depth of the thread (major radius - minor radius). If 0 (default), auto-computed as pitch * 0.54.</td></tr>
 <tr><th>segments</th><td>Rotational resolution of the helix (steps per revolution). Range: 3-256. Higher = smoother helix, more geometry.</td></tr>
-<tr><th>thread_runout</th><td>Smooth (unthreaded) region at the top of the shaft. Defaults to 0 (full-length threads) — gives the strongest print because threads under the head form a continuous stress path. Leaving a smooth runout creates a thin-walled neck at minor_r that snaps under torque in FDM prints. Pass a positive value only if a head&#x27;s deep hex socket would otherwise reach thread peaks.</td></tr>
+<tr><th>thread_runout</th><td>Smooth (unthreaded) region at the top of the shaft. Defaults to 0 (full-length threads), which gives the strongest print because threads under the head form a continuous stress path. Leaving a smooth runout creates a thin-walled neck at minor_r that snaps under torque in FDM prints. Pass a positive value only if a head&#x27;s deep hex socket would otherwise reach thread peaks.</td></tr>
 <tr><th>name</th><td>Optional name for the object. Auto-generated if empty.</td></tr>
 <tr><th>location</th><td>XYZ position of the shaft base as a 3-element list/tuple.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created object&#x27;s name, diameter, length, pitch, and the number of thread iterations actually generated.</p></article><article class="tool" id="delete_object" data-search="delete_object delete an object from the scene by name."><h3><a href="#delete_object">delete_object</a></h3><pre class="sig"><code>delete_object(object_name: str)</code></pre><p>Delete an object from the scene by name.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to delete.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="duplicate_object" data-search="duplicate_object duplicate an object."><h3><a href="#duplicate_object">duplicate_object</a></h3><pre class="sig"><code>duplicate_object(object_name: str, linked: bool = False)</code></pre><p>Duplicate an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to duplicate.</td></tr>
 <tr><th>linked</th><td>If True, create a linked duplicate (shares mesh data). Defaults to False.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the new object&#x27;s name.</p></article><article class="tool" id="get_object_info" data-search="get_object_info get detailed information about an object."><h3><a href="#get_object_info">get_object_info</a></h3><pre class="sig"><code>get_object_info(object_name: str)</code></pre><p>Get detailed information about an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with type, location, rotation, scale, modifiers, materials, parent, children, and visibility info.</p></article><article class="tool" id="join_objects" data-search="join_objects join multiple mesh objects into one (keeps all geometry as-is).
@@ -773,14 +773,14 @@ this merges objects into a single datablock without modifying geometry.
 the meshes remain separate inside the object (no boolean merge).
 
 tip: if you want to truly fuse overlapping meshes into one solid shape,
-use booltool_auto_union instead — it performs a boolean union that merges
+use booltool_auto_union instead: it performs a boolean union that merges
 the geometry and removes internal faces."><h3><a href="#join_objects">join_objects</a></h3><pre class="sig"><code>join_objects(names: list[str])</code></pre><p>Join multiple mesh objects into one (keeps all geometry as-is).
 
 This merges objects into a single datablock without modifying geometry.
 The meshes remain separate inside the object (no boolean merge).
 
 TIP: If you want to truly fuse overlapping meshes into one solid shape,
-use booltool_auto_union instead — it performs a boolean union that merges
+use booltool_auto_union instead: it performs a boolean union that merges
 the geometry and removes internal faces.</p><table class="args"><tbody><tr><th>names</th><td>List of object names to join. The first name becomes the active object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the resulting joined object name.</p></article><article class="tool" id="list_objects" data-search="list_objects list all objects in the scene, optionally filtered by type."><h3><a href="#list_objects">list_objects</a></h3><pre class="sig"><code>list_objects(type_filter: str = &#x27;&#x27;)</code></pre><p>List all objects in the scene, optionally filtered by type.</p><table class="args"><tbody><tr><th>type_filter</th><td>Filter by object type (e.g., MESH, LIGHT, CAMERA, EMPTY). Empty string returns all objects.</td></tr></tbody></table><p class="ret"><span>Returns</span> List of dicts with object name, type, and location.</p></article><article class="tool" id="make_single_user" data-search="make_single_user make an object&#x27;s data single-user (unlink shared datablocks)."><h3><a href="#make_single_user">make_single_user</a></h3><pre class="sig"><code>make_single_user(object_name: str, object: bool = True, data: bool = True)</code></pre><p>Make an object&#x27;s data single-user (unlink shared datablocks).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>object</th><td>Make the object single-user. Defaults to True.</td></tr>
 <tr><th>data</th><td>Make the object data (e.g., mesh) single-user. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="parent_objects" data-search="parent_objects set parent-child relationship between two objects."><h3><a href="#parent_objects">parent_objects</a></h3><pre class="sig"><code>parent_objects(child: str, parent: str)</code></pre><p>Set parent-child relationship between two objects.</p><table class="args"><tbody><tr><th>child</th><td>Name of the child object.</td></tr>

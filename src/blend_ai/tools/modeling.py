@@ -41,7 +41,7 @@ def add_modifier(object_name: str, modifier_type: str, name: str = "") -> dict[s
     """Add a modifier to a mesh object (non-destructive workflow).
 
     TIP: For BOOLEAN type, consider using booltool_auto_union/difference/intersect/slice
-    instead — they apply the boolean immediately and handle cutter cleanup automatically.
+    instead: they apply the boolean immediately and handle cutter cleanup automatically.
     Only use add_modifier with BOOLEAN when you want a non-destructive modifier stack.
 
     Args:
@@ -338,7 +338,7 @@ def set_smooth_shading(object_name: str, smooth: bool = True) -> dict[str, Any]:
     """Set smooth or flat shading on an object.
 
     TIP: For production use, prefer shade_auto_smooth which provides angle-based
-    auto-smooth shading — it gives better results on hard-surface models by only
+    auto-smooth shading: it gives better results on hard-surface models by only
     smoothing faces within the angle threshold.
 
     Args:

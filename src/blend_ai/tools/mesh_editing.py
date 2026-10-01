@@ -314,7 +314,7 @@ def tris_to_quads(object_name: str,
     """Convert adjacent triangle pairs to quad faces where possible.
 
     Improves topology for subdivision and deformation. Not all triangles
-    can be merged — only adjacent pairs with compatible angles.
+    can be merged: only adjacent pairs with compatible angles.
 
     Args:
         object_name: Name of the mesh object.

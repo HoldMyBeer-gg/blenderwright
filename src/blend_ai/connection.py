@@ -113,7 +113,7 @@ class BlenderConnection:
             if params:
                 message["params"] = params
 
-            # Try up to 2 times — reconnect on stale connection
+            # Try up to 2 times: reconnect on stale connection
             last_error = None
             for attempt in range(2):
                 if self._socket is None:

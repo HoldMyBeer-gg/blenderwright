@@ -11,7 +11,7 @@ import io
 from .. import dispatcher
 
 
-# Modules blocked from import — prevents RCE via import os, subprocess, etc.
+# Modules blocked from import: prevents RCE via import os, subprocess, etc.
 BLOCKED_MODULES = frozenset({
     "os", "subprocess", "socket", "shutil", "sys", "ctypes",
     "importlib", "pathlib", "signal", "multiprocessing",
@@ -20,7 +20,7 @@ BLOCKED_MODULES = frozenset({
     "webbrowser", "antigravity", "turtle", "tkinter",
 })
 
-# Builtins removed from the sandbox — prevents code injection and file access
+# Builtins removed from the sandbox: prevents code injection and file access
 _REMOVED_BUILTINS = frozenset({
     "__import__", "exec", "eval", "compile", "open",
     "globals", "locals", "vars", "input", "breakpoint",

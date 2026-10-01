@@ -47,7 +47,7 @@ class TestSetShaderNodeInput:
         )
 
     def test_socket_by_index(self, mock_conn):
-        """Math nodes have two sockets both named 'Value' — index disambiguates."""
+        """Math nodes have two sockets both named 'Value': index disambiguates."""
         set_shader_node_input("Mat", "Math", 1, 0.5)
         args = mock_conn.send_command.call_args[0][1]
         assert args["socket"] == 1

@@ -4,7 +4,7 @@ import os
 import pytest
 
 
-# Read the source file directly — avoids MagicMock metaclass issues
+# Read the source file directly, which avoids MagicMock metaclass issues
 # when classes inherit from bpy.types.Operator (which is a mock in tests)
 UI_PANEL_PATH = os.path.join(
     os.path.dirname(__file__),

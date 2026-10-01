@@ -1,4 +1,4 @@
-"""Tests for addon.handlers.modeling — specifically set_modifier_property type coercion."""
+"""Tests for addon.handlers.modeling: specifically set_modifier_property type coercion."""
 
 import os
 import sys
@@ -81,7 +81,7 @@ class TestSetModifierPropertyTypeCoercion:
         modeling_handler.handle_set_modifier_property(params)
 
     def test_none_current_skips_coercion(self, modeling_handler):
-        """When current value is None, coercion is skipped — value passed as-is."""
+        """When current value is None, coercion is skipped: value passed as-is."""
         params, mock_mod = _make_params("custom_prop", "anything", None)
         # Should not raise
         modeling_handler.handle_set_modifier_property(params)
@@ -104,7 +104,7 @@ class TestSetModifierPropertyTypeCoercion:
     def test_failed_coercion_falls_through(self, modeling_handler):
         """When coercion fails (e.g. 'abc' for int property), setattr is still called."""
         params, mock_mod = _make_params("levels", "abc", 1)
-        # setattr will be called with "abc" — mock won't raise, so no error
+        # setattr will be called with "abc", and the mock won't raise, so no error
         modeling_handler.handle_set_modifier_property(params)
 
 

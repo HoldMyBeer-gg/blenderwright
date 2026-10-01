@@ -543,7 +543,7 @@ def get_node_tree(material_name: str) -> dict[str, Any]:
 def _validate_socket_ref(socket: object) -> str | int:
     """Validate a socket reference: either a name or a zero-based index.
 
-    Index form exists because socket names are not unique — a Math node has
+    Index form exists because socket names are not unique: a Math node has
     two inputs both named 'Value', and only the index can tell them apart.
     """
     if isinstance(socket, bool):
@@ -632,7 +632,7 @@ def set_shader_node_input(
         material_name: Name of the material.
         node_name: Name of the node.
         socket: Socket name, or a zero-based index. Use the index when names
-            are ambiguous — a Math node has two inputs both called 'Value'.
+            are ambiguous: a Math node has two inputs both called 'Value'.
         value: A number, a boolean, or a 2-4 component list for vectors and
             colors (colors are RGBA).
 
@@ -763,7 +763,7 @@ def set_color_ramp_element(
     """Move or recolor an existing ColorRamp stop.
 
     At least one of position or color must be given. Moving a stop past a
-    neighbour reorders the ramp, so indices may shift after this call — read
+    neighbour reorders the ramp, so indices may shift after this call. Read
     the ramp back with get_color_ramp if you need certainty.
 
     Args:
@@ -879,9 +879,9 @@ def create_procedural_material(
 ) -> dict[str, Any]:
     """Build a complete procedural texture as a material, in one call.
 
-    Prefer this over hand-wiring texture nodes. It creates the full graph —
+    Prefer this over hand-wiring texture nodes. It creates the full graph (
     coordinates, mapping, the pattern's texture nodes, a tuned colour ramp,
-    and the Principled BSDF — and returns the node names so you can adjust
+    and the Principled BSDF) and returns the node names so you can adjust
     anything afterwards with set_shader_node_input or the colour ramp tools.
 
     Procedural beats image textures here: no files, no UV unwrap needed, and

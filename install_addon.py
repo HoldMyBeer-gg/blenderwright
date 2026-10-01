@@ -113,7 +113,7 @@ def _blender_candidates() -> list[Path]:
         ]
         candidates += glob.glob(str(Path.home() / ".local" / "share" / "Steam" /
                                     "steamapps" / "common" / "Blender" / "blender"))
-        # Flatpak — check if installed
+        # Flatpak: check if installed
         flatpak_app = Path.home() / ".local" / "share" / "flatpak" / "app" / "org.blender.Blender"
         system_flatpak = Path("/var/lib/flatpak/app/org.blender.Blender")
         if flatpak_app.exists() or system_flatpak.exists():
@@ -241,7 +241,7 @@ def install(blender: str | Path, zip_path: Path, log_fn) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Doctor / uninstall / upgrade — Extensions system aware
+# Doctor / uninstall / upgrade: Extensions system aware
 # ---------------------------------------------------------------------------
 
 _VERSION_DIR_RE = re.compile(r"^\d+\.\d+$")
@@ -308,10 +308,10 @@ def find_blend_ai_installs(version_dir: Path) -> list[dict]:
 
     Returns a list of finding dicts with keys: path, kind, version.
     Kinds:
-      - "legacy_dir"    — directory under scripts/addons/ identified as blend-ai
-      - "extension_dir" — directory under extensions/user_default/ identified as blend-ai
-      - "symlink"       — symlink (legacy dev install) identified as blend-ai without following
-      - "orphan_file"   — loose file directly in scripts/addons/ from a botched install
+      - "legacy_dir"    : directory under scripts/addons/ identified as blend-ai
+      - "extension_dir" : directory under extensions/user_default/ identified as blend-ai
+      - "symlink"       : symlink (legacy dev install) identified as blend-ai without following
+      - "orphan_file"   : loose file directly in scripts/addons/ from a botched install
     """
     findings: list[dict] = []
     version = version_dir.name
@@ -341,7 +341,7 @@ def find_blend_ai_installs(version_dir: Path) -> list[dict]:
                         "version": version,
                     })
                 continue
-            # Loose file directly in addons/ — botched install artifact.
+            # Loose file directly in addons/: botched install artifact.
             if entry.is_file() and _looks_like_blend_ai(entry):
                 findings.append({
                     "path": entry,
@@ -430,7 +430,7 @@ def uninstall(dry_run: bool = True) -> list[dict]:
             continue
         try:
             if path.is_symlink():
-                # Never follow the link — just unlink.
+                # Never follow the link, just unlink.
                 path.unlink()
             elif path.is_dir():
                 shutil.rmtree(path)
@@ -468,7 +468,7 @@ def _cmd_doctor(_args) -> int:
     if report["blender_running"]:
         print("Warning: Blender is currently running.")
     if not installs:
-        print("No blend-ai installs found — system is clean.")
+        print("No blend-ai installs found. System is clean.")
         return 0
     print(f"Found {len(installs)} blend-ai install(s):")
     for f in installs:

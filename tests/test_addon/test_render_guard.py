@@ -80,7 +80,7 @@ class TestRenderGuard:
 
 
 class TestLoadPostRecovery:
-    """Tests for load_post recovery path — verifies on_render_complete clears stuck guard."""
+    """Tests for load_post recovery path: verifies on_render_complete clears stuck guard."""
 
     def test_on_render_complete_clears_stuck_guard(self):
         """Calling on_render_complete(None) directly clears a stuck render guard."""

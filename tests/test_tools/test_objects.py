@@ -499,10 +499,10 @@ class TestCreateThreadedShaft:
         assert args["length"] == 10.0
         assert args["pitch"] == 0.5
         assert args["name"] == "M3Shaft"
-        # thread_depth defaults to 0 (auto — handler computes it)
+        # thread_depth defaults to 0 (auto, handler computes it)
         assert args["thread_depth"] == 0.0
         assert args["segments"] == 32
-        # thread_runout defaults to -1 (auto — handler sets to one pitch)
+        # thread_runout defaults to -1 (auto, handler sets to one pitch)
         assert args["thread_runout"] == -1.0
 
     def test_explicit_thread_runout(self, mock_conn):
@@ -513,7 +513,7 @@ class TestCreateThreadedShaft:
         assert args["thread_runout"] == 2.0
 
     def test_thread_runout_zero_threads_full_length(self, mock_conn):
-        """thread_runout=0 means no smooth cylinder at the top — threads all
+        """thread_runout=0 means no smooth cylinder at the top: threads all
         the way up. Distinct from the -1 auto sentinel."""
         create_threaded_shaft(
             diameter=3.0, length=10.0, pitch=0.5, thread_runout=0.0

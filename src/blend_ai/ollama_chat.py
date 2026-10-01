@@ -34,7 +34,7 @@ DEFAULT_VISION_MODEL = "llava-llama3:latest"
 # Max tool-call loop iterations to prevent infinite retries
 MAX_TOOL_ROUNDS = 25
 
-# Base system prompt — tool list is appended dynamically in initialize()
+# Base system prompt: tool list is appended dynamically in initialize()
 SYSTEM_PROMPT_BASE = """You are an expert Blender 3D artist and technical director. You control \
 Blender through tool calls.
 
@@ -78,21 +78,21 @@ from the sizes you chose: a 40m stage sitting on top of a 30m stage is centred \
 - Engines, fins and greebles attach to the surface of the body, not floating \
 beside it. If you name something "left", create a matching "right".
 
-Modeling strategy — what actually works with available tools:
+Modeling strategy: what actually works with available tools:
 - Organic/anatomical (bodies, creatures, faces): build from multiple positioned \
 primitives (UV_SPHERE for rounded forms, CYLINDER for shafts). Scale and \
 position each part, then join_objects to merge. Add Subdivision modifier \
-(levels 2-3) and set_smooth_shading for smooth results. Do NOT use sculpt mode \
-— no stroke tools are available.
+(levels 2-3) and set_smooth_shading for smooth results. Do NOT use sculpt mode: \
+no stroke tools are available.
 - Hard-surface (mechanical, weapons, props): start from the primitive whose \
 cross-section matches, then refine with add_loop_cut and extrude_faces. Use \
 bevel_edges for chamfers. Mirror modifier for symmetric objects.
 - Layered organic forms: overlap multiple UV_SPHEREs at different scales and \
 positions to approximate organic volume, then join. Subdivision smooths the \
 joins.
-- DO NOT use boolean_operation for organic shapes — unreliable without \
+- DO NOT use boolean_operation for organic shapes: unreliable without \
 perfectly clean manifold meshes. Prefer join_objects + smooth shading instead.
-- DO NOT enter sculpt mode — there are no brush stroke tools. It is a dead end.
+- DO NOT enter sculpt mode: there are no brush stroke tools. It is a dead end.
 
 Always plan before acting:
 1. State your approach: which primitive for each part and why that \
@@ -181,7 +181,7 @@ class BlenderChatSession:
 
     def initialize(self) -> None:
         """Connect to Blender and load tool definitions."""
-        # Import here to avoid circular imports — server module registers all tools
+        # Import here to avoid circular imports: server module registers all tools
         from blend_ai.server import mcp
 
         # Configure and verify Blender connection
@@ -228,7 +228,7 @@ class BlenderChatSession:
 
         try:
             result = self._loop.run_until_complete(mcp.call_tool(name, arguments))
-            # call_tool returns list[TextContent] — extract the text
+            # call_tool returns list[TextContent]: extract the text
             if result and hasattr(result[0], "text"):
                 return result[0].text
             return json.dumps(result, default=str)
@@ -319,7 +319,7 @@ class BlenderChatSession:
                     tool_name = tool_call["name"]
                     tool_args = tool_call.get("arguments", {})
 
-                # Check if tool exists — if not, give model corrective feedback
+                # Check if tool exists: if not, give model corrective feedback
                 if tool_name not in self._tool_names:
                     similar = _find_similar_tools(tool_name, self._tool_names)
                     hint = f"Tool '{tool_name}' does not exist."
@@ -437,13 +437,13 @@ def _parse_text_tool_calls(text: str, known_tools: set[str]) -> list[dict[str, A
                 args[key] = json.loads(value)
             except (json.JSONDecodeError, ValueError):
                 args[key] = value
-        # Accept all parsed tool calls — validation happens in the chat loop
+        # Accept all parsed tool calls: validation happens in the chat loop
         calls.append({"name": func_name, "arguments": args})
 
     if calls:
         return calls
 
-    # Pattern 2: JSON object with name/arguments — find by scanning for opening brace
+    # Pattern 2: JSON object with name/arguments: find by scanning for opening brace
     for i, ch in enumerate(text):
         if ch != '{':
             continue

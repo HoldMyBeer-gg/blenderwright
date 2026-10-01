@@ -1,4 +1,4 @@
-"""Tests for sculpting handler — validates 5.1 API compliance."""
+"""Tests for sculpting handler: validates 5.1 API compliance."""
 
 import os
 import sys

@@ -276,7 +276,7 @@ class TestBlenderChatSession:
     def test_chat_simple_response(
         self, mock_ollama_client, mock_blender_connection, mock_mcp_tools
     ):
-        """Test chat with no tool calls — just a text response."""
+        """Test chat with no tool calls, just a text response."""
         mock_response = MagicMock()
         mock_response.message.tool_calls = None
         mock_response.message.content = "I'll help you with Blender!"
@@ -470,7 +470,7 @@ class TestBlenderChatSession:
         mock_ollama_client.chat.side_effect = [tool_response, final_response]
 
         # Patch analyze_screenshot to return analysis even for non-JSON result
-        # We also need parse to succeed at extracting image key — mock execute_tool
+        # We also need parse to succeed at extracting image key, so mock execute_tool
         # to return JSON with "image" so vision analysis is triggered, but then
         # pretend execute_tool returned plain text for the appended message.
         # Simplest approach: patch both execute_tool AND analyze_screenshot,
@@ -508,8 +508,8 @@ class TestBlenderChatSession:
 
                     def selective_loads(s, **kwargs):
                         call_count[0] += 1
-                        # First call is for extracting "image" key — allow it
-                        # Second call is for merging vision note — raise to test fallback
+                        # First call is for extracting "image" key, allow it
+                        # Second call is for merging vision note, raise to test fallback
                         if call_count[0] == 2:
                             raise json.JSONDecodeError("forced", "", 0)
                         return original_loads(s, **kwargs)
@@ -555,7 +555,7 @@ class TestParseTextToolCalls:
         assert result[0]["arguments"]["location"] == [1, 2, 3]
 
     def test_unknown_tool_still_parsed(self):
-        """Unknown tools are parsed — validation happens in the chat loop."""
+        """Unknown tools are parsed: validation happens in the chat loop."""
         text = '<function=unknown_tool><parameter=x>1</parameter></function>'
         result = _parse_text_tool_calls(text, {"create_object"})
         assert len(result) == 1
@@ -759,7 +759,7 @@ class TestImageCommandRouting:
     def test_image_command_calls_analyze_screenshot_not_chat_images(
         self, mock_ollama_client, mock_blender_connection, mock_mcp_tools
     ):
-        """!image should call analyze_screenshot (vision model) then chat() with text — not pass images to chat()."""
+        """!image should call analyze_screenshot (vision model) then chat() with text, not pass images to chat()."""
         vision_description = "A detailed humanoid figure with clear muscle definition."
         mock_response = MagicMock()
         mock_response.message.tool_calls = None

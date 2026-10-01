@@ -1,4 +1,4 @@
-"""Tests for addon.handlers.materials — shader node value control.
+"""Tests for addon.handlers.materials: shader node value control.
 
 Covers socket default assignment, allowlisted node-property writes, and
 ColorRamp stop editing. The allowlist is re-checked here rather than trusted
@@ -40,7 +40,7 @@ def mh():
 
 
 # ---------------------------------------------------------------------------
-# Fakes — closer to the real bpy shape than bare MagicMocks
+# Fakes: closer to the real bpy shape than bare MagicMocks
 # ---------------------------------------------------------------------------
 
 

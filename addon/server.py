@@ -117,7 +117,7 @@ class BlenderServer:
                     command = message.get("command", "")
                     params = message.get("params", {})
 
-                    # Check if Blender is rendering — main thread is blocked
+                    # Check if Blender is rendering: main thread is blocked
                     if render_guard.is_rendering:
                         response = {
                             "status": "busy",
@@ -159,7 +159,7 @@ class BlenderServer:
         The header and payload are sent in two separate sendall calls rather
         than concatenated. On Blender 5.1 Windows builds, some reports
         (issue #5) showed the length prefix being silently dropped when the
-        concatenated bytes were passed to sendall — every response arrived
+        concatenated bytes were passed to sendall: every response arrived
         as raw JSON without the 4-byte header, causing the client to misread
         the first four JSON bytes as a length and bail with "Response too
         large". Splitting the call guarantees the header is transmitted

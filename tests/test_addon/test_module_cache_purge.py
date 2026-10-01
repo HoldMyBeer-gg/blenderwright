@@ -10,7 +10,7 @@ import importlib.util
 
 
 def _load_addon_init():
-    """Load addon/__init__.py in isolation — we only want the pure helper.
+    """Load addon/__init__.py in isolation: we only want the pure helper.
 
     The real __init__ imports bpy in register()/unregister(), but
     _purge_submodules_from_cache has no bpy dependency, so module load
@@ -43,7 +43,7 @@ class TestPurgeSubmodulesFromCache:
         }
 
     def test_leaves_package_itself(self):
-        """Purging must not delete the package __init__ entry — that's the
+        """Purging must not delete the package __init__ entry: that's the
         currently-executing module during unregister()."""
         addon_init = _load_addon_init()
         fake = {
@@ -61,7 +61,7 @@ class TestPurgeSubmodulesFromCache:
             "addon.handlers": object(),
             "other_package": unrelated,
             "other_package.sub": object(),
-            "addonlike": object(),  # same prefix as addon, but no dot — keep it
+            "addonlike": object(),  # same prefix as addon, but no dot, keep it
         }
         addon_init._purge_submodules_from_cache("addon", modules=fake)
         assert fake["other_package"] is unrelated
@@ -128,7 +128,7 @@ class TestPurgeSubmodulesFromCache:
 
     def test_works_with_extension_style_prefix(self):
         """When installed as a Blender extension, the package name is
-        something like 'bl_ext.user_default.blend_ai' — purge must follow
+        something like 'bl_ext.user_default.blend_ai', so purge must follow
         whatever __name__ resolves to, not a hardcoded string."""
         addon_init = _load_addon_init()
         pkg = "bl_ext.user_default.blend_ai"

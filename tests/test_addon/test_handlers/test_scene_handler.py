@@ -1,4 +1,4 @@
-"""Tests for scene addon handlers — extension detection."""
+"""Tests for scene addon handlers: extension detection."""
 
 import os
 import sys

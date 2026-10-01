@@ -30,7 +30,7 @@ installer = _import_installer()
 
 
 # ---------------------------------------------------------------------------
-# Unit tests — pure functions (no TUI)
+# Unit tests: pure functions (no TUI)
 # ---------------------------------------------------------------------------
 
 class TestBlenderCandidates:
@@ -260,7 +260,7 @@ class TestInstall:
 
 
 # ---------------------------------------------------------------------------
-# TUI tests — Textual Pilot
+# TUI tests: Textual Pilot
 # ---------------------------------------------------------------------------
 
 class TestBlenderUserConfigDirs:
