@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 186 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 186 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 191 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 191 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 186 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 191 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,8 +110,8 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>186</b> tools</span>
-    <span><b>27</b> modules</span>
+    <span><b>191</b> tools</span>
+    <span><b>28</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
   </div>
@@ -141,6 +141,7 @@ footer a { color: var(--accent); }
 <a href="#scene">Scene <span class="n">6</span></a>
 <a href="#sculpting">Sculpting <span class="n">8</span></a>
 <a href="#selection">Selection <span class="n">6</span></a>
+<a href="#sequencer">sequencer <span class="n">5</span></a>
 <a href="#sweep">sweep <span class="n">2</span></a>
 <a href="#transforms">Transforms <span class="n">6</span></a>
 <a href="#uv">UV Mapping <span class="n">4</span></a>
@@ -955,6 +956,36 @@ requires something to already be selected: it compares against that."><h3><a hre
 Requires something to already be selected: it compares against that.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>type</th><td>What to compare. Face options: FACE_MATERIAL, FACE_AREA, FACE_SIDES, FACE_PERIMETER, FACE_NORMAL, FACE_COPLANAR, FACE_SMOOTH, FACE_FREESTYLE. Edge options: EDGE_LENGTH, EDGE_DIR, EDGE_FACES, EDGE_FACE_ANGLE, EDGE_CREASE, EDGE_BEVEL, EDGE_SEAM, EDGE_SHARP, EDGE_FREESTYLE. Vertex options: VERT_NORMAL, VERT_FACES, VERT_GROUPS, VERT_EDGES, VERT_CREASE.</td></tr>
 <tr><th>threshold</th><td>How close a match must be, 0.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected.</p></article></section>
+<section class="module" id="sequencer" data-module="sequencer"><h2>sequencer <span class="n">5</span></h2><article class="tool" id="add_image_sequence_strip" data-search="add_image_sequence_strip add rendered frames to the sequencer as one image strip.
+
+give the first frame of a numbered sequence, such as the output of
+render_animation. every file in the same folder that shares its prefix and
+extension is added in numeric order, one image per timeline frame."><h3><a href="#add_image_sequence_strip">add_image_sequence_strip</a></h3><pre class="sig"><code>add_image_sequence_strip(first_frame: str, name: str = &#x27;&#x27;, channel: int = 1, frame_start: int = 1)</code></pre><p>Add rendered frames to the sequencer as one image strip.
+
+Give the first frame of a numbered sequence, such as the output of
+render_animation. Every file in the same folder that shares its prefix and
+extension is added in numeric order, one image per timeline frame.</p><table class="args"><tbody><tr><th>first_frame</th><td>Path to the first image, e.g. /renders/f_0001.png.</td></tr>
+<tr><th>name</th><td>Optional name for the strip.</td></tr>
+<tr><th>channel</th><td>Sequencer channel, 1-128. Higher channels draw on top.</td></tr>
+<tr><th>frame_start</th><td>Timeline frame where the strip begins.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the strip name, image count, and the frames it covers.</p></article><article class="tool" id="add_sound_strip" data-search="add_sound_strip add an audio file to the sequencer as a sound strip."><h3><a href="#add_sound_strip">add_sound_strip</a></h3><pre class="sig"><code>add_sound_strip(filepath: str, name: str = &#x27;&#x27;, channel: int = 2, frame_start: int = 1, start_offset: float = 0.0, volume: float = 1.0)</code></pre><p>Add an audio file to the sequencer as a sound strip.</p><table class="args"><tbody><tr><th>filepath</th><td>Path to the audio file (.wav, .mp3, .flac, .ogg, .m4a, .aac, .opus).</td></tr>
+<tr><th>name</th><td>Optional name for the strip.</td></tr>
+<tr><th>channel</th><td>Sequencer channel, 1-128.</td></tr>
+<tr><th>frame_start</th><td>Timeline frame where the sound becomes audible.</td></tr>
+<tr><th>start_offset</th><td>Seconds to skip at the start of the audio file, so a clip can begin partway in.</td></tr>
+<tr><th>volume</th><td>Volume multiplier, 0-100. 1.0 leaves the audio unchanged.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the strip name and the frames it covers.</p></article><article class="tool" id="list_strips" data-search="list_strips list every strip in the sequencer."><h3><a href="#list_strips">list_strips</a></h3><pre class="sig"><code>list_strips()</code></pre><p>List every strip in the sequencer.</p><p class="ret"><span>Returns</span> List of dicts with name, type, channel, and first and last frame.</p></article><article class="tool" id="remove_strip" data-search="remove_strip remove a strip from the sequencer by name."><h3><a href="#remove_strip">remove_strip</a></h3><pre class="sig"><code>remove_strip(strip_name: str)</code></pre><p>Remove a strip from the sequencer by name.</p><table class="args"><tbody><tr><th>strip_name</th><td>Name of the strip to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="render_video" data-search="render_video render the scene&#x27;s frame range to a single video file, with sound.
+
+sequencer strips are used when there are any, so frames already rendered
+with render_animation can be assembled with a sound strip in seconds.
+with an empty sequencer the 3d scene is rendered. playback speed follows
+the scene fps."><h3><a href="#render_video">render_video</a></h3><pre class="sig"><code>render_video(filepath: str = &#x27;/tmp/render.mp4&#x27;, container: str = &#x27;MPEG4&#x27;, quality: str = &#x27;HIGH&#x27;, audio_codec: str = &#x27;AAC&#x27;)</code></pre><p>Render the scene&#x27;s frame range to a single video file, with sound.
+
+Sequencer strips are used when there are any, so frames already rendered
+with render_animation can be assembled with a sound strip in seconds.
+With an empty sequencer the 3D scene is rendered. Playback speed follows
+the scene fps.</p><table class="args"><tbody><tr><th>filepath</th><td>Output path. The extension must match the container: .mp4 for MPEG4, .mkv for MKV, .webm for WEBM.</td></tr>
+<tr><th>container</th><td>Video container. One of: MPEG4, MKV, WEBM.</td></tr>
+<tr><th>quality</th><td>Encoder quality preset, from LOWEST to LOSSLESS.</td></tr>
+<tr><th>audio_codec</th><td>Audio codec, or NONE for a silent video. WEBM accepts only OPUS or NONE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the output path, frame range, and fps.</p></article></section>
 <section class="module" id="sweep" data-module="sweep"><h2>sweep <span class="n">2</span></h2><article class="tool" id="analyze_sweep_path" data-search="analyze_sweep_path check whether a path can carry a profile of a given radius, without building it.
 
 where a path&#x27;s radius of curvature falls below the profile radius, the

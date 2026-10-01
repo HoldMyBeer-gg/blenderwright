@@ -51,6 +51,7 @@ from blenderwright.tools import (  # noqa: E402, F401
     gpencil,
     sweep,
     print3d,
+    sequencer,
 )
 
 # Import resources and prompts

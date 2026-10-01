@@ -29,6 +29,7 @@ from . import (
     gpencil,
     sweep,
     print3d,
+    sequencer,
 )
 
 _modules = [
@@ -60,6 +61,7 @@ _modules = [
     gpencil,
     sweep,
     print3d,
+    sequencer,
 ]
 
 
