@@ -37,8 +37,26 @@ AUTO_THRESHOLD = 0.5
 DEFAULT_CHAT_MODEL = "qwen2.5-coder:14b"
 DEFAULT_VISION_MODEL = "llava-llama3:latest"
 
-# Max tool-call loop iterations to prevent infinite retries
-MAX_TOOL_ROUNDS = 25
+# The real bound on a tool-calling loop is the context window: Ollama reports
+# prompt_eval_count and eval_count on every reply, and the loop stops when
+# the next request would not fit. This counter is only a backstop against a
+# model that loops forever on tiny calls. A shuttle is more than 25 calls.
+MAX_TOOL_ROUNDS = 200
+
+# Tokens kept free at the end of the window for the model's final answer.
+CONTEXT_RESERVE = 4096
+
+# Calling one of these twice in a row with the same arguments cannot return
+# anything new. A local model will do exactly that, five times, instead of
+# building. The repeat is answered from the previous result with a nudge.
+READ_ONLY_TOOLS = frozenset({
+    "get_scene_info", "list_objects", "get_object_info", "get_selection",
+    "list_materials", "list_lights", "list_scenes", "list_keyframes",
+    "list_strips", "list_collections", "list_recent_files", "list_toolsets",
+    "get_node_tree", "get_color_ramp", "list_procedural_patterns",
+    "list_geometry_node_inputs", "analyze_mesh_quality", "analyze_sweep_path",
+    "check_3d_printability",
+})
 
 # Base system prompt: tool list is appended dynamically in initialize()
 SYSTEM_PROMPT_BASE = """You are an expert Blender 3D artist and technical director. You control \
@@ -342,6 +360,11 @@ class BlenderChatSession:
             "options": {"num_ctx": self.num_ctx},
         }
 
+        # Last tool call and its result, for answering an identical read-only
+        # repeat without a round trip. Reset per user message.
+        last_call: tuple[str, str] | None = None
+        last_result = ""
+
         for _round in range(MAX_TOOL_ROUNDS):
             response = self.ollama_client.chat(**chat_kwargs)
 
@@ -389,7 +412,23 @@ class BlenderChatSession:
 
                 print(f"  -> {tool_name}({_format_args(tool_args)})")
 
+                call_key = (tool_name, json.dumps(tool_args, sort_keys=True, default=str))
+                if tool_name in READ_ONLY_TOOLS and call_key == last_call:
+                    print("  [=] unchanged since the previous call; answered from cache")
+                    self.messages.append({
+                        "role": "tool",
+                        "content": json.dumps({
+                            "status": "unchanged",
+                            "note": f"Identical to your previous {tool_name} call and "
+                                    f"nothing has changed since. Do not call it again; "
+                                    f"continue with the next step.",
+                            "result": _as_json(last_result),
+                        }),
+                    })
+                    continue
+
                 result = self.execute_tool(tool_name, tool_args)
+                last_call, last_result = call_key, result
 
                 # If tool errored, still feed it back so the model can recover
                 if result.startswith('{"status": "error"'):
@@ -426,6 +465,18 @@ class BlenderChatSession:
                     "role": "tool",
                     "content": tool_content,
                 })
+
+            # The calls the model just made have run. If their results would
+            # not fit in the window, stop here rather than let Ollama drop
+            # messages silently.
+            if context_exhausted(response, self.num_ctx):
+                used = _count(getattr(response, "prompt_eval_count", None))
+                note = (f"(Context window is nearly full: ~{used:,} of "
+                        f"{self.num_ctx:,} tokens used. The scene is kept. Send a "
+                        f"new message to continue from here, or raise --num-ctx.)")
+                print(f"  [!] {note}")
+                self.messages.append({"role": "assistant", "content": note})
+                return note
 
         return "(Reached maximum tool-calling rounds. Please try a simpler request.)"
 
@@ -527,6 +578,36 @@ def _parse_text_tool_calls(text: str, known_tools: set[str]) -> list[dict[str, A
                 break
 
     return calls
+
+
+def _as_json(text: str) -> Any:
+    """A tool result as data when it parses, else as the text it was."""
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        return text
+
+
+def _count(value: Any) -> int:
+    """An Ollama token count, or 0 when the field is missing or not a number."""
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
+
+def context_exhausted(response: Any, num_ctx: int) -> bool:
+    """True when the reply just received leaves no room for another round.
+
+    Args:
+        response: An Ollama chat response. prompt_eval_count is the size of
+            everything sent; eval_count is the size of what came back.
+        num_ctx: The window the model is running with.
+
+    Returns:
+        Whether prompt plus reply already reach into CONTEXT_RESERVE.
+    """
+    used = _count(getattr(response, "prompt_eval_count", None)) + _count(
+        getattr(response, "eval_count", None)
+    )
+    return used > num_ctx - CONTEXT_RESERVE
 
 
 def choose_toolsets(prompt_tokens: int, num_ctx: int) -> str:

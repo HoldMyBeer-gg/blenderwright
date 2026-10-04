@@ -72,9 +72,12 @@ def mock_mcp_tools():
 
 
 class TestConstants:
-    def test_max_tool_rounds_is_25(self):
+    def test_max_tool_rounds_is_only_a_backstop(self):
+        # The loop is bounded by the context window (see test_ollama_budget).
+        # This counter exists to stop a model looping forever on tiny calls,
+        # so it must be far above what a real build needs.
         from blenderwright.ollama_chat import MAX_TOOL_ROUNDS
-        assert MAX_TOOL_ROUNDS == 25
+        assert MAX_TOOL_ROUNDS >= 100
 
     def test_system_prompt_has_modeling_strategy(self):
         assert "Modeling strategy" in SYSTEM_PROMPT_BASE
