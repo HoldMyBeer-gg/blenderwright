@@ -37,11 +37,19 @@ jobs:
         run: bandit -r src/ -ll  # low severity threshold; skip install_addon.py (subprocess by design)
       - name: Install project dependencies
         run: pip install -e ".[dev]"
-      - name: pip-audit
+      - name: pip-audit (fresh resolution)
         # Audits the environment, which now contains this project's declared
         # dependencies. The upgrade step above keeps the runner's own build
         # tooling current so drift in the image does not fail the build.
         run: pip-audit
+      - name: pip-audit (uv.lock)
+        # The step above resolves today's versions and passed for weeks while
+        # uv.lock, which is what `uv run` and every developer actually
+        # install, carried 64 known vulnerabilities. Audit the pins too.
+        run: |
+          pip install uv
+          uv export --all-extras --format requirements-txt --no-hashes --no-emit-project -o /tmp/uv-lock.txt
+          pip-audit --no-deps --disable-pip --strict -r /tmp/uv-lock.txt
 
   tests:
     name: Tests (${{ matrix.os }} / Python ${{ matrix.python-version }})
