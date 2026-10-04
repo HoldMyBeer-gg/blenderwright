@@ -275,6 +275,31 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 
 </details>
 
+### Toolsets
+
+Every tool is loaded by default, and that is the setting the featured renders were made with. The full set of schemas costs roughly 48k tokens per request, which is fine for Claude-class clients and too much for a local model on a 32k window. `BLENDERWRIGHT_TOOLSETS` (or `--toolsets`) trims it:
+
+| Value | Loads |
+|-------|-------|
+| unset or `all` | everything (default) |
+| `auto` | the core toolsets plus `list_toolsets` and `enable_toolset`; the model loads other groups as a task needs them |
+| `core` | scene, objects, transforms, modeling, mesh quality, lighting, camera, rendering, screenshot, viewport, collections |
+| `core,physics,animation` | any comma-separated list of toolset names; a toolset is one row of the table above |
+
+```json
+{
+  "mcpServers": {
+    "blenderwright": {
+      "command": "uvx",
+      "args": ["blenderwright"],
+      "env": { "BLENDERWRIGHT_TOOLSETS": "auto" }
+    }
+  }
+}
+```
+
+`auto` relies on the client honouring the MCP `tools/list_changed` notification. The bundled Ollama chat client picks `auto` on its own when the full set would take more than half of `--num-ctx`, and says so at startup.
+
 ## Architecture
 
 ```

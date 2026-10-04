@@ -69,7 +69,31 @@ attach_legacy_aliases(mcp)
 
 
 def main():
-    """Run the MCP server."""
+    """Run the MCP server.
+
+    --toolsets or BLENDERWRIGHT_TOOLSETS trims the tool list for clients with
+    small context windows. Unset means every tool; see toolsets.py.
+    """
+    import argparse
+    import os
+    import sys
+
+    from blenderwright.toolsets import ToolsetError, apply_toolsets
+
+    parser = argparse.ArgumentParser(prog="blenderwright")
+    parser.add_argument(
+        "--toolsets",
+        default=None,
+        help="all (default), auto, core, or a comma-separated list of toolsets. "
+             "Overrides BLENDERWRIGHT_TOOLSETS.",
+    )
+    args = parser.parse_args()
+    spec = args.toolsets if args.toolsets is not None else os.environ.get("BLENDERWRIGHT_TOOLSETS")
+    try:
+        apply_toolsets(mcp, spec)
+    except ToolsetError as exc:
+        print(f"blenderwright: {exc}", file=sys.stderr)
+        sys.exit(2)
     mcp.run(transport="stdio")
 
 

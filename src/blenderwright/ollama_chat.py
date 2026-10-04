@@ -16,6 +16,7 @@ except ImportError:
 
 from blenderwright.connection import BlenderConnectionError
 from blenderwright.tool_registry import get_ollama_tools
+from blenderwright.toolsets import TOOLSETS, apply_toolsets, enabled_toolsets
 
 # Supported image formats for the !image REPL command
 SUPPORTED_IMAGE_FORMATS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
@@ -27,6 +28,11 @@ SUPPORTED_IMAGE_FORMATS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 # work overflowed mid-task and Ollama silently dropped messages. Give the
 # conversation real room; models in use here support far larger windows.
 DEFAULT_NUM_CTX = 65536
+
+# Below this share of the window left for the conversation, start with the
+# core toolsets and let the model enable the rest. Half: a request that
+# spends more than half its window on tool schemas has no room to work.
+AUTO_THRESHOLD = 0.5
 
 DEFAULT_CHAT_MODEL = "qwen2.5-coder:14b"
 DEFAULT_VISION_MODEL = "llava-llama3:latest"
@@ -161,6 +167,7 @@ class BlenderChatSession:
         ollama_host: str | None = None,
         think: bool = False,
         num_ctx: int = DEFAULT_NUM_CTX,
+        toolsets: str | None = None,
     ):
         self.chat_model = chat_model
         self.vision_model = vision_model
@@ -168,6 +175,10 @@ class BlenderChatSession:
         self.port = port
         self.think = think
         self.num_ctx = num_ctx
+        # None means: use BLENDERWRIGHT_TOOLSETS if set, else let the window
+        # size decide in initialize().
+        self.toolsets = toolsets
+        self.toolset_mode = "all"
         if OllamaClient is None:
             raise RuntimeError(
                 "The ollama package is required for the chat client. "
@@ -190,23 +201,63 @@ class BlenderChatSession:
         srv._connection = BlenderConnection(host=self.host, port=self.port)
         srv._connection.connect()
 
-        self.tools = get_ollama_tools(mcp)
-        self._tool_names = {t["function"]["name"] for t in self.tools}
+        import os
 
-        # Build system prompt with tool listing grouped by module
-        tool_list = _build_tool_list(self.tools)
-        system_prompt = SYSTEM_PROMPT_BASE + "\nAvailable tools:\n" + tool_list
+        spec = self.toolsets
+        if spec is None:
+            spec = os.environ.get("BLENDERWRIGHT_TOOLSETS") or None
+
+        # Measure the full set first: that is what the decision is about.
+        apply_toolsets(mcp, None)
+        full_prompt_tokens = self._estimate_prompt_tokens(get_ollama_tools(mcp))
+
+        if spec is None:
+            spec = choose_toolsets(full_prompt_tokens, self.num_ctx)
+            if spec == "auto":
+                print(f"All tools would cost ~{full_prompt_tokens:,} of "
+                      f"{self.num_ctx:,} tokens. Starting in auto mode with the "
+                      f"core toolsets; the model enables the rest as it needs "
+                      f"them. Pass --toolsets all to load everything.")
+
+        self.toolset_mode = apply_toolsets(mcp, spec).mode
+        self._refresh_tools()
 
         # Roughly four characters per token. Exact enough to show whether the
         # tools have eaten the window before the conversation starts.
-        prompt_tokens = (len(system_prompt) + len(json.dumps(self.tools))) // 4
+        prompt_tokens = self._estimate_prompt_tokens(self.tools)
         headroom = self.num_ctx - prompt_tokens
         print(f"Tools: {len(self.tools)} | prompt ~{prompt_tokens:,} tokens "
               f"of {self.num_ctx:,} | ~{headroom:,} left for the conversation")
         if headroom < prompt_tokens // 2:
             print("  Warning: little room left for tool results. "
                   "Raise --num-ctx if replies stop early.")
-        self.messages = [{"role": "system", "content": system_prompt}]
+
+    def _estimate_prompt_tokens(self, tools: list[dict[str, Any]]) -> int:
+        prompt = self._system_prompt(tools)
+        return (len(prompt) + len(json.dumps(tools))) // 4
+
+    def _system_prompt(self, tools: list[dict[str, Any]]) -> str:
+        """The base prompt, the tool list, and in auto mode the toolset menu."""
+        prompt = SYSTEM_PROMPT_BASE + "\nAvailable tools:\n" + _build_tool_list(tools)
+        if self.toolset_mode == "auto":
+            prompt += "\n\n" + _build_toolset_menu()
+        return prompt
+
+    def _refresh_tools(self) -> None:
+        """Re-read the registry into the request tool list and the prompt.
+
+        Called at start and after every enable_toolset, so the next request
+        carries the tools the model just asked for.
+        """
+        from blenderwright.server import mcp
+
+        self.tools = get_ollama_tools(mcp)
+        self._tool_names = {t["function"]["name"] for t in self.tools}
+        system = {"role": "system", "content": self._system_prompt(self.tools)}
+        if self.messages and self.messages[0].get("role") == "system":
+            self.messages[0] = system
+        else:
+            self.messages.insert(0, system)
 
     def execute_tool(self, name: str, arguments: dict[str, Any]) -> str:
         """Execute a blenderwright tool through the MCP tool layer.
@@ -228,9 +279,12 @@ class BlenderChatSession:
 
         try:
             result = self._loop.run_until_complete(mcp.call_tool(name, arguments))
-            # call_tool returns list[TextContent]: extract the text
-            if result and hasattr(result[0], "text"):
-                return result[0].text
+            # call_tool returns list[TextContent], or (list[TextContent],
+            # structured) for a tool with a typed return. Either way the
+            # model wants the text, never a repr of the wrapper.
+            content = result[0] if isinstance(result, tuple) else result
+            if content and hasattr(content[0], "text"):
+                return content[0].text
             return json.dumps(result, default=str)
         except Exception as e:
             return json.dumps({"status": "error", "result": str(e)})
@@ -340,6 +394,12 @@ class BlenderChatSession:
                 # If tool errored, still feed it back so the model can recover
                 if result.startswith('{"status": "error"'):
                     print(f"  [!] Error: {result}")
+
+                # The model just loaded a toolset: the next request has to
+                # carry the new schemas or it cannot call what it asked for.
+                if tool_name == "enable_toolset" and not result.startswith('{"status": "error"'):
+                    self._refresh_tools()
+                    chat_kwargs["tools"] = self.tools
 
                 # If this was a screenshot, auto-analyze with vision model
                 vision_note = ""
@@ -469,6 +529,40 @@ def _parse_text_tool_calls(text: str, known_tools: set[str]) -> list[dict[str, A
     return calls
 
 
+def choose_toolsets(prompt_tokens: int, num_ctx: int) -> str:
+    """Decide between every tool and the core set from the window size.
+
+    Args:
+        prompt_tokens: Estimated cost of the system prompt plus every tool
+            schema.
+        num_ctx: The context window the model will be run with.
+
+    Returns:
+        "all" when the full set leaves at least half the window for the
+        conversation, "auto" otherwise.
+    """
+    if prompt_tokens > num_ctx * AUTO_THRESHOLD:
+        return "auto"
+    return "all"
+
+
+def _build_toolset_menu() -> str:
+    """The toolsets a model can enable, for the system prompt in auto mode."""
+    from blenderwright.server import mcp
+
+    on = enabled_toolsets(mcp)
+    lines = [
+        "Only the core tools are loaded. More are available in groups. When a "
+        "task needs one of these, call enable_toolset with the group name, "
+        "then use the tools it lists:",
+    ]
+    for name in sorted(TOOLSETS):
+        if name in on:
+            continue
+        lines.append(f"- {name}: {TOOLSETS[name]}")
+    return "\n".join(lines)
+
+
 def _build_tool_list(tools: list[dict[str, Any]]) -> str:
     """Build a compact tool listing for the system prompt.
 
@@ -579,6 +673,13 @@ def main():
              f"schemas alone cost ~31k tokens",
     )
     parser.add_argument(
+        "--toolsets",
+        default=None,
+        help="all, auto, core, or a comma-separated list of toolsets. Default: "
+             "all if the window has room, otherwise auto. Overrides "
+             "BLENDERWRIGHT_TOOLSETS.",
+    )
+    parser.add_argument(
         "--think",
         action="store_true",
         default=False,
@@ -594,6 +695,7 @@ def main():
         ollama_host=args.ollama_host,
         think=args.think,
         num_ctx=args.num_ctx,
+        toolsets=args.toolsets,
     )
 
     ollama_display = args.ollama_host or "localhost:11434"
