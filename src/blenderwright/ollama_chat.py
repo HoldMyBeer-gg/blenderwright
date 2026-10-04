@@ -1,8 +1,10 @@
 """Interactive Ollama chat client for controlling Blender via blenderwright."""
 
+import ast
 import asyncio
 import base64
 import json
+import math
 import re
 import sys
 from typing import Any
@@ -45,6 +47,10 @@ MAX_TOOL_ROUNDS = 200
 
 # Tokens kept free at the end of the window for the model's final answer.
 CONTEXT_RESERVE = 4096
+
+# What the chat model is told when the vision model says nothing. Silence
+# used to reach it as an empty string, which it read as approval.
+NO_VISION_VERDICT = "(The vision model returned no description of the screenshot.)"
 
 # Tools whose result carries an encoded image, and the keys it arrives under.
 SCREENSHOT_TOOLS = frozenset({"get_viewport_screenshot", "capture_viewport"})
@@ -320,17 +326,22 @@ class BlenderChatSession:
         Naming the parameters that exist ends the guessing.
         """
         unknown = re.findall(r"\n(\w+)\n\s+Extra inputs are not permitted", message)
-        if not unknown:
+        missing = re.findall(r"\n(\w+)\n\s+Field required", message)
+        if not unknown and not missing:
             return message
         params = []
         for tool in self.tools:
             if tool["function"]["name"] == name:
                 params = list(tool["function"]["parameters"].get("properties", {}))
                 break
-        text = f"{name} does not accept: {', '.join(unknown)}."
+        parts = []
+        if unknown:
+            parts.append(f"{name} does not accept: {', '.join(unknown)}.")
+        if missing:
+            parts.append(f"{name} requires: {', '.join(missing)}.")
         if params:
-            text += f" Its parameters are: {', '.join(params)}."
-        return text
+            parts.append(f"Its parameters are: {', '.join(params)}.")
+        return " ".join(parts)
 
     def analyze_screenshot(self, image_base64: str, context: str = "") -> str:
         """Send a viewport screenshot to the vision model for analysis.
@@ -342,15 +353,19 @@ class BlenderChatSession:
         Returns:
             Vision model's analysis of the image.
         """
-        prompt = "Analyze this Blender viewport screenshot. "
+        prompt = "This is a screenshot of a 3D model in progress in Blender. "
         if context:
-            prompt += context
-        else:
-            prompt += (
-                "Describe what you see: objects, materials, lighting, composition. "
-                "Note any issues with topology, scale, or visual quality."
-            )
+            prompt += context + " "
+        prompt += (
+            "Answer in a few short lines: 1) what objects you see and how they are "
+            "arranged; 2) what is wrong: anything floating, flat, buried inside "
+            "another part, missing, or off in scale; 3) whether it resembles what "
+            "was asked for. Be blunt and specific. Do not praise."
+        )
 
+        # think=False: a thinking model spends its whole output budget on
+        # thought about the image, hits the length limit, and returns empty
+        # content. Measured: 17,000 characters of thinking, zero of answer.
         response = self.ollama_client.chat(
             model=self.vision_model,
             messages=[{
@@ -358,8 +373,16 @@ class BlenderChatSession:
                 "content": prompt,
                 "images": [image_base64],
             }],
+            think=False,
         )
-        return response.message.content
+        verdict = (response.message.content or "").strip()
+        if not verdict:
+            reason = getattr(response, "done_reason", None)
+            print(f"  [!] Vision model {self.vision_model} returned no description"
+                  f"{f' (done_reason={reason})' if reason else ''}. Try --vision-model "
+                  f"with a model that lists 'vision' in `ollama show`.")
+            return NO_VISION_VERDICT
+        return verdict
 
     def chat(self, user_message: str, images: list[str] | None = None) -> str:
         """Send a message and process the full tool-calling loop.
@@ -435,6 +458,7 @@ class BlenderChatSession:
                     })
                     continue
 
+                tool_args = coerce_arguments(tool_name, tool_args, self.tools)
                 print(f"  -> {tool_name}({_format_args(tool_args)})")
 
                 call_key = (tool_name, json.dumps(tool_args, sort_keys=True, default=str))
@@ -513,8 +537,11 @@ class BlenderChatSession:
             return result
         encoded = data.pop(key)
         print("  -> Analyzing screenshot with vision model...")
+        request = next((m.get("content", "") for m in reversed(self.messages)
+                        if m.get("role") == "user"), "")
+        context = f"The user asked for: {request.strip()}." if request.strip() else ""
         try:
-            data["vision_analysis"] = self.analyze_screenshot(encoded)
+            data["vision_analysis"] = self.analyze_screenshot(encoded, context)
             excerpt = " ".join(str(data["vision_analysis"]).split())
             print(f"  [vision] {excerpt[:200]}{'...' if len(excerpt) > 200 else ''}")
         except Exception as exc:
@@ -649,6 +676,81 @@ def context_exhausted(response: Any, num_ctx: int) -> bool:
         getattr(response, "eval_count", None)
     )
     return used > num_ctx - CONTEXT_RESERVE
+
+
+_VECTOR_NAMES = {"pi": math.pi, "tau": math.tau, "e": math.e}
+_VECTOR_OPS = {
+    ast.Add: lambda a, b: a + b,
+    ast.Sub: lambda a, b: a - b,
+    ast.Mult: lambda a, b: a * b,
+    ast.Div: lambda a, b: a / b,
+}
+
+
+def _eval_number(node: ast.AST) -> float:
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) \
+            and not isinstance(node.value, bool):
+        return node.value
+    if isinstance(node, ast.Name) and node.id in _VECTOR_NAMES:
+        return _VECTOR_NAMES[node.id]
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+        value = _eval_number(node.operand)
+        return -value if isinstance(node.op, ast.USub) else value
+    if isinstance(node, ast.BinOp) and type(node.op) in _VECTOR_OPS:
+        return _VECTOR_OPS[type(node.op)](_eval_number(node.left), _eval_number(node.right))
+    raise ValueError("not a plain number")
+
+
+def parse_vector_text(text: str) -> list[float] | None:
+    """Read a vector a model wrote as text, arithmetic included.
+
+    rotation='[-3.1416/2,0,0]' is a list with a division in it. Only
+    literals, pi/tau/e, unary sign and + - * / are allowed; anything else
+    (names, calls, powers, attribute access) returns None.
+
+    Args:
+        text: The string the model sent.
+
+    Returns:
+        The numbers, or None if the text is not a plain numeric vector.
+    """
+    try:
+        tree = ast.parse(text.strip(), mode="eval")
+    except (SyntaxError, ValueError):
+        return None
+    body = tree.body
+    if not isinstance(body, (ast.List, ast.Tuple)):
+        return None
+    try:
+        return [_eval_number(el) for el in body.elts]
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
+def coerce_arguments(name: str, args: dict[str, Any], tools: list[dict[str, Any]]) -> dict[str, Any]:
+    """Turn text that should be a vector back into one, per the tool's schema.
+
+    Args:
+        name: The tool being called.
+        args: The arguments as the model sent them.
+        tools: The Ollama tool definitions, for the parameter types.
+
+    Returns:
+        The arguments with array-typed parameters parsed from text where
+        that parses cleanly. Anything else is left for the validator.
+    """
+    schema = next((t["function"]["parameters"] for t in tools
+                   if t["function"]["name"] == name), None)
+    if not schema or not isinstance(args, dict):
+        return args
+    props = schema.get("properties", {})
+    out = dict(args)
+    for key, value in args.items():
+        if isinstance(value, str) and props.get(key, {}).get("type") == "array":
+            parsed = parse_vector_text(value)
+            if parsed is not None:
+                out[key] = parsed
+    return out
 
 
 def choose_toolsets(prompt_tokens: int, num_ctx: int) -> str:

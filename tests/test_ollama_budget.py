@@ -211,7 +211,8 @@ class TestScreenshotNeverReachesTheChatModel:
         with patch.object(session, "execute_tool", return_value=shot), \
              patch.object(session, "analyze_screenshot", return_value="x") as vision:
             session.chat("check")
-        vision.assert_called_once_with("abc")
+        vision.assert_called_once()
+        assert vision.call_args.args[0] == "abc"
         tool_msg = [m for m in session.messages if m.get("role") == "tool"][-1]
         assert "image" not in json.loads(tool_msg["content"])
 
