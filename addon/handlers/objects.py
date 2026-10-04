@@ -510,9 +510,17 @@ def handle_join_objects(params: dict) -> dict:
         bpy.ops.object.join()
 
         result_obj = bpy.context.active_object
+        # The others are gone. A caller that uses one of their names on the
+        # next call gets "not found" and loses a round; say so here instead.
+        removed = [n for n in names if n != result_obj.name]
         return {
             "name": result_obj.name,
             "joined_count": len(names),
+            "removed": removed,
+            "note": (
+                f"{', '.join(removed)} no longer exist; their geometry is part of "
+                f"{result_obj.name}. Refer to {result_obj.name} from now on."
+            ),
             "success": True,
         }
     except ValueError:

@@ -7,4 +7,5 @@ set -e
 uv run --extra chat python -u -m blenderwright.ollama_chat \
     --model qwen3:30b-a3b \
     --vision-model qwen3.5:latest \
+    --no-think \
     --ollama-host http://mbpc:11434

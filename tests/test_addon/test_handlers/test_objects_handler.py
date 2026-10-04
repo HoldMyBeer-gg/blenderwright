@@ -429,3 +429,43 @@ class TestCreateThreadedShaft:
             "name": "", "location": (0, 0, 0),
         })
         assert h["core"].name == "ThreadedShaft"
+
+
+# ---------------------------------------------------------------------------
+# handle_join_objects
+# ---------------------------------------------------------------------------
+
+
+class TestJoinObjects:
+    """A model joined main_body, right_wing and left_wing, then addressed
+    right_wing by name on the very next call and got "not found". The result
+    said only {name, joined_count}. It has to say which names are gone."""
+
+    def _scene(self, bpy, names):
+        objs = {}
+        for n in names:
+            o = MagicMock()
+            o.name = n
+            o.type = "MESH"
+            objs[n] = o
+        bpy.data.objects.get = lambda n: objs.get(n)
+        bpy.context.active_object = objs[names[0]]
+        return objs
+
+    def test_result_names_the_survivor_and_the_consumed(self, objects_handler):
+        import bpy
+        bpy.reset_mock()
+        self._scene(bpy, ["main_body", "right_wing", "left_wing"])
+        result = objects_handler.handle_join_objects(
+            {"names": ["main_body", "right_wing", "left_wing"]})
+        assert result["name"] == "main_body"
+        assert result["removed"] == ["right_wing", "left_wing"]
+        assert "no longer exist" in result["note"]
+        assert "main_body" in result["note"]
+
+    def test_joined_count_is_kept(self, objects_handler):
+        import bpy
+        bpy.reset_mock()
+        self._scene(bpy, ["a", "b"])
+        result = objects_handler.handle_join_objects({"names": ["a", "b"]})
+        assert result["joined_count"] == 2

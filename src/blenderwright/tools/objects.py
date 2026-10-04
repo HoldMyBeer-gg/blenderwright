@@ -489,7 +489,8 @@ def join_objects(names: list[str]) -> dict[str, Any]:
         names: List of object names to join. The first name becomes the active object.
 
     Returns:
-        Dict with the resulting joined object name.
+        Dict with the resulting object's name, the names that no longer
+        exist, and a note saying so.
     """
     if len(names) < 2:
         raise ValidationError("At least 2 objects are required to join")
