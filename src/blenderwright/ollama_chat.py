@@ -431,11 +431,13 @@ class BlenderChatSession:
                     clean_content = _strip_tool_markup(response.message.content)
                     self.messages.append({"role": "assistant", "content": clean_content})
                 else:
-                    self.messages.append(response.message)
-                    return response.message.content
+                    final = _strip_thinking(response.message.content)
+                    self.messages.append({"role": "assistant", "content": final})
+                    return final
             elif not tool_calls:
-                self.messages.append(response.message)
-                return response.message.content or ""
+                final = _strip_thinking(response.message.content or "")
+                self.messages.append({"role": "assistant", "content": final})
+                return final
             else:
                 self.messages.append(response.message)
 
@@ -829,6 +831,20 @@ def _find_similar_tools(name: str, known_tools: set[str], max_results: int = 5) 
             scored.append((overlap, tool))
     scored.sort(key=lambda x: (-x[0], x[1]))
     return [s[1] for s in scored[:max_results]]
+
+
+def _strip_thinking(text: str) -> str:
+    """Drop inline reasoning from a reply, keeping the answer.
+
+    With think=False, qwen3 reasons inside <think> tags in the content
+    instead of a separate channel, so the user saw "Okay, let's see. The
+    user has been trying..." and the conversation carried it forward. An
+    unclosed block is thought that never reached an answer.
+    """
+    cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    cleaned = re.sub(r"<think>.*", "", cleaned, flags=re.DOTALL)
+    cleaned = re.sub(r"</?final_answer>", "", cleaned)
+    return cleaned.strip()
 
 
 def _strip_tool_markup(text: str) -> str:

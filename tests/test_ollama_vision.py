@@ -161,3 +161,35 @@ class TestMissingRequiredField:
         assert "type" in out["result"]
         assert "requires" in out["result"].lower()
         assert "errors.pydantic.dev" not in out["result"]
+
+
+class TestInlineThinkingIsStripped:
+    """With think=False, qwen3 reasons inline inside <think> tags, so a reply
+    began "Okay, let's see. The user has been trying..." and ended in </think>.
+    The user sees the answer; the conversation keeps the answer."""
+
+    def test_think_block_is_removed_from_the_reply(self):
+        from blenderwright.ollama_chat import _strip_thinking
+        text = "<think>\nOkay, let's see. The user wants...\n</think>\n\nThe shuttle is done."
+        assert _strip_thinking(text) == "The shuttle is done."
+
+    def test_unclosed_think_block_is_removed_too(self):
+        from blenderwright.ollama_chat import _strip_thinking
+        assert _strip_thinking("<think>still going") == ""
+
+    def test_final_answer_tags_are_unwrapped(self):
+        from blenderwright.ollama_chat import _strip_thinking
+        assert _strip_thinking("<final_answer>\nDone.\n</final_answer>") == "Done."
+
+    def test_plain_text_is_untouched(self):
+        from blenderwright.ollama_chat import _strip_thinking
+        assert _strip_thinking("Built a cube.") == "Built a cube."
+
+    def test_chat_returns_and_stores_the_clean_reply(self, session):
+        reply = MagicMock()
+        reply.message.tool_calls = None
+        reply.message.content = "<think>hmm</think>\nAll done."
+        reply.message.role = "assistant"
+        session.ollama_client.chat.return_value = reply
+        assert session.chat("go") == "All done."
+        assert session.messages[-1]["content"] == "All done."
