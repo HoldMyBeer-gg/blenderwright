@@ -169,3 +169,63 @@ class TestRepeatedReadOnlyCalls:
             session.chat("look")
             session.chat("look again")
         assert ex.call_count == 2
+
+
+class TestScreenshotNeverReachesTheChatModel:
+    """The handlers return the PNG under "base64". The client looked for "image".
+
+    So the vision step never ran, and the whole encoded PNG went into the
+    conversation as a tool message: tens of thousands of tokens of
+    base64 that the chat model cannot read. The next reply came back empty.
+    The image goes to the vision model; the chat model gets the words.
+    """
+
+    @pytest.mark.parametrize("tool", ["get_viewport_screenshot", "capture_viewport"])
+    def test_base64_key_triggers_vision_and_is_stripped(self, session, tool):
+        session._tool_names |= {tool}
+        png = "iVBORw0KGgo" * 2000
+        shot = json.dumps({"base64": png, "width": 1000, "height": 562, "format": "PNG"})
+        session.ollama_client.chat.side_effect = [
+            _response(tool_calls=[_call(tool)]),
+            _response(content="Looks right."),
+        ]
+        with patch.object(session, "execute_tool", return_value=shot), \
+             patch.object(session, "analyze_screenshot", return_value="A grey cone.") as vision:
+            session.chat("check")
+        vision.assert_called_once()
+        assert vision.call_args.args[0] == png
+        tool_msg = [m for m in session.messages if m.get("role") == "tool"][-1]
+        assert png[:40] not in tool_msg["content"]
+        parsed = json.loads(tool_msg["content"])
+        assert parsed["vision_analysis"] == "A grey cone."
+        assert parsed["width"] == 1000
+        assert "base64" not in parsed
+
+    def test_legacy_image_key_still_works(self, session):
+        session._tool_names |= {"get_viewport_screenshot"}
+        shot = json.dumps({"image": "abc", "width": 10, "height": 10})
+        session.ollama_client.chat.side_effect = [
+            _response(tool_calls=[_call("get_viewport_screenshot")]),
+            _response(content="ok"),
+        ]
+        with patch.object(session, "execute_tool", return_value=shot), \
+             patch.object(session, "analyze_screenshot", return_value="x") as vision:
+            session.chat("check")
+        vision.assert_called_once_with("abc")
+        tool_msg = [m for m in session.messages if m.get("role") == "tool"][-1]
+        assert "image" not in json.loads(tool_msg["content"])
+
+    def test_vision_failure_still_strips_the_image(self, session):
+        session._tool_names |= {"get_viewport_screenshot"}
+        png = "iVBORw0KGgo" * 2000
+        shot = json.dumps({"base64": png, "width": 10, "height": 10})
+        session.ollama_client.chat.side_effect = [
+            _response(tool_calls=[_call("get_viewport_screenshot")]),
+            _response(content="ok"),
+        ]
+        with patch.object(session, "execute_tool", return_value=shot), \
+             patch.object(session, "analyze_screenshot", side_effect=RuntimeError("no vision model")):
+            session.chat("check")
+        tool_msg = [m for m in session.messages if m.get("role") == "tool"][-1]
+        assert png[:40] not in tool_msg["content"]
+        assert "no vision model" in tool_msg["content"]

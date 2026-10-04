@@ -1,5 +1,6 @@
 """MCP tools for Blender object operations."""
 
+import math
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
@@ -26,6 +27,63 @@ ALLOWED_OBJECT_TYPES = {
     "MONKEY",
     "EMPTY",
 }
+
+# Primitives that look the same mirrored across any axis.
+FULLY_SYMMETRIC = {"CUBE", "SPHERE", "UV_SPHERE", "ICO_SPHERE", "TORUS"}
+
+# Primitives symmetric about their own Z axis: mirroring X or Y changes
+# nothing, mirroring Z is a half turn about X.
+AXIAL_ABOUT_Z = {"CYLINDER", "CONE", "PLANE", "CIRCLE"}
+
+
+def normalise_primitive_scale(
+    type: str,
+    scale: tuple[float, ...],
+    rotation: tuple[float, ...],
+) -> tuple[tuple[float, ...], tuple[float, ...], str | None]:
+    """Turn a negative scale on a fresh primitive into what the caller meant.
+
+    A model that wants a cone pointing down sends a negative Z scale, and
+    will keep sending it whatever the error says. On a primitive that is
+    symmetric about its axis the mirror is exactly a positive scale plus a
+    half turn, or no visible change at all, so apply that instead of
+    refusing. Zero, and anything on an asymmetric primitive, is left for
+    validate_scale to reject.
+
+    Args:
+        type: The primitive type.
+        scale: Requested scale.
+        rotation: Requested XYZ Euler rotation in radians.
+
+    Returns:
+        (scale, rotation, note): the values to send, and a sentence for the
+        result explaining what changed, or None if nothing did.
+    """
+    if not any(v < 0 for v in scale):
+        return scale, rotation, None
+    if type in FULLY_SYMMETRIC:
+        return (
+            tuple(abs(v) for v in scale),
+            rotation,
+            f"Negative scale on a {type} has no visible effect; used the absolute values.",
+        )
+    if type in AXIAL_ABOUT_Z:
+        fixed = tuple(abs(v) for v in scale)
+        if scale[2] < 0:
+            rotation = (rotation[0] + math.pi, rotation[1], rotation[2])
+            return (
+                fixed,
+                rotation,
+                f"Scale z was negative: applied as a positive scale and a 180 degree "
+                f"rotation about x, which points a {type} the other way.",
+            )
+        return (
+            fixed,
+            rotation,
+            f"Negative x or y scale on a {type} has no visible effect; used the absolute values.",
+        )
+    return scale, rotation, None
+
 
 # Allowed object type filters
 ALLOWED_TYPE_FILTERS = {
@@ -67,7 +125,9 @@ def create_object(
         name: Optional name for the object. Auto-generated if empty.
         location: XYZ position as a 3-element list/tuple. Defaults to origin.
         rotation: XYZ Euler rotation in radians as a 3-element list/tuple.
-        scale: XYZ scale as a 3-element list/tuple. Defaults to (1,1,1).
+        scale: XYZ scale as a 3-element list/tuple. Defaults to (1,1,1). Use
+            positive values; a negative component on a symmetric primitive is
+            applied as the equivalent rotation and noted in the result.
 
     Returns:
         Dict with the created object's name, type, and location.
@@ -77,6 +137,8 @@ def create_object(
         name = validate_object_name(name)
     location = validate_vector(location, size=3, name="location")
     rotation = validate_vector(rotation, size=3, name="rotation")
+    scale = validate_vector(scale, size=3, name="scale")
+    scale, rotation, note = normalise_primitive_scale(type, scale, rotation)
     scale = validate_scale(scale, name="scale")
 
     conn = get_connection()
@@ -89,7 +151,10 @@ def create_object(
     })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
-    return response.get("result")
+    result = response.get("result")
+    if note and isinstance(result, dict):
+        result["note"] = note
+    return result
 
 
 @mcp.tool()

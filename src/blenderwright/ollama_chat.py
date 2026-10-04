@@ -46,6 +46,10 @@ MAX_TOOL_ROUNDS = 200
 # Tokens kept free at the end of the window for the model's final answer.
 CONTEXT_RESERVE = 4096
 
+# Tools whose result carries an encoded image, and the keys it arrives under.
+SCREENSHOT_TOOLS = frozenset({"get_viewport_screenshot", "capture_viewport"})
+IMAGE_KEYS = ("base64", "image")
+
 # Calling one of these twice in a row with the same arguments cannot return
 # anything new. A local model will do exactly that, five times, instead of
 # building. The repeat is answered from the previous result with a nudge.
@@ -440,27 +444,13 @@ class BlenderChatSession:
                     self._refresh_tools()
                     chat_kwargs["tools"] = self.tools
 
-                # If this was a screenshot, auto-analyze with vision model
-                vision_note = ""
-                if tool_name in ("get_viewport_screenshot", "fast_viewport_capture"):
-                    try:
-                        result_data = json.loads(result)
-                        if isinstance(result_data, dict) and "image" in result_data:
-                            print("  -> Analyzing screenshot with vision model...")
-                            analysis = self.analyze_screenshot(result_data["image"])
-                            vision_note = f"\n\n[Vision Analysis]: {analysis}"
-                    except (json.JSONDecodeError, KeyError):
-                        pass
-
-                if vision_note:
-                    try:
-                        result_obj = json.loads(result)
-                        result_obj["vision_analysis"] = analysis
-                        tool_content = json.dumps(result_obj)
-                    except (json.JSONDecodeError, TypeError):
-                        tool_content = result + vision_note
-                else:
-                    tool_content = result
+                # A screenshot goes to the vision model, and the chat model
+                # gets the words. The encoded PNG must never enter the
+                # conversation: it is tens of thousands of tokens the chat
+                # model cannot read, and it empties the window in one call.
+                tool_content = result
+                if tool_name in SCREENSHOT_TOOLS:
+                    tool_content = self._describe_screenshot(result)
                 self.messages.append({
                     "role": "tool",
                     "content": tool_content,
@@ -479,6 +469,34 @@ class BlenderChatSession:
                 return note
 
         return "(Reached maximum tool-calling rounds. Please try a simpler request.)"
+
+    def _describe_screenshot(self, result: str) -> str:
+        """Swap the encoded image in a screenshot result for a description.
+
+        Args:
+            result: The tool's JSON result. The handlers put the PNG under
+                "base64"; "image" is accepted for older builds.
+
+        Returns:
+            The result as JSON with the image removed and a "vision_analysis"
+            field added, or the result untouched if it carried no image.
+        """
+        try:
+            data = json.loads(result)
+        except json.JSONDecodeError:
+            return result
+        if not isinstance(data, dict):
+            return result
+        key = next((k for k in IMAGE_KEYS if k in data), None)
+        if key is None:
+            return result
+        encoded = data.pop(key)
+        print("  -> Analyzing screenshot with vision model...")
+        try:
+            data["vision_analysis"] = self.analyze_screenshot(encoded)
+        except Exception as exc:
+            data["vision_analysis"] = f"(vision model unavailable: {exc})"
+        return json.dumps(data)
 
     def _handle_image_command(self, image_path: str, message: str) -> str:
         """Handle a !image command by routing through the vision model first.
