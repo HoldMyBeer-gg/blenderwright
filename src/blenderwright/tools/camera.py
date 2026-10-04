@@ -6,6 +6,7 @@ from blenderwright.connection import BlenderConnection
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_object_name,
+    validate_new_name,
     validate_enum,
     validate_numeric_range,
     validate_vector,
@@ -69,7 +70,7 @@ def create_camera(
     Returns:
         Confirmation dict with camera name and properties.
     """
-    name = validate_object_name(name)
+    name = validate_new_name(name)
     location = list(validate_vector(location, size=3, name="location"))
     rotation = list(validate_vector(rotation, size=3, name="rotation"))
     lens = validate_numeric_range(lens, min_val=1.0, max_val=500.0, name="lens")

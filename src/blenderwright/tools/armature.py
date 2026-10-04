@@ -6,6 +6,7 @@ from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     coerce_scalar,
     validate_object_name,
+    validate_new_name,
     validate_enum,
     validate_vector,
     ValidationError,
@@ -66,7 +67,7 @@ def create_armature(
     Returns:
         Dict with the created armature's name and location.
     """
-    name = validate_object_name(name)
+    name = validate_new_name(name)
     location = validate_vector(location, size=3, name="location")
 
     conn = get_connection()

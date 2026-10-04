@@ -6,6 +6,7 @@ from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     coerce_scalar,
     validate_object_name,
+    validate_new_name,
     validate_enum,
     validate_numeric_range,
     validate_vector,
@@ -33,7 +34,7 @@ def create_annotation(
         Dict with the created annotation's name.
     """
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
 
     conn = get_connection()
     response = conn.send_command("create_annotation", {

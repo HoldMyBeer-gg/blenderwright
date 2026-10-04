@@ -7,7 +7,7 @@ from blenderwright.validators import (
     ValidationError,
     validate_enum,
     validate_numeric_range,
-    validate_object_name,
+    validate_new_name,
 )
 
 ALLOWED_SWEEP_PROFILES = {"CIRCLE", "SQUARE", "HEXAGON", "TRIANGLE"}
@@ -114,7 +114,7 @@ def sweep_profile_along_path(
         twist, min_val=-MAX_TWIST, max_val=MAX_TWIST, name="twist")
     if not isinstance(caps, bool):
         raise ValidationError("caps must be true or false")
-    name = validate_object_name(name)
+    name = validate_new_name(name)
 
     conn = get_connection()
     response = conn.send_command("sweep_profile_along_path", {

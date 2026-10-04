@@ -6,6 +6,7 @@ from typing import Any
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_object_name,
+    validate_new_name,
     validate_color,
     validate_enum,
     validate_numeric_range,
@@ -178,7 +179,7 @@ def create_material(name: str) -> dict[str, Any]:
     Returns:
         Confirmation dict with the created material name.
     """
-    name = validate_object_name(name)
+    name = validate_new_name(name)
     return _send_material_command("create_material", {"name": name})
 
 
@@ -299,7 +300,7 @@ def create_principled_material(
     Returns:
         Confirmation dict with material name and all set properties.
     """
-    name = validate_object_name(name)
+    name = validate_new_name(name)
     color = list(validate_color(color))
     if len(color) == 3:
         color = color + [1.0]
@@ -934,7 +935,7 @@ def create_procedural_material(
         Dict with the material name, the created node names, and
         ignored_params listing any arguments this pattern could not use.
     """
-    name = validate_object_name(name)
+    name = validate_new_name(name)
     validate_enum(pattern, PROCEDURAL_PATTERNS, name="pattern")
     scale = validate_numeric_range(
         scale, min_val=0.0001, max_val=MAX_PROCEDURAL_SCALE, name="scale"
@@ -1003,7 +1004,7 @@ def create_raster_texture(
     Returns:
         Dict with the image name, size, and mark count.
     """
-    name = validate_object_name(name)
+    name = validate_new_name(name)
     validate_enum(pattern, RASTER_PATTERNS, name="pattern")
 
     if isinstance(size, bool) or not isinstance(size, int):

@@ -6,6 +6,7 @@ from typing import Any
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_object_name,
+    validate_new_name,
     validate_color,
     validate_enum,
     validate_numeric_range,
@@ -71,7 +72,7 @@ def create_light(
     """
     validate_enum(type, ALLOWED_LIGHT_TYPES, name="type")
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
     location = list(validate_vector(location, size=3, name="location"))
     energy = validate_numeric_range(energy, min_val=0.0, max_val=10000000.0, name="energy")
     color = list(validate_color(color))[:3]

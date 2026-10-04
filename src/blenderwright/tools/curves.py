@@ -6,6 +6,7 @@ from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_file_path,
     validate_object_name,
+    validate_new_name,
     validate_enum,
     validate_vector,
     validate_numeric_range,
@@ -56,7 +57,7 @@ def create_curve(
     validate_enum(type, ALLOWED_CURVE_TYPES, name="type")
     location = validate_vector(location, size=3, name="location")
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
 
     conn = get_connection()
     response = conn.send_command("create_curve", {
@@ -199,7 +200,7 @@ def create_text(
     location = validate_vector(location, size=3, name="location")
     size = validate_numeric_range(size, min_val=0.001, max_val=1000.0, name="size")
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
     if font:
         # The only file path in the codebase that skipped validation: no
         # absolute-path requirement, no null-byte check, no extension check.

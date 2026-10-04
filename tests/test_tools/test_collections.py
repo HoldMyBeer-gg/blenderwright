@@ -45,11 +45,12 @@ class TestCreateCollection:
         with pytest.raises(ValidationError):
             create_collection("My/Collection")
 
-    def test_create_collection_name_too_long(self, mock_conn):
+    def test_create_collection_name_too_long_is_cut_to_fit(self, mock_conn):
         from blenderwright.tools.collections import create_collection
 
-        with pytest.raises(ValidationError):
-            create_collection("a" * 64)
+        create_collection("a" * 64)
+        sent = mock_conn.send_command.call_args[0][1]["name"]
+        assert sent == "a" * 63
 
 
 class TestMoveToCollection:

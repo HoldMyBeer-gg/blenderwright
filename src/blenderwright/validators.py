@@ -38,13 +38,31 @@ def validate_object_name(name: str) -> str:
         raise ValidationError("Object name must be a non-empty string")
     name = name.strip()
     if len(name) > MAX_OBJECT_NAME_LENGTH:
-        raise ValidationError(f"Object name exceeds maximum length of {MAX_OBJECT_NAME_LENGTH}")
+        raise ValidationError(
+            f"Object names are at most {MAX_OBJECT_NAME_LENGTH} characters, so no object "
+            f"has this name. Use the name returned when the object was created."
+        )
     if not SAFE_NAME_PATTERN.match(name):
         raise ValidationError(
             "Object name contains invalid characters. "
             "Only alphanumeric, underscores, hyphens, spaces, and dots are allowed."
         )
     return name
+
+
+def validate_new_name(name: str) -> str:
+    """Validate the name for something about to be created.
+
+    Same rules as validate_object_name, except that a name over Blender's
+    limit is cut to fit rather than refused. A model that has just been told
+    its shuttle lacks thermal tiles will name the next part in sixty-eight
+    characters, and the refusal cost it seventeen rounds. Blender would cut
+    it anyway; do it here and return what was used.
+    """
+    if not name or not isinstance(name, str):
+        raise ValidationError("Object name must be a non-empty string")
+    name = name.strip()[:MAX_OBJECT_NAME_LENGTH].rstrip("_-. ")
+    return validate_object_name(name)
 
 
 def validate_file_path(path: str, allowed_extensions: set[str] | None = None, must_exist: bool = False) -> str:

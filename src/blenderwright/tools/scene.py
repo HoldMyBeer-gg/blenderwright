@@ -8,6 +8,7 @@ from blenderwright.validators import (
     validate_enum,
     validate_numeric_range,
     validate_object_name,
+    validate_new_name,
     validate_vector,
 )
 
@@ -136,7 +137,7 @@ def create_scene(name: str) -> dict[str, Any]:
     Returns:
         Confirmation dict with the created scene name.
     """
-    name = validate_object_name(name)
+    name = validate_new_name(name)
     conn = get_connection()
     response = conn.send_command("create_scene", {"name": name})
     if response.get("status") == "error":

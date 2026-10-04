@@ -6,6 +6,7 @@ from typing import Any
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_object_name,
+    validate_new_name,
     validate_enum,
     validate_numeric_range,
     validate_vector,
@@ -134,7 +135,7 @@ def create_object(
     """
     validate_enum(type, ALLOWED_OBJECT_TYPES, name="type")
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
     location = validate_vector(location, size=3, name="location")
     rotation = validate_vector(rotation, size=3, name="rotation")
     scale = validate_vector(scale, size=3, name="scale")
@@ -192,7 +193,7 @@ def create_polygon_prism(
     radius = validate_numeric_range(radius, min_val=1e-9, name="radius")
     depth = validate_numeric_range(depth, min_val=1e-9, name="depth")
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
     location = validate_vector(location, size=3, name="location")
     rotation = validate_vector(rotation, size=3, name="rotation")
     scale = validate_scale(scale, name="scale")
@@ -280,7 +281,7 @@ def create_threaded_shaft(
             thread_runout, min_val=0.0, max_val=length, name="thread_runout",
         )
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
     location = validate_vector(location, size=3, name="location")
 
     conn = get_connection()

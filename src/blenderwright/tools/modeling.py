@@ -5,6 +5,7 @@ from typing import Any
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_object_name,
+    validate_new_name,
     validate_enum,
     validate_numeric_range,
     ValidationError,
@@ -59,7 +60,7 @@ def add_modifier(object_name: str, modifier_type: str, name: str = "") -> dict[s
     object_name = validate_object_name(object_name)
     validate_enum(modifier_type, ALLOWED_MODIFIER_TYPES, name="modifier_type")
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
 
     conn = get_connection()
     response = conn.send_command("add_modifier", {

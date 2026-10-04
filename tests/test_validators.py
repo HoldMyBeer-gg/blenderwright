@@ -49,7 +49,7 @@ class TestValidateObjectName:
 
     def test_too_long_raises(self):
         long_name = "A" * (MAX_OBJECT_NAME_LENGTH + 1)
-        with pytest.raises(ValidationError, match="exceeds maximum length"):
+        with pytest.raises(ValidationError, match="at most 63"):
             validate_object_name(long_name)
 
     def test_max_length_ok(self):

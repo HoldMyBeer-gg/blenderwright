@@ -406,6 +406,9 @@ class BlenderChatSession:
             "messages": self.messages,
             "tools": self.tools,
             "options": {"num_ctx": self.num_ctx},
+            # Explicit, because a thinking model left to its default can
+            # spend the whole reply thinking and return empty content.
+            "think": self.think,
         }
 
         # Last tool call and its result, for answering an identical read-only

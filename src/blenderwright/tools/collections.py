@@ -3,7 +3,7 @@
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
-from blenderwright.validators import validate_object_name, ValidationError
+from blenderwright.validators import validate_object_name, validate_new_name, ValidationError
 
 
 @mcp.tool()
@@ -21,7 +21,7 @@ def create_collection(
     Returns:
         Dict with the created collection's name and parent.
     """
-    name = validate_object_name(name)
+    name = validate_new_name(name)
     if parent:
         parent = validate_object_name(parent)
 

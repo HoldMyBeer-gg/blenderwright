@@ -6,6 +6,7 @@ from blenderwright.connection import BlenderConnection
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_object_name,
+    validate_new_name,
     validate_enum,
     validate_numeric_range,
     validate_file_path,
@@ -81,7 +82,7 @@ def add_image_sequence_strip(
         first_frame, allowed_extensions=ALLOWED_STRIP_IMAGE_EXTENSIONS, must_exist=True
     )
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
     channel = validate_numeric_range(
         channel, min_val=1, max_val=MAX_SEQUENCER_CHANNEL, name="channel"
     )
@@ -125,7 +126,7 @@ def add_sound_strip(
         filepath, allowed_extensions=ALLOWED_SOUND_EXTENSIONS, must_exist=True
     )
     if name:
-        name = validate_object_name(name)
+        name = validate_new_name(name)
     channel = validate_numeric_range(
         channel, min_val=1, max_val=MAX_SEQUENCER_CHANNEL, name="channel"
     )

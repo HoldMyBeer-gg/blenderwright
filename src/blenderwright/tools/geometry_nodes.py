@@ -5,7 +5,7 @@ from typing import Any
 import re
 
 from blenderwright.server import mcp, get_connection
-from blenderwright.validators import validate_object_name, validate_vector, ValidationError
+from blenderwright.validators import validate_object_name, validate_new_name, validate_vector, ValidationError
 
 
 _NODE_TYPE_PATTERN = re.compile(r"^(Geometry|Function|Shader)Node[A-Z][A-Za-z0-9]*$")
@@ -26,7 +26,7 @@ def create_geometry_nodes(
         Dict with modifier name and node group name.
     """
     object_name = validate_object_name(object_name)
-    name = validate_object_name(name)
+    name = validate_new_name(name)
 
     conn = get_connection()
     response = conn.send_command("create_geometry_nodes", {

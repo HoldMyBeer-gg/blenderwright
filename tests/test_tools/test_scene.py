@@ -139,9 +139,10 @@ class TestCreateScene:
         with pytest.raises(ValidationError):
             create_scene("scene<>bad")
 
-    def test_name_too_long_raises(self, mock_conn):
-        with pytest.raises(ValidationError):
-            create_scene("a" * 64)
+    def test_name_too_long_is_cut_to_fit(self, mock_conn):
+        create_scene("a" * 64)
+        sent = mock_conn.send_command.call_args[0][1]["name"]
+        assert sent == "a" * 63
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "exists"}
