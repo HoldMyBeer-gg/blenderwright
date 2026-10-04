@@ -131,7 +131,9 @@ def create_object(
             applied as the equivalent rotation and noted in the result.
 
     Returns:
-        Dict with the created object's name, type, and location.
+        Dict with the created object's name, type, location, dimensions, and
+        world-space bounds (min and max corner). Place the next part from the
+        bounds: a nose cone sits at bounds.max z plus half its own height.
     """
     validate_enum(type, ALLOWED_OBJECT_TYPES, name="type")
     if name:

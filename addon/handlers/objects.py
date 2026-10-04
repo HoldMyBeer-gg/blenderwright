@@ -3,6 +3,7 @@
 import math
 
 import bpy
+import mathutils
 from .. import dispatcher
 
 # Map of primitive type to bpy.ops function
@@ -38,6 +39,29 @@ def _get_primitive_op(ptype: str):
     return ops_map.get(ptype)
 
 
+def _extent(obj) -> dict:
+    """The object's size and where it ends, in world space.
+
+    A caller placing the next part needs to know where this one stops. A
+    model assumed a primitive was one unit tall, scaled it by 18.5, and put
+    the nose cone at z=9.25, halfway up inside a body that reached 18.5.
+    Blender's cylinder is two units tall; the result says so now.
+    """
+    bpy.context.view_layer.update()
+    out = {"dimensions": [float(v) for v in obj.dimensions]}
+    try:
+        corners = [obj.matrix_world @ mathutils.Vector(c) for c in obj.bound_box]
+        xs, ys, zs = ([float(getattr(c, axis)) for c in corners] for axis in "xyz")
+        out["bounds"] = {
+            "min": [min(xs), min(ys), min(zs)],
+            "max": [max(xs), max(ys), max(zs)],
+        }
+    except Exception:
+        # No bound box (an empty), or something odd: the dimensions still help.
+        pass
+    return out
+
+
 def handle_create_object(params: dict) -> dict:
     """Create a primitive object in the scene."""
     obj_type = params.get("type", "CUBE")
@@ -65,6 +89,7 @@ def handle_create_object(params: dict) -> dict:
             "name": obj.name,
             "type": obj.type,
             "location": list(obj.location),
+            **_extent(obj),
         }
     except Exception as e:
         raise RuntimeError(f"Failed to create object: {e}")
@@ -100,6 +125,7 @@ def handle_create_polygon_prism(params: dict) -> dict:
             "type": obj.type,
             "location": list(obj.location),
             "sides": sides,
+            **_extent(obj),
         }
     except Exception as e:
         raise RuntimeError(f"Failed to create polygon prism: {e}")
@@ -260,6 +286,7 @@ def handle_create_threaded_shaft(params: dict) -> dict:
             "pitch": pitch,
             "thread_depth": thread_depth,
             "iterations": iterations,
+            **_extent(obj),
         }
     except Exception as e:
         raise RuntimeError(f"Failed to create threaded shaft: {e}")

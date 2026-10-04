@@ -790,7 +790,7 @@ smoothing faces within the angle threshold.</p><table class="args"><tbody><tr><t
 <tr><th>name</th><td>Optional name for the object. Auto-generated if empty.</td></tr>
 <tr><th>location</th><td>XYZ position as a 3-element list/tuple. Defaults to origin.</td></tr>
 <tr><th>rotation</th><td>XYZ Euler rotation in radians as a 3-element list/tuple.</td></tr>
-<tr><th>scale</th><td>XYZ scale as a 3-element list/tuple. Defaults to (1,1,1). Use positive values; a negative component on a symmetric primitive is applied as the equivalent rotation and noted in the result.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created object&#x27;s name, type, and location.</p></article><article class="tool" id="create_polygon_prism" data-search="create_polygon_prism create an n-sided regular prism (polygon-based cylinder).
+<tr><th>scale</th><td>XYZ scale as a 3-element list/tuple. Defaults to (1,1,1). Use positive values; a negative component on a symmetric primitive is applied as the equivalent rotation and noted in the result.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created object&#x27;s name, type, location, dimensions, and world-space bounds (min and max corner). Place the next part from the bounds: a nose cone sits at bounds.max z plus half its own height.</p></article><article class="tool" id="create_polygon_prism" data-search="create_polygon_prism create an n-sided regular prism (polygon-based cylinder).
 
 useful for hex sockets, octagonal columns, triangular prisms, or any
 straight-sided geometry where a 32-sided round cylinder is the wrong

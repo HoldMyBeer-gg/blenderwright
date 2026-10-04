@@ -469,3 +469,78 @@ class TestJoinObjects:
         self._scene(bpy, ["a", "b"])
         result = objects_handler.handle_join_objects({"names": ["a", "b"]})
         assert result["joined_count"] == 2
+
+
+# ---------------------------------------------------------------------------
+# create results carry the object's extent
+# ---------------------------------------------------------------------------
+
+
+class TestCreateReturnsExtent:
+    """A model put a nose cone at z=9.25 on a fuselage made with scale z 18.5,
+    so the cone sat halfway up inside it. It assumed the primitive was one
+    unit tall; Blender's cylinder is two. Twice in a row, two models. The
+    result now says how big the thing is and where it ends, so the next part
+    can be placed from facts instead of a guess."""
+
+    def _obj(self, bpy, name="Fuselage", dims=(10.0, 10.0, 37.0), loc=(0, 0, 0)):
+        obj = MagicMock()
+        obj.name = name
+        obj.type = "MESH"
+        obj.location = list(loc)
+        obj.dimensions = list(dims)
+        half = [d / 2 for d in dims]
+        obj.bound_box = [
+            (sx * half[0], sy * half[1], sz * half[2])
+            for sx in (-1, 1) for sy in (-1, 1) for sz in (-1, 1)
+        ]
+        # matrix_world @ corner: the mock applies a translation by loc.
+        obj.matrix_world.__matmul__ = lambda _self, v: MagicMock(
+            x=v[0] + loc[0], y=v[1] + loc[1], z=v[2] + loc[2])
+        # Earlier tests hang side effects on the primitive ops that swap the
+        # active object; reset_mock() leaves those in place.
+        for op in ("primitive_cube_add", "primitive_cylinder_add", "primitive_cone_add"):
+            getattr(bpy.ops.mesh, op).side_effect = None
+        bpy.context.active_object = obj
+        return obj
+
+    def test_dimensions_and_world_bounds(self, objects_handler):
+        import bpy
+        bpy.reset_mock()
+        self._obj(bpy, loc=(0, 0, 5))
+        result = objects_handler.handle_create_object({
+            "type": "CYLINDER", "name": "Fuselage", "location": (0, 0, 5),
+            "rotation": (0, 0, 0), "scale": (5, 5, 18.5),
+        })
+        assert result["dimensions"] == [10.0, 10.0, 37.0]
+        assert result["bounds"]["min"] == pytest.approx([-5.0, -5.0, -13.5])
+        assert result["bounds"]["max"] == pytest.approx([5.0, 5.0, 23.5])
+
+    def test_extent_is_computed_after_the_scene_updates(self, objects_handler):
+        # matrix_world is stale until the view layer updates; without this
+        # the bounds describe where the object was before the transform.
+        import bpy
+        bpy.reset_mock()
+        self._obj(bpy)
+        objects_handler.handle_create_object({"type": "CUBE"})
+        bpy.context.view_layer.update.assert_called()
+
+    def test_polygon_prism_and_threaded_shaft_report_extent_too(self, objects_handler):
+        import bpy
+        bpy.reset_mock()
+        self._obj(bpy, name="Hex", dims=(2.0, 2.0, 0.8))
+        result = objects_handler.handle_create_polygon_prism({
+            "sides": 6, "radius": 1.0, "depth": 0.8,
+            "location": (0, 0, 0), "rotation": (0, 0, 0), "scale": (1, 1, 1),
+        })
+        assert result["dimensions"] == [2.0, 2.0, 0.8]
+        assert "bounds" in result
+
+    def test_a_bad_bound_box_does_not_break_creation(self, objects_handler):
+        import bpy
+        bpy.reset_mock()
+        obj = self._obj(bpy)
+        obj.bound_box = None
+        result = objects_handler.handle_create_object({"type": "CUBE"})
+        assert result["name"] == "Fuselage"
+        assert "bounds" not in result

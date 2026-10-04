@@ -109,6 +109,10 @@ Parts must actually meet. An assembly is not a pile:
 from the sizes you chose: a 40m stage sitting on top of a 30m stage is centred \
 20m above that stage's centre, not at the same location.
 - Two parts at the same location are inside each other, not stacked.
+- Do not guess a primitive's size: the default cylinder, cube and cone are 2 \
+units tall, so scale z=18.5 makes a body 37 tall from -18.5 to 18.5. Every \
+create result reports dimensions and bounds; put the next part at bounds.max \
+or bounds.min plus half its own size.
 - Engines, fins and greebles attach to the surface of the body, not floating \
 beside it. If you name something "left", create a matching "right".
 
