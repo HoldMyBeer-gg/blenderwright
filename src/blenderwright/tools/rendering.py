@@ -8,6 +8,8 @@ from blenderwright.validators import (
     validate_enum,
     validate_numeric_range,
     validate_file_path,
+    validate_output_path,
+    default_output_path,
     ValidationError,
     MAX_RENDER_RESOLUTION,
     MAX_RENDER_SAMPLES,
@@ -120,17 +122,20 @@ def set_output_format(format: str, filepath: str = "") -> dict[str, Any]:
 
 
 @mcp.tool()
-def render_image(filepath: str = "/tmp/render.png") -> dict[str, Any]:  # nosec B108
+def render_image(filepath: str = "") -> dict[str, Any]:
     """Render the current scene to an image file.
 
     Args:
         filepath: Output file path for the rendered image. Must be an absolute path
-            with a valid image extension (.png, .jpg, .exr, .tiff, .bmp).
+            with a valid image extension (.png, .jpg, .exr, .tiff, .bmp) in a
+            directory that exists. Empty means render.png in the system temp
+            directory.
 
     Returns:
         Confirmation dict with the output file path.
     """
-    filepath = validate_file_path(filepath, allowed_extensions=ALLOWED_RENDER_EXTENSIONS)
+    filepath = validate_output_path(filepath or default_output_path("render.png"),
+                                    allowed_extensions=ALLOWED_RENDER_EXTENSIONS)
 
     conn = get_connection()
     response = conn.send_command(
@@ -142,23 +147,26 @@ def render_image(filepath: str = "/tmp/render.png") -> dict[str, Any]:  # nosec 
 
 
 @mcp.tool()
-def render_animation(filepath: str = "/tmp/render_", format: str = "PNG") -> dict[str, Any]:  # nosec B108
+def render_animation(filepath: str = "", format: str = "PNG") -> dict[str, Any]:
     """Render the animation sequence to image files.
 
     Args:
         filepath: Output file path prefix for the rendered frames. Each frame will be
-            saved with a frame number suffix.
+            saved with a frame number suffix. The directory must exist. Empty
+            means render_ in the system temp directory.
         format: Output format. One of: PNG, JPEG, OPEN_EXR, TIFF, BMP.
 
     Returns:
         Confirmation dict with output details.
     """
     validate_enum(format, ALLOWED_OUTPUT_FORMATS, name="format")
-    if not filepath or not isinstance(filepath, str):
-        raise ValidationError("filepath must be a non-empty string")
+    if not filepath:
+        filepath = default_output_path("render_")
+    if not isinstance(filepath, str):
+        raise ValidationError("filepath must be a string")
     # Blender resolves a relative path against the .blend, so frames landed
     # somewhere the caller never named. No extension check: this is a prefix.
-    filepath = validate_file_path(filepath, allowed_extensions=None)
+    filepath = validate_output_path(filepath, allowed_extensions=None, allow_directory=True)
     # Validate no null bytes
     if "\x00" in filepath:
         raise ValidationError("filepath contains null bytes")

@@ -3,6 +3,7 @@
 import math
 import re
 import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -80,6 +81,54 @@ def validate_file_path(path: str, allowed_extensions: set[str] | None = None, mu
     return resolved
 
 
+def default_output_path(filename: str) -> str:
+    """A writable default for an output file: the system temp directory.
+
+    /tmp was the default for years and does not exist on Windows, which
+    nothing noticed until the directory check arrived.
+    """
+    return os.path.join(tempfile.gettempdir(), filename)
+
+
+def validate_output_path(
+    path: str,
+    allowed_extensions: set[str] | None = None,
+    allow_directory: bool = False,
+) -> str:
+    """Validate a path a tool will write to.
+
+    validate_file_path checks the shape of the path; this also checks that
+    the directory exists, because Blender's own failure for a missing one
+    is a bare "cannot save". A model on a Mac sent /home/user/render.png,
+    read that, and had nothing to go on. Name a directory that does exist.
+
+    Args:
+        path: The output path.
+        allowed_extensions: As for validate_file_path.
+        allow_directory: Accept an existing directory as the target. True for
+            a frame prefix, where Blender appends the frame number itself.
+
+    Returns:
+        The resolved absolute path.
+    """
+    resolved = validate_file_path(path, allowed_extensions=allowed_extensions)
+    if os.path.isdir(resolved):
+        if allow_directory:
+            return resolved
+        raise ValidationError(
+            f"{resolved} is a directory. Give the full path of the file to write, "
+            f"including its name."
+        )
+    parent = os.path.dirname(resolved)
+    if not os.path.isdir(parent):
+        suggestion = os.path.join(tempfile.gettempdir(), os.path.basename(resolved))
+        raise ValidationError(
+            f"Directory {parent} does not exist on this machine. Use a directory "
+            f"that does, for example {suggestion}"
+        )
+    return resolved
+
+
 def coerce_scalar(value: Any) -> Any:
     """Turn a number or boolean that arrived as text back into its own type.
 
@@ -123,10 +172,15 @@ def validate_numeric_range(value: float | int | str, min_val: float | int | None
     if min_val is not None and value < min_val:
         raise ValidationError(f"{name} must be >= {min_val}, got {value}")
     if max_val is not None and value > max_val:
+        # 3.1416 means pi. A caller that rounds must not be refused for the
+        # rounding, so an angle within a hair of its cap is the cap. Only
+        # angles: 10001 samples against a cap of 10000 is still over.
+        if max_val <= math.tau and math.isclose(value, max_val, abs_tol=1e-3):
+            return max_val
         # Every angle in this API is radians, and a caller reaching for 30 or
         # 90 is thinking in degrees. Saying only "must be <= 3.14159" is true
         # and useless; offer the conversion.
-        if "angle" in name.lower() and max_val <= math.tau:
+        if "angle" in name.lower() and max_val <= math.tau and value >= 2 * max_val:
             radians = math.radians(value)
             if radians <= max_val:
                 raise ValidationError(

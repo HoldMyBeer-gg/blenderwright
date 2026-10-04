@@ -309,7 +309,28 @@ class BlenderChatSession:
                 return content[0].text
             return json.dumps(result, default=str)
         except Exception as e:
-            return json.dumps({"status": "error", "result": str(e)})
+            return json.dumps({"status": "error",
+                               "result": self._explain_unknown_parameters(name, str(e))})
+
+    def _explain_unknown_parameters(self, name: str, message: str) -> str:
+        """Replace pydantic's extra-field error with the tool's real parameters.
+
+        "Extra inputs are not permitted" plus a URL told a model nothing it
+        could act on, so it guessed another name and lost another round.
+        Naming the parameters that exist ends the guessing.
+        """
+        unknown = re.findall(r"\n(\w+)\n\s+Extra inputs are not permitted", message)
+        if not unknown:
+            return message
+        params = []
+        for tool in self.tools:
+            if tool["function"]["name"] == name:
+                params = list(tool["function"]["parameters"].get("properties", {}))
+                break
+        text = f"{name} does not accept: {', '.join(unknown)}."
+        if params:
+            text += f" Its parameters are: {', '.join(params)}."
+        return text
 
     def analyze_screenshot(self, image_base64: str, context: str = "") -> str:
         """Send a viewport screenshot to the vision model for analysis.
@@ -494,6 +515,8 @@ class BlenderChatSession:
         print("  -> Analyzing screenshot with vision model...")
         try:
             data["vision_analysis"] = self.analyze_screenshot(encoded)
+            excerpt = " ".join(str(data["vision_analysis"]).split())
+            print(f"  [vision] {excerpt[:200]}{'...' if len(excerpt) > 200 else ''}")
         except Exception as exc:
             data["vision_analysis"] = f"(vision model unavailable: {exc})"
         return json.dumps(data)

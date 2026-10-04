@@ -9,6 +9,8 @@ from blenderwright.validators import (
     validate_enum,
     validate_numeric_range,
     validate_file_path,
+    validate_output_path,
+    default_output_path,
     ValidationError,
 )
 
@@ -173,7 +175,7 @@ def remove_strip(strip_name: str) -> dict[str, Any]:
 
 @mcp.tool()
 def render_video(
-    filepath: str = "/tmp/render.mp4",  # nosec B108
+    filepath: str = "",
     container: str = "MPEG4",
     quality: str = "HIGH",
     audio_codec: str = "AAC",
@@ -186,7 +188,8 @@ def render_video(
     the scene fps.
 
     Args:
-        filepath: Output path. The extension must match the
+        filepath: Output path, in a directory that exists. Empty means the
+            system temp directory. The extension must match the
             container: .mp4 for MPEG4, .mkv for MKV, .webm for WEBM.
         container: Video container. One of: MPEG4, MKV, WEBM.
         quality: Encoder quality preset, from LOWEST to LOSSLESS.
@@ -206,7 +209,8 @@ def render_video(
     # Resolved to an absolute path here: Blender would resolve a relative one
     # against the .blend, somewhere the caller never named.
     extension = VIDEO_CONTAINER_EXTENSIONS[container]
-    filepath = validate_file_path(filepath, allowed_extensions={extension})
+    filepath = validate_output_path(filepath or default_output_path(f"render{extension}"),
+                                    allowed_extensions={extension})
 
     return _send("render_video", {
         "filepath": filepath,

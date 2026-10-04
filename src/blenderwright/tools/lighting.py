@@ -1,5 +1,6 @@
 """MCP tools for Blender lighting operations."""
 
+import math
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
@@ -109,11 +110,11 @@ def set_light_property(object_name: str, property: str, value: Any) -> dict[str,
     elif property in ("shadow_soft_size", "area_size", "area_size_y"):
         value = validate_numeric_range(value, min_val=0.0, max_val=1000.0, name=property)
     elif property == "spot_size":
-        value = validate_numeric_range(value, min_val=0.0, max_val=3.14159, name="spot_size")
+        value = validate_numeric_range(value, min_val=0.0, max_val=math.pi, name="spot_size")
     elif property == "spot_blend":
         value = validate_numeric_range(value, min_val=0.0, max_val=1.0, name="spot_blend")
     elif property == "angle":
-        value = validate_numeric_range(value, min_val=0.0, max_val=3.14159, name="angle")
+        value = validate_numeric_range(value, min_val=0.0, max_val=math.pi, name="angle")
     elif property in ("specular_factor", "diffuse_factor", "volume_factor"):
         value = validate_numeric_range(value, min_val=0.0, max_val=1.0, name=property)
     elif property == "use_shadow":

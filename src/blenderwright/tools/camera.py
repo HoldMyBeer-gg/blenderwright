@@ -9,7 +9,7 @@ from blenderwright.validators import (
     validate_enum,
     validate_numeric_range,
     validate_vector,
-    validate_file_path,
+    validate_output_path,
     ValidationError,
 )
 
@@ -204,7 +204,7 @@ def capture_viewport(
         Dict with filepath or base64 image data.
     """
     if filepath:
-        filepath = validate_file_path(filepath, allowed_extensions=ALLOWED_RENDER_EXTENSIONS)
+        filepath = validate_output_path(filepath, allowed_extensions=ALLOWED_RENDER_EXTENSIONS)
     width = validate_numeric_range(width, min_val=1, max_val=8192, name="width")
     height = validate_numeric_range(height, min_val=1, max_val=8192, name="height")
 

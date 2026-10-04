@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import tempfile
+import os
 import pytest
 
 from blenderwright.connection import BlenderConnection
@@ -158,7 +160,7 @@ class TestRenderVideo:
     def test_defaults_to_mp4_with_aac(self, mock_conn):
         from blenderwright.tools.sequencer import render_video
 
-        render_video("/tmp/out.mp4")
+        render_video(os.path.join(tempfile.gettempdir(), "out.mp4"))
         command, params = mock_conn.send_command.call_args[0]
         assert command == "render_video"
         assert params["filepath"].endswith("out.mp4")
@@ -169,14 +171,14 @@ class TestRenderVideo:
     def test_waits_as_long_as_an_animation(self, mock_conn):
         from blenderwright.tools.sequencer import render_video
 
-        render_video("/tmp/out.mp4")
+        render_video(os.path.join(tempfile.gettempdir(), "out.mp4"))
         timeout = mock_conn.send_command.call_args.kwargs["timeout"]
         assert timeout == BlenderConnection.ANIMATION_TIMEOUT
 
     def test_webm_with_opus(self, mock_conn):
         from blenderwright.tools.sequencer import render_video
 
-        render_video("/tmp/out.webm", container="WEBM", audio_codec="OPUS")
+        render_video(os.path.join(tempfile.gettempdir(), "out.webm"), container="WEBM", audio_codec="OPUS")
         params = mock_conn.send_command.call_args[0][1]
         assert params["container"] == "WEBM"
         assert params["audio_codec"] == "OPUS"
@@ -184,21 +186,21 @@ class TestRenderVideo:
     def test_silent_video(self, mock_conn):
         from blenderwright.tools.sequencer import render_video
 
-        render_video("/tmp/out.mp4", audio_codec="NONE")
+        render_video(os.path.join(tempfile.gettempdir(), "out.mp4"), audio_codec="NONE")
         assert mock_conn.send_command.call_args[0][1]["audio_codec"] == "NONE"
 
     def test_extension_must_match_container(self, mock_conn):
         from blenderwright.tools.sequencer import render_video
 
         with pytest.raises(ValidationError, match="mp4"):
-            render_video("/tmp/out.webm", container="MPEG4")
+            render_video(os.path.join(tempfile.gettempdir(), "out.webm"), container="MPEG4")
 
     def test_webm_refuses_aac(self, mock_conn):
         """Blender writes a broken file rather than failing on this pairing."""
         from blenderwright.tools.sequencer import render_video
 
         with pytest.raises(ValidationError, match="WEBM"):
-            render_video("/tmp/out.webm", container="WEBM", audio_codec="AAC")
+            render_video(os.path.join(tempfile.gettempdir(), "out.webm"), container="WEBM", audio_codec="AAC")
 
     def test_unknown_container(self, mock_conn):
         from blenderwright.tools.sequencer import render_video
@@ -210,7 +212,7 @@ class TestRenderVideo:
         from blenderwright.tools.sequencer import render_video
 
         with pytest.raises(ValidationError):
-            render_video("/tmp/out.mp4", quality="ULTRA")
+            render_video(os.path.join(tempfile.gettempdir(), "out.mp4"), quality="ULTRA")
 
     def test_relative_path_is_sent_as_an_absolute_one(self, mock_conn):
         """Blender would resolve a relative path against the .blend instead."""

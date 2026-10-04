@@ -110,7 +110,9 @@ class TestFilePathsAreValidated:
         landed somewhere the caller never named. validate_file_path pins it to
         an absolute path first, as render_image already did."""
         from blenderwright.tools.rendering import render_animation
-        render_animation(filepath="frames/out")
+        # A relative prefix in a directory that exists; a missing directory
+        # is its own, separate refusal (see test_round_wasters).
+        render_animation(filepath="tests/out")
         sent = mock_conn.send_command.call_args[0][1]["filepath"]
         # os.path.isabs, not startswith("/"): Windows absolute paths begin C:\\
         assert os.path.isabs(sent), f"sent a relative path: {sent!r}"

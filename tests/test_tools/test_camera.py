@@ -1,5 +1,7 @@
 """Unit tests for camera tools."""
 
+import tempfile
+import os
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -180,7 +182,7 @@ class TestCaptureViewport:
     def test_capture_with_filepath(self, mock_conn):
         from blenderwright.tools.camera import capture_viewport
 
-        capture_viewport(filepath="/tmp/test.png")
+        capture_viewport(filepath=os.path.join(tempfile.gettempdir(), "test.png"))
         call_args = mock_conn.send_command.call_args
         assert call_args[0][0] == "capture_viewport"
         assert call_args[0][1]["width"] == 1920

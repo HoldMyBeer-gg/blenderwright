@@ -541,7 +541,7 @@ def shade_auto_smooth(object_name: str, angle: float = 0.523599) -> dict[str, An
         Confirmation dict.
     """
     object_name = validate_object_name(object_name)
-    angle = validate_numeric_range(angle, min_val=0.0, max_val=3.14159, name="angle")
+    angle = validate_numeric_range(angle, min_val=0.0, max_val=math.pi, name="angle")
 
     conn = get_connection()
     response = conn.send_command("shade_auto_smooth", {

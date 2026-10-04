@@ -1,6 +1,8 @@
 """Unit tests for rendering tools."""
 
+import os
 import pathlib
+import tempfile
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -164,7 +166,7 @@ class TestSetOutputFormat:
     def test_set_format_with_filepath(self, mock_conn):
         from blenderwright.tools.rendering import set_output_format
 
-        set_output_format("JPEG", filepath="/tmp/output.jpg")
+        set_output_format("JPEG", filepath=os.path.join(tempfile.gettempdir(), "output.jpg"))
         call_args = mock_conn.send_command.call_args
         assert call_args[0][0] == "set_output_format"
         assert call_args[0][1]["format"] == "JPEG"
@@ -195,7 +197,7 @@ class TestRenderImage:
     def test_render_image_custom_path(self, mock_conn):
         from blenderwright.tools.rendering import render_image
 
-        render_image(filepath="/tmp/my_render.exr")
+        render_image(filepath=os.path.join(tempfile.gettempdir(), "my_render.exr"))
         call_args = mock_conn.send_command.call_args
         assert call_args[0][1]["filepath"].endswith("my_render.exr")
 
@@ -203,7 +205,7 @@ class TestRenderImage:
         from blenderwright.tools.rendering import render_image
 
         with pytest.raises(ValidationError):
-            render_image(filepath="/tmp/render.mp4")
+            render_image(filepath=os.path.join(tempfile.gettempdir(), "render.mp4"))
 
     def test_render_image_waits_longer_than_a_normal_command(self, mock_conn):
         """A real render outlasts the 30s default, which reported failure."""
@@ -222,19 +224,19 @@ class TestRenderAnimation:
 
         render_animation()
         sent = mock_conn.send_command.call_args[0][1]
-        # validate_file_path resolves symlinks, so /tmp becomes /private/tmp
-        # on macOS. render_image has always done this; this now agrees.
-        assert sent["filepath"].replace("\\", "/").endswith("/tmp/render_")
+        # The default is the system temp directory, which exists everywhere;
+        # /tmp did not exist on Windows.
+        assert sent["filepath"].endswith("render_")
+        assert os.path.isdir(os.path.dirname(sent["filepath"]))
         assert sent["format"] == "PNG"
 
     def test_render_animation_custom(self, mock_conn):
         from blenderwright.tools.rendering import render_animation
 
-        render_animation(filepath="/tmp/anim_", format="JPEG")
+        render_animation(filepath=os.path.join(tempfile.gettempdir(), "anim_"), format="JPEG")
         sent = mock_conn.send_command.call_args[0][1]
-        # validate_file_path resolves symlinks, so /tmp becomes /private/tmp
-        # on macOS. render_image has always done this; this now agrees.
-        assert sent["filepath"].replace("\\", "/").endswith("/tmp/anim_")
+        # The path is resolved (symlinks and all), so compare only the tail.
+        assert sent["filepath"].endswith("anim_")
         assert sent["format"] == "JPEG"
 
     def test_render_animation_waits_longer_than_a_still(self, mock_conn):
@@ -252,11 +254,14 @@ class TestRenderAnimation:
         with pytest.raises(ValidationError):
             render_animation(format="AVI")
 
-    def test_render_animation_empty_filepath(self, mock_conn):
+    def test_render_animation_empty_filepath_means_the_temp_dir(self, mock_conn):
+        # Same meaning as render_image's default, and it exists on Windows.
         from blenderwright.tools.rendering import render_animation
 
-        with pytest.raises(ValidationError):
-            render_animation(filepath="")
+        render_animation(filepath="")
+        sent = mock_conn.send_command.call_args[0][1]["filepath"]
+        assert sent.startswith(os.path.realpath(tempfile.gettempdir()))
+        assert sent.endswith("render_")
 
     def test_render_animation_null_byte_filepath(self, mock_conn):
         from blenderwright.tools.rendering import render_animation
