@@ -185,10 +185,15 @@ def validate_scale(vec: list | tuple, name: str = "scale") -> tuple:
                 f"object to no thickness. Every axis needs a positive size."
             )
         if v < 0:
+            # Flipping along one axis is a half turn about either of the
+            # other two. Name one so the fix is a single call.
+            turn_about = axes[(i + 1) % 3]
             raise ValidationError(
                 f"{name} component {i} ({axes[i]}) is negative, which mirrors "
-                f"the object and inverts its normals. Use a positive scale, "
-                f"and add a Mirror modifier if you want a mirrored copy."
+                f"the object and inverts its normals. Use positive scale "
+                f"{abs(v):g} and, to point the object the other way along "
+                f"{axes[i]}, rotate it 180 degrees about {turn_about} with "
+                f"set_rotation. For a mirrored copy, add a Mirror modifier."
             )
     return vec
 

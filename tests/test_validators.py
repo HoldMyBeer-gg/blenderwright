@@ -312,12 +312,30 @@ class TestValidateScale:
             validate_scale([0.5, 0.6, -1])
         assert "negative" in str(exc.value).lower()
 
-    def test_negative_error_points_at_the_mirror_modifier(self):
-        """Refusing is only helpful if it says what to do instead."""
+    def test_negative_error_says_to_rotate_instead(self):
+        """Refusing is only helpful if it says what to do instead.
+
+        A local model wanted a cone pointing down, sent a negative Z scale,
+        read the old advice ("add a Mirror modifier"), and sent a negative
+        scale again. Three rounds burned. What it wanted was a rotation.
+        """
         from blenderwright.validators import ValidationError, validate_scale
         with pytest.raises(ValidationError) as exc:
+            validate_scale([1, 1, -1])
+        message = str(exc.value).lower()
+        assert "rotat" in message
+        assert "180" in message
+        assert "mirror" in message
+
+    def test_negative_error_names_the_axis_to_rotate_about(self):
+        from blenderwright.validators import ValidationError, validate_scale
+        with pytest.raises(ValidationError) as exc:
+            validate_scale([1, 1, -1])
+        # Flipping Z is a half turn about X (or Y); flipping X is about Y or Z.
+        assert "x" in str(exc.value).lower()
+        with pytest.raises(ValidationError) as exc:
             validate_scale([-1, 1, 1])
-        assert "mirror" in str(exc.value).lower()
+        assert "y" in str(exc.value).lower() or "z" in str(exc.value).lower()
 
     def test_names_the_offending_axis(self):
         from blenderwright.validators import ValidationError, validate_scale
