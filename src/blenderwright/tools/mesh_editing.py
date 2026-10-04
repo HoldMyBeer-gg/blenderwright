@@ -553,10 +553,13 @@ def set_edge_crease(object_name: str, value: float = 1.0,
 
 @mcp.tool()
 def select_linked(object_name: str) -> dict[str, Any]:
-    """Select all geometry linked to the current selection.
+    """Grow the current mesh selection to everything connected to it.
 
     Expands selection to include all connected vertices, edges, and faces.
     Useful for isolating mesh islands or selecting connected components.
+    Needs a starting selection: set one with select_by_index or
+    select_by_axis first. Works inside one mesh; to select whole objects
+    use select_objects.
 
     Args:
         object_name: Name of the mesh object.

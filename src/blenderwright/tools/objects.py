@@ -293,7 +293,12 @@ def rename_object(old_name: str, new_name: str) -> dict[str, Any]:
 
 @mcp.tool()
 def select_objects(names: list[str], deselect_others: bool = True) -> dict[str, Any]:
-    """Select objects by name.
+    """Select whole objects in the scene by name.
+
+    This is object-level selection, the kind that join_objects and
+    delete_object act on. To select vertices, edges or faces inside one
+    mesh, use select_by_index, select_by_axis or the other select_* tools
+    in the Selection group.
 
     Args:
         names: List of object names to select.

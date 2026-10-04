@@ -55,7 +55,10 @@ def _send(command: str, params: dict[str, Any]) -> Any:
 
 @mcp.tool()
 def select_all_geometry(object_name: str, action: str = "SELECT") -> dict[str, Any]:
-    """Select, deselect or invert all geometry on a mesh.
+    """Select, deselect or invert all vertices, edges and faces on one mesh.
+
+    Acts inside a mesh. To select whole objects in the scene, use
+    select_objects.
 
     Args:
         object_name: Name of the mesh object.
@@ -77,11 +80,12 @@ def select_by_index(
     indices: list[int],
     extend: bool = False,
 ) -> dict[str, Any]:
-    """Select specific vertices, edges or faces by index.
+    """Select specific vertices, edges or faces of one mesh by index.
 
     The deterministic way to select: no operator, no viewport, no guessing.
     analyze_mesh_quality reports sample indices for each defect it finds, so
-    this is how to act on them.
+    this is how to act on them. To select whole objects in the scene, use
+    select_objects.
 
     Args:
         object_name: Name of the mesh object.
@@ -128,9 +132,10 @@ def select_by_axis(
     sign: str = "POS",
     extend: bool = False,
 ) -> dict[str, Any]:
-    """Select geometry on one side of the object along an axis.
+    """Select the vertices, edges and faces on one side of a mesh along an axis.
 
-    The usual way to say "the top", "the front" or "the left half".
+    The usual way to say "the top", "the front" or "the left half" of one
+    object. To select whole objects in the scene, use select_objects.
 
     Args:
         object_name: Name of the mesh object.
@@ -159,9 +164,10 @@ def select_similar(
     type: str = "FACE_AREA",
     threshold: float = 0.0,
 ) -> dict[str, Any]:
-    """Grow the current selection to geometry that resembles it.
+    """Grow the current mesh selection to vertices, edges or faces that resemble it.
 
     Requires something to already be selected: it compares against that.
+    Works inside one mesh; it does not pick objects (see select_objects).
 
     Args:
         object_name: Name of the mesh object.
@@ -194,10 +200,11 @@ def select_faces_by_sides(
     comparison: str = "EQUAL",
     extend: bool = False,
 ) -> dict[str, Any]:
-    """Select faces by how many sides they have.
+    """Select faces of one mesh by how many sides they have.
 
     The direct way to find ngons (GREATER than 4) or triangles (EQUAL to 3),
-    which is what topology cleanup usually needs.
+    which is what topology cleanup usually needs. Works inside one mesh; to
+    select whole objects use select_objects.
 
     Args:
         object_name: Name of the mesh object.

@@ -35,11 +35,14 @@ def _send_booltool_command(command: str, object_name: str, target_name: str) -> 
 
 @mcp.tool()
 def booltool_auto_union(object_name: str, target_name: str) -> dict[str, Any]:
-    """Auto boolean union: merge two mesh objects into one.
+    """Auto boolean union: merge two mesh objects into one, destructively.
 
     The target object is consumed and joined into the main object.
     This is useful for permanently joining meshes so parts don't
     float away from their bodies.
+
+    This is the default choice for a union. Use boolean_operation instead
+    only when the cutter must stay editable as a modifier.
 
     Uses Bool Tool extension if installed, otherwise falls back to native
     boolean modifier (a warning will be included in the response).
@@ -61,6 +64,9 @@ def booltool_auto_difference(object_name: str, target_name: str) -> dict[str, An
 
     The target object is used as a cutter and removed after the operation.
 
+    This is the default choice for a cut. Use boolean_operation instead
+    only when the cutter must stay editable as a modifier.
+
     Uses Bool Tool extension if installed, otherwise falls back to native
     boolean modifier (a warning will be included in the response).
 
@@ -80,6 +86,9 @@ def booltool_auto_intersect(object_name: str, target_name: str) -> dict[str, Any
     """Auto boolean intersect: keep only the overlapping volume of two objects.
 
     The target object is removed after the operation.
+
+    This is the default choice for an intersection. Use boolean_operation
+    instead only when the cutter must stay editable as a modifier.
 
     Uses Bool Tool extension if installed, otherwise falls back to native
     boolean modifier (a warning will be included in the response).
@@ -101,6 +110,9 @@ def booltool_auto_slice(object_name: str, target_name: str) -> dict[str, Any]:
 
     Creates two separate pieces from the intersection. The target object
     is removed after the operation.
+
+    Slice has no modifier equivalent: boolean_operation offers UNION,
+    DIFFERENCE and INTERSECT only.
 
     Uses Bool Tool extension if installed, otherwise falls back to native
     boolean modifier (a warning will be included in the response).

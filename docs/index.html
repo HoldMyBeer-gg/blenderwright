@@ -180,10 +180,16 @@ footer a { color: var(--accent); }
 
 the target object is used as a cutter and removed after the operation.
 
+this is the default choice for a cut. use boolean_operation instead
+only when the cutter must stay editable as a modifier.
+
 uses bool tool extension if installed, otherwise falls back to native
 boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_difference">booltool_auto_difference</a></h3><pre class="sig"><code>booltool_auto_difference(object_name: str, target_name: str)</code></pre><p>Auto boolean difference: subtract the target object from the main object.
 
 The target object is used as a cutter and removed after the operation.
+
+This is the default choice for a cut. Use boolean_operation instead
+only when the cutter must stay editable as a modifier.
 
 Uses Bool Tool extension if installed, otherwise falls back to native
 boolean modifier (a warning will be included in the response).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to cut from.</td></tr>
@@ -191,10 +197,16 @@ boolean modifier (a warning will be included in the response).</p><table class="
 
 the target object is removed after the operation.
 
+this is the default choice for an intersection. use boolean_operation
+instead only when the cutter must stay editable as a modifier.
+
 uses bool tool extension if installed, otherwise falls back to native
 boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_intersect">booltool_auto_intersect</a></h3><pre class="sig"><code>booltool_auto_intersect(object_name: str, target_name: str)</code></pre><p>Auto boolean intersect: keep only the overlapping volume of two objects.
 
 The target object is removed after the operation.
+
+This is the default choice for an intersection. Use boolean_operation
+instead only when the cutter must stay editable as a modifier.
 
 Uses Bool Tool extension if installed, otherwise falls back to native
 boolean modifier (a warning will be included in the response).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the main object.</td></tr>
@@ -203,26 +215,38 @@ boolean modifier (a warning will be included in the response).</p><table class="
 creates two separate pieces from the intersection. the target object
 is removed after the operation.
 
+slice has no modifier equivalent: boolean_operation offers union,
+difference and intersect only.
+
 uses bool tool extension if installed, otherwise falls back to native
 boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_slice">booltool_auto_slice</a></h3><pre class="sig"><code>booltool_auto_slice(object_name: str, target_name: str)</code></pre><p>Auto boolean slice: split the main object using the target as a cutter.
 
 Creates two separate pieces from the intersection. The target object
 is removed after the operation.
 
+Slice has no modifier equivalent: boolean_operation offers UNION,
+DIFFERENCE and INTERSECT only.
+
 Uses Bool Tool extension if installed, otherwise falls back to native
 boolean modifier (a warning will be included in the response).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to slice.</td></tr>
-<tr><th>target_name</th><td>Name of the cutter object (will be removed).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with operation details. May include a &#x27;warning&#x27; field if Bool Tool is not available and native fallback was used.</p></article><article class="tool" id="booltool_auto_union" data-search="booltool_auto_union auto boolean union: merge two mesh objects into one.
+<tr><th>target_name</th><td>Name of the cutter object (will be removed).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with operation details. May include a &#x27;warning&#x27; field if Bool Tool is not available and native fallback was used.</p></article><article class="tool" id="booltool_auto_union" data-search="booltool_auto_union auto boolean union: merge two mesh objects into one, destructively.
 
 the target object is consumed and joined into the main object.
 this is useful for permanently joining meshes so parts don&#x27;t
 float away from their bodies.
 
+this is the default choice for a union. use boolean_operation instead
+only when the cutter must stay editable as a modifier.
+
 uses bool tool extension if installed, otherwise falls back to native
-boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_union">booltool_auto_union</a></h3><pre class="sig"><code>booltool_auto_union(object_name: str, target_name: str)</code></pre><p>Auto boolean union: merge two mesh objects into one.
+boolean modifier (a warning will be included in the response)."><h3><a href="#booltool_auto_union">booltool_auto_union</a></h3><pre class="sig"><code>booltool_auto_union(object_name: str, target_name: str)</code></pre><p>Auto boolean union: merge two mesh objects into one, destructively.
 
 The target object is consumed and joined into the main object.
 This is useful for permanently joining meshes so parts don&#x27;t
 float away from their bodies.
+
+This is the default choice for a union. Use boolean_operation instead
+only when the cutter must stay editable as a modifier.
 
 Uses Bool Tool extension if installed, otherwise falls back to native
 boolean modifier (a warning will be included in the response).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the main object to keep.</td></tr>
@@ -361,7 +385,31 @@ bunched toward the top; rust needs a hard break between metal and oxide.</p><tab
 <tr><th>from_node</th><td>Name of the source node.</td></tr>
 <tr><th>from_socket</th><td>Name of the output socket on the source node.</td></tr>
 <tr><th>to_node</th><td>Name of the destination node.</td></tr>
-<tr><th>to_socket</th><td>Name of the input socket on the destination node.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="create_material" data-search="create_material create a new material with a principled bsdf shader node."><h3><a href="#create_material">create_material</a></h3><pre class="sig"><code>create_material(name: str)</code></pre><p>Create a new material with a Principled BSDF shader node.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new material.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the created material name.</p></article><article class="tool" id="create_principled_material" data-search="create_principled_material create a fully configured principled bsdf material in one call."><h3><a href="#create_principled_material">create_principled_material</a></h3><pre class="sig"><code>create_principled_material(name: str, color: list = [0.8, 0.8, 0.8, 1.0], metallic: float = 0.0, roughness: float = 0.5, specular: float = 0.5, emission_strength: float = 0.0, emission_color: list = [1.0, 1.0, 1.0, 1.0], alpha: float = 1.0, transmission: float = 0.0, ior: float = 1.45)</code></pre><p>Create a fully configured Principled BSDF material in one call.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new material.</td></tr>
+<tr><th>to_socket</th><td>Name of the input socket on the destination node.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="create_material" data-search="create_material create an empty material: a bare principled bsdf at default values.
+
+use this only when you will wire the node tree yourself with
+add_shader_node and connect_shader_nodes. for a plain surface with a
+colour, metallic and roughness set in one call, use
+create_principled_material. for wood, marble, fire and other patterned
+surfaces, use create_procedural_material."><h3><a href="#create_material">create_material</a></h3><pre class="sig"><code>create_material(name: str)</code></pre><p>Create an empty material: a bare Principled BSDF at default values.
+
+Use this only when you will wire the node tree yourself with
+add_shader_node and connect_shader_nodes. For a plain surface with a
+colour, metallic and roughness set in one call, use
+create_principled_material. For wood, marble, fire and other patterned
+surfaces, use create_procedural_material.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new material.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the created material name.</p></article><article class="tool" id="create_principled_material" data-search="create_principled_material create a plain-surface material with colour, metallic, roughness and more set in one call.
+
+the usual choice for painted, metal, glass or plastic surfaces of a
+single colour. for a patterned surface (wood, marble, fire, veins) use
+create_procedural_material instead. create_material makes the same
+principled bsdf with nothing set, for when you will build the node tree
+by hand."><h3><a href="#create_principled_material">create_principled_material</a></h3><pre class="sig"><code>create_principled_material(name: str, color: list = [0.8, 0.8, 0.8, 1.0], metallic: float = 0.0, roughness: float = 0.5, specular: float = 0.5, emission_strength: float = 0.0, emission_color: list = [1.0, 1.0, 1.0, 1.0], alpha: float = 1.0, transmission: float = 0.0, ior: float = 1.45)</code></pre><p>Create a plain-surface material with colour, metallic, roughness and more set in one call.
+
+The usual choice for painted, metal, glass or plastic surfaces of a
+single colour. For a patterned surface (wood, marble, fire, veins) use
+create_procedural_material instead. create_material makes the same
+Principled BSDF with nothing set, for when you will build the node tree
+by hand.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new material.</td></tr>
 <tr><th>color</th><td>Base color as RGBA list, default [0.8, 0.8, 0.8, 1.0].</td></tr>
 <tr><th>metallic</th><td>Metallic value 0.0-1.0, default 0.0.</td></tr>
 <tr><th>roughness</th><td>Roughness value 0.0-1.0, default 0.5.</td></tr>
@@ -370,7 +418,10 @@ bunched toward the top; rust needs a hard break between metal and oxide.</p><tab
 <tr><th>emission_color</th><td>Emission color as RGBA list, default [1.0, 1.0, 1.0, 1.0].</td></tr>
 <tr><th>alpha</th><td>Alpha value 0.0-1.0, default 1.0.</td></tr>
 <tr><th>transmission</th><td>Transmission weight 0.0-1.0, default 0.0.</td></tr>
-<tr><th>ior</th><td>Index of refraction, default 1.45.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with material name and all set properties.</p></article><article class="tool" id="create_procedural_material" data-search="create_procedural_material build a complete procedural texture as a material, in one call.
+<tr><th>ior</th><td>Index of refraction, default 1.45.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with material name and all set properties.</p></article><article class="tool" id="create_procedural_material" data-search="create_procedural_material create a patterned material (wood, marble, fire, veins) as a full node graph in one call.
+
+for a single flat colour use create_principled_material instead; for an
+empty material you will wire by hand use create_material.
 
 prefer this over hand-wiring texture nodes. it creates the full graph (
 coordinates, mapping, the pattern&#x27;s texture nodes, a tuned colour ramp,
@@ -380,7 +431,10 @@ anything afterwards with set_shader_node_input or the colour ramp tools.
 procedural beats image textures here: no files, no uv unwrap needed, and
 it stays sharp at any camera distance.
 
-call list_procedural_patterns() to see what each pattern looks like."><h3><a href="#create_procedural_material">create_procedural_material</a></h3><pre class="sig"><code>create_procedural_material(name: str, pattern: str, scale: float = 5.0, detail: float = 2.0, distortion: float = 0.0, roughness: float = 0.5, metallic: float = 0.0, colors: list | None = None, banded: bool = False, connect_to_bsdf: bool = True)</code></pre><p>Build a complete procedural texture as a material, in one call.
+call list_procedural_patterns() to see what each pattern looks like."><h3><a href="#create_procedural_material">create_procedural_material</a></h3><pre class="sig"><code>create_procedural_material(name: str, pattern: str, scale: float = 5.0, detail: float = 2.0, distortion: float = 0.0, roughness: float = 0.5, metallic: float = 0.0, colors: list | None = None, banded: bool = False, connect_to_bsdf: bool = True)</code></pre><p>Create a patterned material (wood, marble, fire, veins) as a full node graph in one call.
+
+For a single flat colour use create_principled_material instead; for an
+empty material you will wire by hand use create_material.
 
 Prefer this over hand-wiring texture nodes. It creates the full graph (
 coordinates, mapping, the pattern&#x27;s texture nodes, a tuned colour ramp,
@@ -600,13 +654,19 @@ fixes meshes with flipped or inconsistent normals that cause shading artifacts."
 
 Fixes meshes with flipped or inconsistent normals that cause shading artifacts.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>inside</th><td>If True, normals point inward instead of outward.</td></tr>
-<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="select_linked" data-search="select_linked select all geometry linked to the current selection.
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="select_linked" data-search="select_linked grow the current mesh selection to everything connected to it.
 
 expands selection to include all connected vertices, edges, and faces.
-useful for isolating mesh islands or selecting connected components."><h3><a href="#select_linked">select_linked</a></h3><pre class="sig"><code>select_linked(object_name: str)</code></pre><p>Select all geometry linked to the current selection.
+useful for isolating mesh islands or selecting connected components.
+needs a starting selection: set one with select_by_index or
+select_by_axis first. works inside one mesh; to select whole objects
+use select_objects."><h3><a href="#select_linked">select_linked</a></h3><pre class="sig"><code>select_linked(object_name: str)</code></pre><p>Grow the current mesh selection to everything connected to it.
 
 Expands selection to include all connected vertices, edges, and faces.
-Useful for isolating mesh islands or selecting connected components.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_edge_crease" data-search="set_edge_crease set edge crease value on all edges for subdivision surface control.
+Useful for isolating mesh islands or selecting connected components.
+Needs a starting selection: set one with select_by_index or
+select_by_axis first. Works inside one mesh; to select whole objects
+use select_objects.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_edge_crease" data-search="set_edge_crease set edge crease value on all edges for subdivision surface control.
 
 crease values control how sharp edges remain when a subdivision surface
 modifier is applied. 0 = fully smooth, 1 = fully sharp."><h3><a href="#set_edge_crease">set_edge_crease</a></h3><pre class="sig"><code>set_edge_crease(object_name: str, value: float = 1.0, selection: str = &#x27;ALL&#x27;)</code></pre><p>Set edge crease value on all edges for subdivision surface control.
@@ -786,7 +846,17 @@ the geometry and removes internal faces.</p><table class="args"><tbody><tr><th>n
 <tr><th>object</th><td>Make the object single-user. Defaults to True.</td></tr>
 <tr><th>data</th><td>Make the object data (e.g., mesh) single-user. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="parent_objects" data-search="parent_objects set parent-child relationship between two objects."><h3><a href="#parent_objects">parent_objects</a></h3><pre class="sig"><code>parent_objects(child: str, parent: str)</code></pre><p>Set parent-child relationship between two objects.</p><table class="args"><tbody><tr><th>child</th><td>Name of the child object.</td></tr>
 <tr><th>parent</th><td>Name of the parent object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="rename_object" data-search="rename_object rename an object."><h3><a href="#rename_object">rename_object</a></h3><pre class="sig"><code>rename_object(old_name: str, new_name: str)</code></pre><p>Rename an object.</p><table class="args"><tbody><tr><th>old_name</th><td>Current name of the object.</td></tr>
-<tr><th>new_name</th><td>New name for the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with old and new names.</p></article><article class="tool" id="select_objects" data-search="select_objects select objects by name."><h3><a href="#select_objects">select_objects</a></h3><pre class="sig"><code>select_objects(names: list[str], deselect_others: bool = True)</code></pre><p>Select objects by name.</p><table class="args"><tbody><tr><th>names</th><td>List of object names to select.</td></tr>
+<tr><th>new_name</th><td>New name for the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with old and new names.</p></article><article class="tool" id="select_objects" data-search="select_objects select whole objects in the scene by name.
+
+this is object-level selection, the kind that join_objects and
+delete_object act on. to select vertices, edges or faces inside one
+mesh, use select_by_index, select_by_axis or the other select_* tools
+in the selection group."><h3><a href="#select_objects">select_objects</a></h3><pre class="sig"><code>select_objects(names: list[str], deselect_others: bool = True)</code></pre><p>Select whole objects in the scene by name.
+
+This is object-level selection, the kind that join_objects and
+delete_object act on. To select vertices, edges or faces inside one
+mesh, use select_by_index, select_by_axis or the other select_* tools
+in the Selection group.</p><table class="args"><tbody><tr><th>names</th><td>List of object names to select.</td></tr>
 <tr><th>deselect_others</th><td>If True, deselect all other objects first. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with list of selected object names.</p></article><article class="tool" id="set_object_visibility" data-search="set_object_visibility set object visibility in viewport and/or render."><h3><a href="#set_object_visibility">set_object_visibility</a></h3><pre class="sig"><code>set_object_visibility(object_name: str, visible: bool, viewport: bool = True, render: bool = True)</code></pre><p>Set object visibility in viewport and/or render.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>visible</th><td>Whether the object should be visible.</td></tr>
 <tr><th>viewport</th><td>Apply visibility change to viewport. Defaults to True.</td></tr>
@@ -921,39 +991,53 @@ without this a caller cannot see the result of its own selection, and the
 mesh tools that act on the current selection would be operating blind."><h3><a href="#get_selection">get_selection</a></h3><pre class="sig"><code>get_selection(object_name: str)</code></pre><p>Report what is currently selected on a mesh.
 
 Without this a caller cannot see the result of its own selection, and the
-mesh tools that act on the current selection would be operating blind.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with selected and total counts per element type, and the first 50 selected indices of each, so a caller can confirm before acting.</p></article><article class="tool" id="select_all_geometry" data-search="select_all_geometry select, deselect or invert all geometry on a mesh."><h3><a href="#select_all_geometry">select_all_geometry</a></h3><pre class="sig"><code>select_all_geometry(object_name: str, action: str = &#x27;SELECT&#x27;)</code></pre><p>Select, deselect or invert all geometry on a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>action</th><td>One of: SELECT, DESELECT, INVERT, TOGGLE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the counts selected afterwards.</p></article><article class="tool" id="select_by_axis" data-search="select_by_axis select geometry on one side of the object along an axis.
+mesh tools that act on the current selection would be operating blind.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with selected and total counts per element type, and the first 50 selected indices of each, so a caller can confirm before acting.</p></article><article class="tool" id="select_all_geometry" data-search="select_all_geometry select, deselect or invert all vertices, edges and faces on one mesh.
 
-the usual way to say &quot;the top&quot;, &quot;the front&quot; or &quot;the left half&quot;."><h3><a href="#select_by_axis">select_by_axis</a></h3><pre class="sig"><code>select_by_axis(object_name: str, axis: str = &#x27;Z&#x27;, sign: str = &#x27;POS&#x27;, extend: bool = False)</code></pre><p>Select geometry on one side of the object along an axis.
+acts inside a mesh. to select whole objects in the scene, use
+select_objects."><h3><a href="#select_all_geometry">select_all_geometry</a></h3><pre class="sig"><code>select_all_geometry(object_name: str, action: str = &#x27;SELECT&#x27;)</code></pre><p>Select, deselect or invert all vertices, edges and faces on one mesh.
 
-The usual way to say &quot;the top&quot;, &quot;the front&quot; or &quot;the left half&quot;.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+Acts inside a mesh. To select whole objects in the scene, use
+select_objects.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>action</th><td>One of: SELECT, DESELECT, INVERT, TOGGLE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the counts selected afterwards.</p></article><article class="tool" id="select_by_axis" data-search="select_by_axis select the vertices, edges and faces on one side of a mesh along an axis.
+
+the usual way to say &quot;the top&quot;, &quot;the front&quot; or &quot;the left half&quot; of one
+object. to select whole objects in the scene, use select_objects."><h3><a href="#select_by_axis">select_by_axis</a></h3><pre class="sig"><code>select_by_axis(object_name: str, axis: str = &#x27;Z&#x27;, sign: str = &#x27;POS&#x27;, extend: bool = False)</code></pre><p>Select the vertices, edges and faces on one side of a mesh along an axis.
+
+The usual way to say &quot;the top&quot;, &quot;the front&quot; or &quot;the left half&quot; of one
+object. To select whole objects in the scene, use select_objects.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>axis</th><td>One of: X, Y, Z.</td></tr>
 <tr><th>sign</th><td>POS for the positive side, NEG for the negative side, ALIGN for geometry lying in the plane.</td></tr>
-<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected.</p></article><article class="tool" id="select_by_index" data-search="select_by_index select specific vertices, edges or faces by index.
+<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected.</p></article><article class="tool" id="select_by_index" data-search="select_by_index select specific vertices, edges or faces of one mesh by index.
 
 the deterministic way to select: no operator, no viewport, no guessing.
 analyze_mesh_quality reports sample indices for each defect it finds, so
-this is how to act on them."><h3><a href="#select_by_index">select_by_index</a></h3><pre class="sig"><code>select_by_index(object_name: str, element: str, indices: list[int], extend: bool = False)</code></pre><p>Select specific vertices, edges or faces by index.
+this is how to act on them. to select whole objects in the scene, use
+select_objects."><h3><a href="#select_by_index">select_by_index</a></h3><pre class="sig"><code>select_by_index(object_name: str, element: str, indices: list[int], extend: bool = False)</code></pre><p>Select specific vertices, edges or faces of one mesh by index.
 
 The deterministic way to select: no operator, no viewport, no guessing.
 analyze_mesh_quality reports sample indices for each defect it finds, so
-this is how to act on them.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+this is how to act on them. To select whole objects in the scene, use
+select_objects.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>element</th><td>One of: VERTEX, EDGE, FACE.</td></tr>
 <tr><th>indices</th><td>Indices to select. Must be non-negative and within the mesh.</td></tr>
-<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected and the mesh&#x27;s totals.</p></article><article class="tool" id="select_faces_by_sides" data-search="select_faces_by_sides select faces by how many sides they have.
+<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected and the mesh&#x27;s totals.</p></article><article class="tool" id="select_faces_by_sides" data-search="select_faces_by_sides select faces of one mesh by how many sides they have.
 
 the direct way to find ngons (greater than 4) or triangles (equal to 3),
-which is what topology cleanup usually needs."><h3><a href="#select_faces_by_sides">select_faces_by_sides</a></h3><pre class="sig"><code>select_faces_by_sides(object_name: str, number: int = 4, comparison: str = &#x27;EQUAL&#x27;, extend: bool = False)</code></pre><p>Select faces by how many sides they have.
+which is what topology cleanup usually needs. works inside one mesh; to
+select whole objects use select_objects."><h3><a href="#select_faces_by_sides">select_faces_by_sides</a></h3><pre class="sig"><code>select_faces_by_sides(object_name: str, number: int = 4, comparison: str = &#x27;EQUAL&#x27;, extend: bool = False)</code></pre><p>Select faces of one mesh by how many sides they have.
 
 The direct way to find ngons (GREATER than 4) or triangles (EQUAL to 3),
-which is what topology cleanup usually needs.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+which is what topology cleanup usually needs. Works inside one mesh; to
+select whole objects use select_objects.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>number</th><td>Number of sides to compare against. A face has at least 3.</td></tr>
 <tr><th>comparison</th><td>One of: LESS, EQUAL, GREATER, NOTEQUAL.</td></tr>
-<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many faces were selected.</p></article><article class="tool" id="select_similar" data-search="select_similar grow the current selection to geometry that resembles it.
+<tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many faces were selected.</p></article><article class="tool" id="select_similar" data-search="select_similar grow the current mesh selection to vertices, edges or faces that resemble it.
 
-requires something to already be selected: it compares against that."><h3><a href="#select_similar">select_similar</a></h3><pre class="sig"><code>select_similar(object_name: str, type: str = &#x27;FACE_AREA&#x27;, threshold: float = 0.0)</code></pre><p>Grow the current selection to geometry that resembles it.
+requires something to already be selected: it compares against that.
+works inside one mesh; it does not pick objects (see select_objects)."><h3><a href="#select_similar">select_similar</a></h3><pre class="sig"><code>select_similar(object_name: str, type: str = &#x27;FACE_AREA&#x27;, threshold: float = 0.0)</code></pre><p>Grow the current mesh selection to vertices, edges or faces that resemble it.
 
-Requires something to already be selected: it compares against that.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+Requires something to already be selected: it compares against that.
+Works inside one mesh; it does not pick objects (see select_objects).</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>type</th><td>What to compare. Face options: FACE_MATERIAL, FACE_AREA, FACE_SIDES, FACE_PERIMETER, FACE_NORMAL, FACE_COPLANAR, FACE_SMOOTH, FACE_FREESTYLE. Edge options: EDGE_LENGTH, EDGE_DIR, EDGE_FACES, EDGE_FACE_ANGLE, EDGE_CREASE, EDGE_BEVEL, EDGE_SEAM, EDGE_SHARP, EDGE_FREESTYLE. Vertex options: VERT_NORMAL, VERT_FACES, VERT_GROUPS, VERT_EDGES, VERT_CREASE.</td></tr>
 <tr><th>threshold</th><td>How close a match must be, 0.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected.</p></article></section>
 <section class="module" id="sequencer" data-module="sequencer"><h2>sequencer <span class="n">5</span></h2><article class="tool" id="add_image_sequence_strip" data-search="add_image_sequence_strip add rendered frames to the sequencer as one image strip.

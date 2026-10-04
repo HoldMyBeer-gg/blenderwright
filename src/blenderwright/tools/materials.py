@@ -164,7 +164,13 @@ def _send_material_command(command: str, params: dict[str, Any] | None = None) -
 
 @mcp.tool()
 def create_material(name: str) -> dict[str, Any]:
-    """Create a new material with a Principled BSDF shader node.
+    """Create an empty material: a bare Principled BSDF at default values.
+
+    Use this only when you will wire the node tree yourself with
+    add_shader_node and connect_shader_nodes. For a plain surface with a
+    colour, metallic and roughness set in one call, use
+    create_principled_material. For wood, marble, fire and other patterned
+    surfaces, use create_procedural_material.
 
     Args:
         name: Name for the new material.
@@ -270,7 +276,13 @@ def create_principled_material(
     transmission: float = 0.0,
     ior: float = 1.45,
 ) -> dict[str, Any]:
-    """Create a fully configured Principled BSDF material in one call.
+    """Create a plain-surface material with colour, metallic, roughness and more set in one call.
+
+    The usual choice for painted, metal, glass or plastic surfaces of a
+    single colour. For a patterned surface (wood, marble, fire, veins) use
+    create_procedural_material instead. create_material makes the same
+    Principled BSDF with nothing set, for when you will build the node tree
+    by hand.
 
     Args:
         name: Name for the new material.
@@ -877,7 +889,10 @@ def create_procedural_material(
     banded: bool = False,
     connect_to_bsdf: bool = True,
 ) -> dict[str, Any]:
-    """Build a complete procedural texture as a material, in one call.
+    """Create a patterned material (wood, marble, fire, veins) as a full node graph in one call.
+
+    For a single flat colour use create_principled_material instead; for an
+    empty material you will wire by hand use create_material.
 
     Prefer this over hand-wiring texture nodes. It creates the full graph (
     coordinates, mapping, the pattern's texture nodes, a tuned colour ramp,
