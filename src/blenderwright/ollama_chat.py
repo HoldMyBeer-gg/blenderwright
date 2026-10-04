@@ -193,7 +193,7 @@ class BlenderChatSession:
         host: str = "127.0.0.1",
         port: int = 9876,
         ollama_host: str | None = None,
-        think: bool = False,
+        think: bool | None = None,
         num_ctx: int = DEFAULT_NUM_CTX,
         toolsets: str | None = None,
     ):
@@ -201,6 +201,10 @@ class BlenderChatSession:
         self.vision_model = vision_model
         self.host = host
         self.port = port
+        # None leaves thinking to the model's default. Measured on qwen3:
+        # unset routes thought to Ollama's separate channel and the content
+        # is the answer; False makes the same model think inline, in the
+        # content, with no tags. True forces thinking on.
         self.think = think
         self.num_ctx = num_ctx
         # None means: use BLENDERWRIGHT_TOOLSETS if set, else let the window
@@ -394,7 +398,7 @@ class BlenderChatSession:
         Returns:
             The final assistant response text.
         """
-        if self.think:
+        if self.think is True:
             user_message = f"/think\n{user_message}"
         user_msg: dict[str, Any] = {"role": "user", "content": user_message}
         if images:
@@ -406,10 +410,9 @@ class BlenderChatSession:
             "messages": self.messages,
             "tools": self.tools,
             "options": {"num_ctx": self.num_ctx},
-            # Explicit, because a thinking model left to its default can
-            # spend the whole reply thinking and return empty content.
-            "think": self.think,
         }
+        if self.think is not None:
+            chat_kwargs["think"] = self.think
 
         # Last tool call and its result, for answering an identical read-only
         # repeat without a round trip. Reset per user message.
@@ -436,10 +439,13 @@ class BlenderChatSession:
                     return final
             elif not tool_calls:
                 final = _strip_thinking(response.message.content or "")
+                if not final and getattr(response, "done_reason", None) == "length":
+                    print("  [!] The model spent its whole reply thinking and ran out "
+                          "of room. Try --no-think, or raise --num-ctx.")
                 self.messages.append({"role": "assistant", "content": final})
                 return final
             else:
-                self.messages.append(response.message)
+                self.messages.append(_without_thinking(response.message))
 
             for tool_call in tool_calls:
                 if hasattr(tool_call, "function"):
@@ -833,6 +839,18 @@ def _find_similar_tools(name: str, known_tools: set[str], max_results: int = 5) 
     return [s[1] for s in scored[:max_results]]
 
 
+def _without_thinking(message: Any) -> dict[str, Any]:
+    """An assistant message for the history, minus the thinking channel.
+
+    Ollama returns the model's thought separately; sending it back on the
+    next request would spend context on text the model has already used.
+    """
+    out: dict[str, Any] = {"role": "assistant", "content": message.content or ""}
+    if getattr(message, "tool_calls", None):
+        out["tool_calls"] = message.tool_calls
+    return out
+
+
 def _strip_thinking(text: str) -> str:
     """Drop inline reasoning from a reply, keeping the answer.
 
@@ -925,8 +943,16 @@ def main():
     parser.add_argument(
         "--think",
         action="store_true",
-        default=False,
-        help="Enable thinking mode (chain-of-thought reasoning before tool calls)",
+        default=None,
+        help="Force thinking on. Default leaves it to the model: on qwen3 that "
+             "routes thought to a separate channel and keeps replies short.",
+    )
+    parser.add_argument(
+        "--no-think",
+        action="store_false",
+        dest="think",
+        help="Force thinking off. For a model whose thinking runs until the "
+             "output limit and leaves an empty reply.",
     )
     args = parser.parse_args()
 
@@ -942,7 +968,7 @@ def main():
     )
 
     ollama_display = args.ollama_host or "localhost:11434"
-    think_display = " | think: on" if args.think else ""
+    think_display = {True: " | think: on", False: " | think: off"}.get(args.think, "")
     print(f"blenderwright chat | model: {args.model} | vision: {args.vision_model}{think_display}")
     print(f"Ollama: {ollama_display}")
     print(f"Connecting to Blender at {args.host}:{args.port}...")

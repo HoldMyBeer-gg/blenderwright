@@ -86,26 +86,46 @@ class TestCreateToolsUseIt:
 
 
 class TestChatThinking:
-    def test_chat_loop_passes_think_off_by_default(self):
+    """Measured on qwen3:30b-a3b: with think unset, thought goes to Ollama's
+    separate channel and the content is the answer; with think=False the
+    same model thinks inline in the content, untagged, 1,100 characters for
+    a one-line question. So the default leaves it to the model."""
+
+    def _session(self, **kw):
         from blenderwright.ollama_chat import BlenderChatSession
         with patch("blenderwright.ollama_chat.OllamaClient", MagicMock()):
-            s = BlenderChatSession()
+            s = BlenderChatSession(**kw)
         s.tools, s._tool_names, s.messages = [], set(), [{"role": "system", "content": ""}]
         reply = MagicMock()
         reply.message.tool_calls = None
         reply.message.content = "ok"
+        reply.message.thinking = "long private thought"
         s.ollama_client.chat.return_value = reply
+        return s
+
+    def test_default_leaves_think_to_the_model(self):
+        s = self._session()
+        s.chat("hi")
+        assert "think" not in s.ollama_client.chat.call_args.kwargs
+
+    def test_think_on_when_asked(self):
+        s = self._session(think=True)
+        s.chat("hi")
+        assert s.ollama_client.chat.call_args.kwargs["think"] is True
+
+    def test_think_off_when_asked(self):
+        s = self._session(think=False)
         s.chat("hi")
         assert s.ollama_client.chat.call_args.kwargs["think"] is False
 
-    def test_chat_loop_passes_think_on_when_asked(self):
-        from blenderwright.ollama_chat import BlenderChatSession
-        with patch("blenderwright.ollama_chat.OllamaClient", MagicMock()):
-            s = BlenderChatSession(think=True)
-        s.tools, s._tool_names, s.messages = [], set(), [{"role": "system", "content": ""}]
-        reply = MagicMock()
-        reply.message.tool_calls = None
-        reply.message.content = "ok"
-        s.ollama_client.chat.return_value = reply
+    def test_thinking_channel_is_not_stored(self):
+        s = self._session()
         s.chat("hi")
-        assert s.ollama_client.chat.call_args.kwargs["think"] is True
+        assert all("thinking" not in m for m in s.messages)
+
+    def test_empty_reply_from_length_cap_prints_a_hint(self, capsys):
+        s = self._session()
+        s.ollama_client.chat.return_value.message.content = ""
+        s.ollama_client.chat.return_value.done_reason = "length"
+        assert s.chat("hi") == ""
+        assert "--no-think" in capsys.readouterr().out
