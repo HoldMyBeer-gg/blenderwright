@@ -39,6 +39,21 @@ def _get_primitive_op(ptype: str):
     return ops_map.get(ptype)
 
 
+def _bake_scale(obj, scale) -> None:
+    """Apply a creation scale the way primitive_cube_add does: into the mesh.
+
+    Mesh data is transformed so the object keeps unit scale and modifiers
+    see the real size. An empty has no mesh, so it gets object scale.
+    """
+    sx, sy, sz = (float(v) for v in scale)
+    if (sx, sy, sz) == (1.0, 1.0, 1.0):
+        return
+    if obj.data is not None and hasattr(obj.data, "transform"):
+        obj.data.transform(mathutils.Matrix.Diagonal((sx, sy, sz, 1)))
+    else:
+        obj.scale = (sx, sy, sz)
+
+
 def _extent(obj) -> dict:
     """The object's size and where it ends, in world space.
 
@@ -77,9 +92,14 @@ def handle_create_object(params: dict) -> dict:
             op_func = _get_primitive_op(obj_type)
             if op_func is None:
                 raise ValueError(f"Unknown object type: {obj_type}")
-            op_func(location=location, rotation=rotation, scale=scale)
+            # Created at unit scale on purpose: the scale is baked below.
+            # Blender 5.1's primitive_plane_add and primitive_circle_add
+            # silently ignore their scale argument while primitive_cube_add
+            # bakes it into the mesh, so the op cannot be trusted with it.
+            op_func(location=location, rotation=rotation)
 
         obj = bpy.context.active_object
+        _bake_scale(obj, scale)
         if name:
             obj.name = name
             if obj.data:

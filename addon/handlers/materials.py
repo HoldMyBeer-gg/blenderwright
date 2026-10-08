@@ -55,9 +55,19 @@ def handle_assign_material(params: dict) -> dict:
                 obj.active_material_index = i
                 return {"object": obj.name, "material": mat.name, "action": "already_assigned", "slot": i}
 
+        # Fill the first empty slot before adding one. A boolean modifier
+        # leaves an empty slot 0 that every face points at; appending puts
+        # the material in slot 1 and the object still renders grey.
+        for i, slot_mat in enumerate(obj.data.materials):
+            if slot_mat is None:
+                obj.data.materials[i] = mat
+                obj.active_material_index = i
+                return {"object": obj.name, "material": mat.name, "action": "assigned", "slot": i}
+
         obj.data.materials.append(mat)
-        obj.active_material_index = len(obj.data.materials) - 1
-        return {"object": obj.name, "material": mat.name, "action": "assigned", "slot": len(obj.data.materials) - 1}
+        slot = len(obj.data.materials) - 1
+        obj.active_material_index = slot
+        return {"object": obj.name, "material": mat.name, "action": "assigned", "slot": slot}
     except Exception as e:
         raise RuntimeError(f"Failed to assign material: {e}")
 
