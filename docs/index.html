@@ -261,15 +261,31 @@ boolean modifier (a warning will be included in the response).</p><table class="
 <tr><th>location</th><td>XYZ location to point at as [x, y, z]. Mutually exclusive with target.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_active_camera" data-search="set_active_camera set the active scene camera."><h3><a href="#set_active_camera">set_active_camera</a></h3><pre class="sig"><code>set_active_camera(object_name: str)</code></pre><p>Set the active scene camera.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the camera object to make active.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_camera_from_view" data-search="set_camera_from_view match the active camera to the current 3d viewport view."><h3><a href="#set_camera_from_view">set_camera_from_view</a></h3><pre class="sig"><code>set_camera_from_view()</code></pre><p>Match the active camera to the current 3D viewport view.</p><p class="ret"><span>Returns</span> Confirmation dict with the camera&#x27;s new location and rotation.</p></article><article class="tool" id="set_camera_property" data-search="set_camera_property set a property on a camera."><h3><a href="#set_camera_property">set_camera_property</a></h3><pre class="sig"><code>set_camera_property(object_name: str, property: str, value: Any)</code></pre><p>Set a property on a camera.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the camera object.</td></tr>
 <tr><th>property</th><td>Property to set. One of: lens, clip_start, clip_end, sensor_width, sensor_height, dof.use_dof, dof.focus_distance, dof.aperture_fstop, ortho_scale, shift_x, shift_y, type, sensor_fit.</td></tr>
 <tr><th>value</th><td>The value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
-<section class="module" id="code_exec" data-module="code execution"><h2>Code Execution <span class="n">1</span></h2><article class="tool" id="execute_blender_code" data-search="execute_blender_code execute python code inside blender&#x27;s sandboxed environment.
+<section class="module" id="code_exec" data-module="code execution"><h2>Code Execution <span class="n">1</span></h2><article class="tool" id="execute_blender_code" data-search="execute_blender_code run python inside blender. off by default; prefer the structured tools.
 
-the code runs in a restricted sandbox that blocks dangerous imports
-(os, subprocess, socket, etc.) and dangerous builtins (exec, eval, open).
-safe blender imports (bpy, bmesh, mathutils, math, json) are allowed."><h3><a href="#execute_blender_code">execute_blender_code</a></h3><pre class="sig"><code>execute_blender_code(code: str)</code></pre><p>Execute Python code inside Blender&#x27;s sandboxed environment.
+the user must tick &quot;allow raw python&quot; in the blenderwright n-panel
+(view3d &gt; sidebar &gt; blenderwright) for the current blender session.
+until they do, this tool returns an error saying so; relay that to the
+user and do not retry. never ask the user to enable it just to do
+something a structured tool already covers.
 
-The code runs in a restricted sandbox that blocks dangerous imports
-(os, subprocess, socket, etc.) and dangerous builtins (exec, eval, open).
-Safe Blender imports (bpy, bmesh, mathutils, math, json) are allowed.</p><table class="args"><tbody><tr><th>code</th><td>Python code to execute. bpy is available but must be imported.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with &#x27;output&#x27; (captured stdout) and &#x27;success&#x27; boolean.</p></article></section>
+the code runs in a restricted namespace that blocks obvious mistakes
+(import os/subprocess/socket, exec/eval/open/compile). that is a guard
+against accidents, not a security boundary: the code runs in-process
+with full bpy. every snippet is echoed to blender&#x27;s system console and
+listed in the panel so the user can see what ran."><h3><a href="#execute_blender_code">execute_blender_code</a></h3><pre class="sig"><code>execute_blender_code(code: str)</code></pre><p>Run Python inside Blender. OFF BY DEFAULT; prefer the structured tools.
+
+The user must tick &quot;Allow raw Python&quot; in the blenderwright N-panel
+(View3D &gt; Sidebar &gt; blenderwright) for the current Blender session.
+Until they do, this tool returns an error saying so; relay that to the
+user and do not retry. Never ask the user to enable it just to do
+something a structured tool already covers.
+
+The code runs in a restricted namespace that blocks obvious mistakes
+(import os/subprocess/socket, exec/eval/open/compile). That is a guard
+against accidents, not a security boundary: the code runs in-process
+with full bpy. Every snippet is echoed to Blender&#x27;s system console and
+listed in the panel so the user can see what ran.</p><table class="args"><tbody><tr><th>code</th><td>Python code to execute. bpy is available but must be imported.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with &#x27;output&#x27; (captured stdout) and &#x27;success&#x27; boolean.</p></article></section>
 <section class="module" id="collections" data-module="collections"><h2>Collections <span class="n">4</span></h2><article class="tool" id="create_collection" data-search="create_collection create a new collection, optionally nested under a parent collection."><h3><a href="#create_collection">create_collection</a></h3><pre class="sig"><code>create_collection(name: str, parent: str = &#x27;&#x27;)</code></pre><p>Create a new collection, optionally nested under a parent collection.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new collection.</td></tr>
 <tr><th>parent</th><td>Optional name of parent collection to nest under. Empty string uses the scene&#x27;s root collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created collection&#x27;s name and parent.</p></article><article class="tool" id="delete_collection" data-search="delete_collection delete a collection."><h3><a href="#delete_collection">delete_collection</a></h3><pre class="sig"><code>delete_collection(collection_name: str, delete_objects: bool = False)</code></pre><p>Delete a collection.</p><table class="args"><tbody><tr><th>collection_name</th><td>Name of the collection to delete.</td></tr>
 <tr><th>delete_objects</th><td>If True, also delete all objects in the collection. If False, objects are unlinked but kept in the scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="move_to_collection" data-search="move_to_collection move objects to a collection, unlinking them from their current collections."><h3><a href="#move_to_collection">move_to_collection</a></h3><pre class="sig"><code>move_to_collection(object_names: list[str], collection_name: str)</code></pre><p>Move objects to a collection, unlinking them from their current collections.</p><table class="args"><tbody><tr><th>object_names</th><td>List of object names to move.</td></tr>

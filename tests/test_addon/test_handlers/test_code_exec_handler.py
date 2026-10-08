@@ -35,6 +35,20 @@ def code_exec_handler():
     return mod
 
 
+@pytest.fixture(autouse=True)
+def raw_python_enabled(code_exec_handler):
+    """Turn the per-session switch on for the sandbox tests below.
+
+    The switch lives on bpy.types.WindowManager so it is never saved into a
+    .blend. The mock bpy would otherwise return a truthy MagicMock, so the
+    handler must only honour a real bool True; set it explicitly here.
+    """
+    import bpy
+    bpy.context.window_manager.blenderwright_allow_code_exec = True
+    yield
+    bpy.context.window_manager.blenderwright_allow_code_exec = False
+
+
 class TestSandboxBlocksDangerousImports:
     """Verify that dangerous modules are blocked."""
 
@@ -187,3 +201,88 @@ class TestSandboxConstants:
     def test_blocked_modules_is_set(self, code_exec_handler):
         """BLOCKED_MODULES is a set (for O(1) lookup)."""
         assert isinstance(code_exec_handler.BLOCKED_MODULES, (set, frozenset))
+
+
+class TestRawPythonIsOffByDefault:
+    """execute_code refuses unless the user ticked the box this session."""
+
+    def test_disabled_when_switch_is_false(self, code_exec_handler):
+        import bpy
+        bpy.context.window_manager.blenderwright_allow_code_exec = False
+        with pytest.raises(PermissionError, match="(?i)disabled|Allow raw Python"):
+            code_exec_handler.handle_execute_code({"code": "print('x')"})
+
+    def test_disabled_when_switch_is_missing(self, code_exec_handler):
+        """No property registered (or a non-bool stand-in) means off."""
+        import bpy
+        bpy.context.window_manager.blenderwright_allow_code_exec = MagicMock()
+        with pytest.raises(PermissionError):
+            code_exec_handler.handle_execute_code({"code": "print('x')"})
+
+    def test_disabled_when_bpy_context_raises(self, code_exec_handler, monkeypatch):
+        """Any failure reading the switch is treated as off, never on."""
+
+        class _NoContext:
+            @property
+            def context(self):
+                raise AttributeError("no context yet")
+
+        monkeypatch.setitem(sys.modules, "bpy", _NoContext())
+        assert code_exec_handler.is_enabled() is False
+
+    def test_refusal_does_not_run_code(self, code_exec_handler):
+        import bpy
+        bpy.context.window_manager.blenderwright_allow_code_exec = False
+        code_exec_handler._exec_log.clear()
+        before = 0
+        with pytest.raises(PermissionError):
+            code_exec_handler.handle_execute_code({"code": "print('never')"})
+        assert len(code_exec_handler.get_exec_log()) == before
+
+    def test_refusal_message_names_the_panel(self, code_exec_handler):
+        import bpy
+        bpy.context.window_manager.blenderwright_allow_code_exec = False
+        with pytest.raises(PermissionError, match="blenderwright"):
+            code_exec_handler.handle_execute_code({"code": "print('x')"})
+
+    def test_enabled_runs(self, code_exec_handler):
+        result = code_exec_handler.handle_execute_code({"code": "print('on')"})
+        assert result["success"] is True
+        assert "on" in result["output"]
+
+
+class TestExecLog:
+    """Every run is recorded so the user can see what the model did."""
+
+    def test_records_each_run(self, code_exec_handler):
+        code_exec_handler._exec_log.clear()
+        code_exec_handler.handle_execute_code({"code": "print('a')\nprint('b')"})
+        log = code_exec_handler.get_exec_log()
+        assert len(log) == 1
+        entry = log[-1]
+        assert entry["first_line"] == "print('a')"
+        assert entry["lines"] == 2
+        assert entry["ok"] is True
+        assert "time" in entry
+
+    def test_records_failed_run(self, code_exec_handler):
+        with pytest.raises(RuntimeError):
+            code_exec_handler.handle_execute_code({"code": "raise ValueError('x')"})
+        assert code_exec_handler.get_exec_log()[-1]["ok"] is False
+
+    def test_log_is_capped(self, code_exec_handler):
+        for i in range(code_exec_handler.EXEC_LOG_SIZE + 5):
+            code_exec_handler.handle_execute_code({"code": f"x = {i}"})
+        assert len(code_exec_handler.get_exec_log()) == code_exec_handler.EXEC_LOG_SIZE
+
+    def test_echoes_code_to_console(self, code_exec_handler, capsys):
+        """The snippet is printed to the real stdout, not the captured buffer."""
+        code_exec_handler.handle_execute_code({"code": "print('seen')"})
+        err = capsys.readouterr().err
+        assert "[blenderwright] execute_code" in err
+        assert "print('seen')" in err
+
+    def test_get_exec_log_returns_copy(self, code_exec_handler):
+        log = code_exec_handler.get_exec_log()
+        log.clear()
+        assert isinstance(code_exec_handler.get_exec_log(), list)

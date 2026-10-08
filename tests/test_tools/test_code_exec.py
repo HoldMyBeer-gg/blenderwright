@@ -53,3 +53,19 @@ class TestExecuteBlenderCode:
 
         with pytest.raises(RuntimeError, match="Blender error"):
             execute_blender_code(code="print(")
+
+    def test_disabled_in_blender_raises_with_hint(self, mock_conn):
+        """When the user has not enabled raw Python, the error says how to."""
+        mock_conn.send_command.return_value = {
+            "status": "error",
+            "result": "PermissionError: execute_blender_code is disabled. "
+            "Tick 'Allow raw Python' in the blenderwright panel.",
+        }
+        with pytest.raises(RuntimeError, match="Allow raw Python"):
+            execute_blender_code(code="print('x')")
+
+    def test_docstring_says_off_by_default(self):
+        """The model must learn from the tool description that it is opt-in."""
+        doc = execute_blender_code.__doc__ or ""
+        assert "off by default" in doc.lower()
+        assert "not a security boundary" in doc.lower()
