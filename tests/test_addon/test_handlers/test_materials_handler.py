@@ -481,3 +481,67 @@ class TestRegistration:
             "set_color_ramp_interpolation",
             "get_color_ramp",
         } <= registered
+
+
+# ---------------------------------------------------------------------------
+# assign_material fills an empty slot before adding one
+# ---------------------------------------------------------------------------
+
+
+class TestAssignMaterialSlots:
+    """An object that has been through a boolean modifier carries an empty
+    material slot 0. Appending put the material in slot 1, every face still
+    pointed at slot 0, and the wall rendered grey. The first empty slot is
+    filled instead; a new slot is only added when none is empty."""
+
+    def _obj(self, slots):
+        obj = MagicMock()
+        obj.name = "Wall"
+        obj.data.materials = list(slots)
+        return obj
+
+    def _mat(self, name):
+        mat = MagicMock()
+        mat.name = name
+        return mat
+
+    def _patch(self, monkeypatch, obj, mat):
+        import bpy
+        monkeypatch.setattr(bpy.data.objects, "get", lambda n: obj)
+        monkeypatch.setattr(bpy.data.materials, "get", lambda n: mat)
+
+    def test_fills_the_empty_slot(self, mh, monkeypatch):
+        sage = self._mat("Wall_Sage")
+        obj = self._obj([None])
+        self._patch(monkeypatch, obj, sage)
+        result = mh.handle_assign_material({"object_name": "Wall", "material_name": "Wall_Sage"})
+        assert obj.data.materials == [sage]
+        assert result["slot"] == 0
+        assert result["action"] == "assigned"
+
+    def test_fills_the_first_empty_slot_only(self, mh, monkeypatch):
+        sage = self._mat("Wall_Sage")
+        other = self._mat("Other")
+        obj = self._obj([other, None, None])
+        self._patch(monkeypatch, obj, sage)
+        result = mh.handle_assign_material({"object_name": "Wall", "material_name": "Wall_Sage"})
+        assert obj.data.materials == [other, sage, None]
+        assert result["slot"] == 1
+
+    def test_appends_when_no_slot_is_empty(self, mh, monkeypatch):
+        sage = self._mat("Wall_Sage")
+        other = self._mat("Other")
+        obj = self._obj([other])
+        self._patch(monkeypatch, obj, sage)
+        result = mh.handle_assign_material({"object_name": "Wall", "material_name": "Wall_Sage"})
+        assert obj.data.materials == [other, sage]
+        assert result["slot"] == 1
+
+    def test_already_assigned_is_reported(self, mh, monkeypatch):
+        sage = self._mat("Wall_Sage")
+        obj = self._obj([None, sage])
+        self._patch(monkeypatch, obj, sage)
+        result = mh.handle_assign_material({"object_name": "Wall", "material_name": "Wall_Sage"})
+        assert result["action"] == "already_assigned"
+        assert result["slot"] == 1
+        assert obj.data.materials == [None, sage]

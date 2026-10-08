@@ -544,3 +544,65 @@ class TestCreateReturnsExtent:
         result = objects_handler.handle_create_object({"type": "CUBE"})
         assert result["name"] == "Fuselage"
         assert "bounds" not in result
+
+
+# ---------------------------------------------------------------------------
+# create_object bakes the scale itself
+# ---------------------------------------------------------------------------
+
+
+class TestCreateBakesScale:
+    """Blender 5.1's primitive_plane_add and primitive_circle_add silently
+    ignore their scale argument, while primitive_cube_add bakes it into the
+    mesh. A hallway floor asked for at scale (3, 4.5, 1) came back 2m square.
+    The handler now creates every primitive at unit scale and bakes the scale
+    into the mesh itself, so every type behaves the way the cube always did."""
+
+    def _obj(self, bpy):
+        obj = MagicMock()
+        obj.name = "Floor"
+        obj.type = "MESH"
+        obj.location = [0, 0, 0]
+        obj.dimensions = [6.0, 9.0, 0.0]
+        obj.bound_box = None
+        for op in ("primitive_plane_add", "primitive_cube_add", "primitive_circle_add"):
+            getattr(bpy.ops.mesh, op).side_effect = None
+        bpy.context.active_object = obj
+        return obj
+
+    def test_plane_scale_is_baked_into_the_mesh(self, objects_handler):
+        import bpy
+        import mathutils
+        bpy.reset_mock()
+        mathutils.Matrix.reset_mock()
+        obj = self._obj(bpy)
+        objects_handler.handle_create_object({
+            "type": "PLANE", "location": (0, 4.5, 0), "scale": (3, 4.5, 1),
+        })
+        mathutils.Matrix.Diagonal.assert_called_once_with((3, 4.5, 1, 1))
+        obj.data.transform.assert_called_once_with(mathutils.Matrix.Diagonal.return_value)
+
+    def test_the_op_is_not_asked_to_scale(self, objects_handler):
+        """Passing scale to the op as well would double it on the cube."""
+        import bpy
+        bpy.reset_mock()
+        self._obj(bpy)
+        objects_handler.handle_create_object({"type": "CUBE", "scale": (2, 2, 2)})
+        assert "scale" not in bpy.ops.mesh.primitive_cube_add.call_args.kwargs
+
+    def test_unit_scale_does_not_touch_the_mesh(self, objects_handler):
+        import bpy
+        bpy.reset_mock()
+        obj = self._obj(bpy)
+        objects_handler.handle_create_object({"type": "CIRCLE", "scale": (1, 1, 1)})
+        obj.data.transform.assert_not_called()
+
+    def test_empty_gets_object_scale(self, objects_handler):
+        """An empty has no mesh to bake into, so its object scale is set."""
+        import bpy
+        bpy.reset_mock()
+        obj = self._obj(bpy)
+        obj.type = "EMPTY"
+        obj.data = None
+        objects_handler.handle_create_object({"type": "EMPTY", "scale": (2, 3, 4)})
+        assert tuple(obj.scale) == (2, 3, 4)
