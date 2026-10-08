@@ -58,3 +58,23 @@ class TestCustomPort:
         """unregister() removes blenderwright_port from Scene."""
         # Should delete the property during unregister
         assert "del" in ui_source and "blenderwright_port" in ui_source
+
+
+class TestRawPythonSwitch:
+    def _switch_line(self, ui_source):
+        lines = [ln for ln in ui_source.splitlines() if "SWITCH_PROP" in ln and ".prop(" in ln]
+        assert len(lines) == 1, "expected exactly one prop() call for the raw Python switch"
+        return lines[0]
+
+    def test_switch_is_a_checkbox_not_a_toggle_button(self, ui_source):
+        """A BoolProperty drawn with icon= becomes a toggle button that reads as
+        a one-shot 'Allow' action. No icon, so it draws as a checkbox."""
+        assert "icon=" not in self._switch_line(ui_source)
+        assert "toggle=" not in self._switch_line(ui_source)
+
+    def test_switch_lives_on_window_manager(self, ui_source):
+        assert "context.window_manager" in ui_source
+        assert "WindowManager, code_exec.SWITCH_PROP" in ui_source
+
+    def test_panel_states_off_when_unticked(self, ui_source):
+        assert "execute_blender_code is off" in ui_source

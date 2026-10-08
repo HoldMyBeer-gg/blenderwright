@@ -30,7 +30,7 @@ class BLENDERWRIGHT_PT_MainPanel(bpy.types.Panel):
         # Raw Python switch: per session, never saved into the .blend.
         box = layout.box()
         wm = context.window_manager
-        box.prop(wm, code_exec.SWITCH_PROP, text="Allow raw Python", icon="SCRIPT")
+        box.prop(wm, code_exec.SWITCH_PROP, text="Allow raw Python")
         if getattr(wm, code_exec.SWITCH_PROP, False):
             box.label(text="Model may run Python in this session", icon="ERROR")
             log = code_exec.get_exec_log()
