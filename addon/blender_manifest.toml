@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "blenderwright"
-version = "2.2.0"
+version = "2.2.1"
 name = "blenderwright"
 tagline = "MCP server integration for AI-assisted 3D workflows"
 maintainer = "jabberwock <88205+jabberwock@users.noreply.github.com>"
