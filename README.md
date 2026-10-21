@@ -27,7 +27,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 ## Key Features
 
 - **[191 tools](https://blenderwright.holdmybeer.gg/)** across 28 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
-- **12 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
+- **13 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
 - **Extension suggestions**: proactively recommends Bool Tool, LoopTools, and Node Wrangler when a task would benefit from them (skips already-installed extensions)
@@ -218,7 +218,7 @@ you have; it reports symlinks distinctly.
 
 ## Expert Guidance
 
-blenderwright includes 12 MCP prompts that guide the LLM toward professional-quality results:
+blenderwright includes 13 MCP prompts that guide the LLM toward professional-quality results:
 
 | Prompt | What It Teaches |
 |--------|----------------|
@@ -234,6 +234,7 @@ blenderwright includes 12 MCP prompts that guide the LLM toward professional-qua
 | `character_base_mesh` | Character modeling guide |
 | `scene_cleanup` | Scene organization workflow |
 | `animation_turntable` | Turntable animation setup |
+| `imported_mesh_cleanup` | Import, analyze, repair, decimate, normals, scale, UVs for meshes from scans, downloads, or generators |
 
 ## Tool Domains
 
@@ -386,7 +387,7 @@ blenderwright/
 │   ├── validators.py       # Input validation
 │   ├── tools/              # 28 tool modules (191 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
-│   └── prompts/            # 12 expert prompt templates
+│   └── prompts/            # 13 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)
 │   ├── blender_manifest.toml  # Blender 4.2+ Extension manifest
 │   ├── __init__.py         # bl_info (legacy fallback) + register/unregister
