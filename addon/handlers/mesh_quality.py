@@ -97,10 +97,8 @@ def handle_repair_mesh(params: dict) -> dict:
 
     bpy.ops.object.mode_set(mode="EDIT")
     try:
-        bpy.ops.mesh.select_all(action="SELECT")
-        if params.get("remove_loose", True):
-            bpy.ops.mesh.delete_loose()
-            applied.append("remove_loose")
+        # Dissolving degenerate faces and filling holes can both leave
+        # vertices with no faces behind, so loose removal runs last.
         if params.get("dissolve_degenerate", True):
             bpy.ops.mesh.select_all(action="SELECT")
             bpy.ops.mesh.dissolve_degenerate()
@@ -109,6 +107,10 @@ def handle_repair_mesh(params: dict) -> dict:
             bpy.ops.mesh.select_all(action="SELECT")
             bpy.ops.mesh.fill_holes(sides=0)
             applied.append("fill_holes")
+        if params.get("remove_loose", True):
+            bpy.ops.mesh.select_all(action="SELECT")
+            bpy.ops.mesh.delete_loose()
+            applied.append("remove_loose")
     finally:
         bpy.ops.object.mode_set(mode="OBJECT")
 

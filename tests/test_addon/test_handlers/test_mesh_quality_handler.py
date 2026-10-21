@@ -437,3 +437,49 @@ class TestAnalyzeMeshQualityErrors:
 
         with pytest.raises(ValueError, match="not a mesh"):
             mod.handle_analyze_mesh_quality({"object_name": "Camera"})
+
+
+class TestRepairMeshOrder:
+    """Dissolving degenerate faces can orphan vertices, so loose removal must run after it."""
+
+    def _run_repair(self, mod, params):
+        import bpy
+        mock_obj = MagicMock()
+        mock_obj.name = "Cube"
+        mock_obj.type = "MESH"
+        mock_obj.mode = "OBJECT"
+        mock_obj.data.vertices = []
+        mock_obj.data.edges = []
+        mock_obj.data.polygons = []
+        bpy.data.objects.get.return_value = mock_obj
+        bpy.ops.mesh.reset_mock()
+        return mod.handle_repair_mesh(params)
+
+    def test_dissolve_degenerate_runs_before_delete_loose(self, handler_and_bmesh):
+        mod, _ = handler_and_bmesh
+        import bpy
+
+        self._run_repair(mod, {"object_name": "Cube"})
+
+        names = [c[0] for c in bpy.ops.mesh.mock_calls]
+        assert "dissolve_degenerate" in names
+        assert "delete_loose" in names
+        assert names.index("dissolve_degenerate") < names.index("delete_loose")
+
+    def test_fill_holes_runs_before_delete_loose(self, handler_and_bmesh):
+        mod, _ = handler_and_bmesh
+        import bpy
+
+        self._run_repair(mod, {"object_name": "Cube", "fill_holes": True})
+
+        names = [c[0] for c in bpy.ops.mesh.mock_calls]
+        assert names.index("fill_holes") < names.index("delete_loose")
+
+    def test_repairs_applied_reports_every_enabled_step(self, handler_and_bmesh):
+        mod, _ = handler_and_bmesh
+
+        result = self._run_repair(mod, {"object_name": "Cube", "fill_holes": True})
+
+        assert set(result["repairs_applied"]) == {
+            "remove_loose", "dissolve_degenerate", "fill_holes"
+        }
