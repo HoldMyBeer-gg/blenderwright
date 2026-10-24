@@ -257,6 +257,12 @@ def handle_set_physics_property(params: dict) -> dict:
         raise RuntimeError(f"Failed to set physics property: {e}")
 
 
+def _bake_cache(point_cache):
+    """Bake one point cache; ptcache.bake reads it from the context."""
+    with bpy.context.temp_override(point_cache=point_cache):
+        bpy.ops.ptcache.bake(bake=True)
+
+
 def handle_bake_physics(params: dict) -> dict:
     """Bake a physics simulation."""
     object_name = params.get("object_name")
@@ -281,21 +287,19 @@ def handle_bake_physics(params: dict) -> dict:
                 point_cache = scene.rigidbody_world.point_cache
                 point_cache.frame_start = scene.frame_start
                 point_cache.frame_end = scene.frame_end
-                bpy.ops.ptcache.bake({"point_cache": point_cache}, bake=True)
+                _bake_cache(point_cache)
                 baked.append("RIGID_BODY")
 
         if physics_type == "CLOTH" or not physics_type:
             for mod in obj.modifiers:
                 if mod.type == 'CLOTH':
-                    override = {"point_cache": mod.point_cache}
-                    bpy.ops.ptcache.bake(override, bake=True)
+                    _bake_cache(mod.point_cache)
                     baked.append("CLOTH")
                     break
 
         if physics_type == "PARTICLE_SYSTEM" or not physics_type:
             for ps in obj.particle_systems:
-                override = {"point_cache": ps.point_cache}
-                bpy.ops.ptcache.bake(override, bake=True)
+                _bake_cache(ps.point_cache)
                 baked.append("PARTICLE_SYSTEM")
                 break
 

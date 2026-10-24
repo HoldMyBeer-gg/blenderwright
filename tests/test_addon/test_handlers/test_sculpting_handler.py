@@ -169,3 +169,49 @@ class TestRemeshVoxelBudget:
         result = mod.handle_remesh({"object_name": "Thing", "voxel_size": 0.001,
                                     "mode": "SHARP"})
         assert result.get("voxel_size") is None
+
+
+class TestHandleSetSculptBrush:
+    """Since 4.3 sculpt brushes are Essentials assets, not builtin_brush tools."""
+
+    @pytest.mark.parametrize("brush_type, asset_name", [
+        ("DRAW", "Draw"),
+        ("CLAY_STRIPS", "Clay Strips"),
+        ("INFLATE", "Inflate/Deflate"),
+        ("CREASE", "Crease Polish"),
+        ("MULTIRES_DISPLACEMENT_SMEAR", "Smear Multires Displacement"),
+    ])
+    def test_activates_the_essentials_asset(self, sculpting_handler, brush_type, asset_name):
+        import bpy
+
+        bpy.ops.brush.asset_activate.reset_mock()
+        bpy.ops.brush.asset_activate.return_value = {"FINISHED"}
+        sculpting_handler.handle_set_sculpt_brush({"brush_type": brush_type})
+
+        bpy.ops.brush.asset_activate.assert_called_once_with(
+            asset_library_type="ESSENTIALS",
+            relative_asset_identifier=(
+                f"brushes/essentials_brushes-mesh_sculpt.blend/Brush/{asset_name}"
+            ),
+        )
+
+    def test_does_not_use_removed_builtin_brush_tools(self, sculpting_handler):
+        import bpy
+
+        bpy.ops.wm.tool_set_by_id.reset_mock()
+        bpy.ops.brush.asset_activate.return_value = {"FINISHED"}
+        sculpting_handler.handle_set_sculpt_brush({"brush_type": "GRAB"})
+
+        for call in bpy.ops.wm.tool_set_by_id.call_args_list:
+            assert not call.kwargs.get("name", "").startswith("builtin_brush.")
+
+    def test_unknown_brush_is_rejected(self, sculpting_handler):
+        with pytest.raises(ValueError):
+            sculpting_handler.handle_set_sculpt_brush({"brush_type": "LASER"})
+
+    def test_failed_activation_raises(self, sculpting_handler):
+        import bpy
+
+        bpy.ops.brush.asset_activate.return_value = {"CANCELLED"}
+        with pytest.raises(RuntimeError):
+            sculpting_handler.handle_set_sculpt_brush({"brush_type": "DRAW"})

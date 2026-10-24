@@ -233,8 +233,10 @@ def handle_set_geometry_node_input(params: dict) -> dict:
                 f"Input '{input_name}' not found on modifier '{modifier_name}'"
             )
 
-        # Set the value using the modifier's indexed access
-        modifier[input_id] = value
+        entry = getattr(modifier.properties.inputs, input_id, None)
+        if not hasattr(entry, "value"):
+            raise ValueError(f"Input '{input_name}' on '{modifier_name}' does not take a value")
+        entry.value = value
 
         return {
             "input_name": input_name,
@@ -274,16 +276,13 @@ def handle_list_geometry_node_inputs(params: dict) -> list:
                     "type": item.socket_type,
                     "identifier": item.identifier,
                 }
-                # Try to get current value
-                try:
-                    val = modifier[item.identifier]
-                    # Convert to serializable type
-                    if hasattr(val, '__iter__') and not isinstance(val, str):
-                        input_info["value"] = list(val)
-                    else:
-                        input_info["value"] = val
-                except (KeyError, TypeError):
-                    input_info["value"] = None
+                # Geometry sockets have an entry but no value
+                entry = getattr(modifier.properties.inputs, item.identifier, None)
+                val = getattr(entry, "value", None)
+                if hasattr(val, '__iter__') and not isinstance(val, str):
+                    input_info["value"] = list(val)
+                else:
+                    input_info["value"] = val
                 inputs.append(input_info)
 
         return inputs

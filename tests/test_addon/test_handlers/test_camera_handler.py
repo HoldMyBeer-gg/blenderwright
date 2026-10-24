@@ -296,3 +296,24 @@ class TestCreateCameraBecomesActive:
         bpy.context.scene.camera = None
         result = mod.handle_create_camera({"name": "Camera_1"})
         assert "active" in result
+
+
+class TestCaptureViewportAfterVideo:
+    """capture_viewport renders a PNG even when the scene was left on video."""
+
+    def test_renders_png_and_restores_video_output(self, camera_handler, video_output_scene):
+        import bpy
+
+        seen = {}
+        bpy.ops.render.render.side_effect = lambda **kw: seen.update(
+            media_type=video_output_scene.media_type,
+            file_format=video_output_scene.file_format,
+        )
+        try:
+            camera_handler.handle_capture_viewport({"filepath": "/tmp/shot.png"})
+        finally:
+            bpy.ops.render.render.side_effect = None
+
+        assert seen == {"media_type": "IMAGE", "file_format": "PNG"}
+        assert video_output_scene.media_type == "VIDEO"
+        assert video_output_scene.file_format == "FFMPEG"

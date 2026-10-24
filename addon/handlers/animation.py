@@ -1,6 +1,7 @@
 """Blender handlers for animation operations."""
 
 import bpy
+from bpy_extras import anim_utils
 from .. import dispatcher
 
 
@@ -10,6 +11,13 @@ def _get_object(name):
     if obj is None:
         raise ValueError(f"Object '{name}' not found")
     return obj
+
+
+def _action_fcurves(obj):
+    """F-curves in the object's assigned action slot, or [] if it has none."""
+    adt = obj.animation_data
+    channelbag = anim_utils.action_get_channelbag_for_slot(adt.action, adt.action_slot)
+    return channelbag.fcurves if channelbag is not None else []
 
 
 def _parse_data_path(data_path):
@@ -114,10 +122,9 @@ def handle_set_interpolation(params):
     if obj.animation_data is None or obj.animation_data.action is None:
         raise ValueError(f"Object '{obj.name}' has no animation data")
 
-    action = obj.animation_data.action
     changed = 0
 
-    for fcurve in action.fcurves:
+    for fcurve in _action_fcurves(obj):
         if fcurve.data_path == base_path:
             if index is not None and fcurve.array_index != index:
                 continue
@@ -167,10 +174,9 @@ def handle_list_keyframes(params):
     if obj.animation_data is None or obj.animation_data.action is None:
         return []
 
-    action = obj.animation_data.action
     keyframes = []
 
-    for fcurve in action.fcurves:
+    for fcurve in _action_fcurves(obj):
         data_path = fcurve.data_path
         array_index = fcurve.array_index
 

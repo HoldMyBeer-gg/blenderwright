@@ -33,7 +33,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 - **Extension suggestions**: proactively recommends Bool Tool, LoopTools, and Node Wrangler when a task would benefit from them (skips already-installed extensions)
 - **Raw Python is opt-in**: `execute_blender_code` is off until you tick "Allow raw Python" in the N-panel, per session, never saved into the .blend. When on, every snippet is echoed to the console and listed in the panel. A restricted namespace blocks obvious mistakes (`os`, `subprocess`, `exec`, `open`, ...); it is a guard against accidents, not a security boundary
 - **Render-aware**: automatically detects when Blender is rendering and queues commands. Recovers from stuck render guards via `load_post` handler and reset command
-- **Blender 4.2+ compatible**: ships as a Blender Extension; tested against Blender 5.1 with EEVEE identifier, Annotation API, sculpt stroke_method, SLIM UV unwrap, Raycast shader node, and EEVEE light path intensity controls
+- **Built for Blender 5.2 LTS**: ships as a Blender Extension; developed and tested on Blender 5.2
 - **Custom port**: configure the server port from the N-panel UI (default: 9876, range: 1024–65535)
 - **Zero telemetry**: no usage tracking, no analytics, no data collection. Everything runs locally on `127.0.0.1`
 - **Zero-dependency addon**: the Blender addon uses only Python stdlib + `bpy`. Nothing to pip install inside Blender
@@ -62,17 +62,17 @@ Then point your client at `uv run --directory /path/to/blenderwright blenderwrig
 ### 2. Install the Blender addon
 
 1. Download the latest addon zip from [GitHub Releases](https://github.com/HoldMyBeer-gg/blenderwright/releases)
-2. Open Blender 4.2 or later
+2. Open Blender 5.2 LTS
 3. Go to **Edit > Preferences > Get Extensions**, click the dropdown (▾) top-right, and choose **Install from Disk...**
 4. Select the downloaded `.zip` file
 5. Enable **"blenderwright"** in the extensions list
 
-> **Blender 4.0 / 4.1 users:** Not supported. blenderwright ships as a Blender Extension, which requires Blender 4.2 (LTS) or later. Please upgrade Blender from [blender.org/download](https://www.blender.org/download/).
+> **Blender 5.1 and earlier:** Not supported. blenderwright targets Blender 5.2 LTS, and Blender refuses to install it on older versions. Please upgrade Blender from [blender.org/download](https://www.blender.org/download/).
 
 <details>
 <summary><strong>Developer install (symlink)</strong></summary>
 
-If you're developing on blenderwright, symlink the addon folder into Blender's user extensions directory instead. Replace `<ver>` with your Blender version (e.g. `4.2`, `5.1`).
+If you're developing on blenderwright, symlink the addon folder into Blender's user extensions directory instead. Replace `<ver>` with your Blender version (e.g. `5.2`).
 
 ```bash
 # macOS
@@ -179,7 +179,7 @@ python install_addon.py upgrade /Applications/Blender.app/Contents/MacOS/Blender
 python install_addon.py upgrade /usr/local/bin/blender
 
 # Windows
-python install_addon.py upgrade "C:\Program Files\Blender Foundation\Blender 4.2\blender.exe"
+python install_addon.py upgrade "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
 ```
 
 It refuses to run while Blender is open, checks the path before touching anything,
@@ -263,7 +263,7 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 | 3D Printing | 1 | Reversed normals, self-intersection, thin walls, shells and overhangs via Blender's 3D Print Toolbox |
 | Sequencer | 5 | Image-sequence strips, sound strips, list and remove strips, render to MP4, MKV or WebM with audio |
 | Sculpting | 8 | Brushes, remesh, multires, symmetry, dynamic topology, stroke_method |
-| UV Mapping | 4 | Smart project, unwrap (ANGLE_BASED, CONFORMAL, SLIM), projection, pack islands |
+| UV Mapping | 4 | Smart project, unwrap (ANGLE_BASED, CONFORMAL, MINIMUM_STRETCH), projection, pack islands |
 | Physics | 9 | Rigid body, cloth, fluid, particles (velocity, rendering, delete), bake |
 | Geometry Nodes | 5 | Create node trees, add/connect nodes, set inputs |
 | Armature | 6 | Bones, constraints, auto weights, pose |
@@ -389,7 +389,7 @@ blenderwright/
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 13 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)
-│   ├── blender_manifest.toml  # Blender 4.2+ Extension manifest
+│   ├── blender_manifest.toml  # Blender 5.2+ Extension manifest
 │   ├── __init__.py         # bl_info (legacy fallback) + register/unregister
 │   ├── server.py           # TCP socket server (SO_KEEPALIVE)
 │   ├── dispatcher.py       # Command routing + allowlist

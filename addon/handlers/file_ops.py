@@ -11,7 +11,7 @@ from .. import dispatcher
 
 # Map file extensions to import operators
 IMPORT_OPERATORS = {
-    ".fbx": lambda fp, **kw: bpy.ops.import_scene.fbx(filepath=fp, **kw),
+    ".fbx": lambda fp, **kw: bpy.ops.wm.fbx_import(filepath=fp, **kw),
     ".obj": lambda fp, **kw: bpy.ops.wm.obj_import(filepath=fp, **kw),
     ".gltf": lambda fp, **kw: bpy.ops.import_scene.gltf(filepath=fp, **kw),
     ".glb": lambda fp, **kw: bpy.ops.import_scene.gltf(filepath=fp, **kw),
@@ -22,9 +22,7 @@ IMPORT_OPERATORS = {
     ".stl": lambda fp, **kw: bpy.ops.wm.stl_import(filepath=fp, **kw),
     ".ply": lambda fp, **kw: bpy.ops.wm.ply_import(filepath=fp, **kw),
     ".abc": lambda fp, **kw: bpy.ops.wm.alembic_import(filepath=fp, **kw),
-    ".dae": lambda fp, **kw: bpy.ops.wm.collada_import(filepath=fp, **kw),
     ".svg": lambda fp, **kw: bpy.ops.import_curve.svg(filepath=fp, **kw),
-    ".x3d": lambda fp, **kw: bpy.ops.import_scene.x3d(filepath=fp, **kw),
 }
 
 # Map file extensions to export operators
@@ -40,9 +38,21 @@ EXPORT_OPERATORS = {
     ".stl": lambda fp, **kw: bpy.ops.wm.stl_export(filepath=fp, **kw),
     ".ply": lambda fp, **kw: bpy.ops.wm.ply_export(filepath=fp, **kw),
     ".abc": lambda fp, **kw: bpy.ops.wm.alembic_export(filepath=fp, **kw),
-    ".dae": lambda fp, **kw: bpy.ops.wm.collada_export(filepath=fp, **kw),
-    ".svg": lambda fp, **kw: bpy.ops.import_curve.svg(filepath=fp, **kw),
-    ".x3d": lambda fp, **kw: bpy.ops.export_scene.x3d(filepath=fp, **kw),
+}
+
+# Each exporter names its "selected objects only" option differently
+EXPORT_SELECTION_KEYWORDS = {
+    ".fbx": "use_selection",
+    ".gltf": "use_selection",
+    ".glb": "use_selection",
+    ".obj": "export_selected_objects",
+    ".stl": "export_selected_objects",
+    ".ply": "export_selected_objects",
+    ".usd": "selected_objects_only",
+    ".usda": "selected_objects_only",
+    ".usdc": "selected_objects_only",
+    ".usdz": "selected_objects_only",
+    ".abc": "selected",
 }
 
 # Map type strings to extensions
@@ -54,9 +64,7 @@ TYPE_TO_EXTENSION = {
     "STL": ".stl",
     "PLY": ".ply",
     "ABC": ".abc",
-    "DAE": ".dae",
     "SVG": ".svg",
-    "X3D": ".x3d",
 }
 
 
@@ -122,10 +130,11 @@ def handle_export_file(params: dict) -> dict:
 
         kwargs = {}
         if selected_only:
-            # Most exporters use use_selection, some use export_selected_objects
-            kwargs["use_selection"] = True
+            kwargs[EXPORT_SELECTION_KEYWORDS[ext]] = True
 
-        result = export_op(filepath, **kwargs)  # noqa: F841
+        result = export_op(filepath, **kwargs)
+        if result != {'FINISHED'}:
+            raise RuntimeError(f"Export operator did not finish successfully: {result}")
 
         return {
             "filepath": filepath,

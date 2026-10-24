@@ -12,10 +12,10 @@ from blenderwright.validators import (
 
 # Allowed import/export format identifiers
 ALLOWED_IMPORT_TYPES = {
-    "", "FBX", "OBJ", "GLTF", "USD", "STL", "PLY", "ABC", "DAE", "SVG", "X3D",
+    "", "FBX", "OBJ", "GLTF", "USD", "STL", "PLY", "ABC", "SVG",
 }
 ALLOWED_EXPORT_TYPES = {
-    "", "FBX", "OBJ", "GLTF", "USD", "STL", "PLY", "ABC", "DAE", "SVG", "X3D",
+    "", "FBX", "OBJ", "GLTF", "USD", "STL", "PLY", "ABC",
 }
 
 # .blend file extension for save/open
@@ -29,13 +29,13 @@ def import_file(
 ) -> dict[str, Any]:
     """Import a 3D file into Blender.
 
-    Supports FBX, OBJ, GLTF/GLB, USD, STL, PLY, Alembic (ABC), Collada (DAE),
-    SVG, and X3D formats. Auto-detects format from file extension if type is empty.
+    Supports FBX, OBJ, GLTF/GLB, USD, STL, PLY, Alembic (ABC), and SVG formats.
+    Auto-detects format from file extension if type is empty.
 
     Args:
         filepath: Absolute path to the file to import. Must exist.
         type: Optional format override. One of: FBX, OBJ, GLTF, USD, STL, PLY,
-              ABC, DAE, SVG, X3D. Auto-detected from extension if empty.
+              ABC, SVG. Auto-detected from extension if empty.
 
     Returns:
         Dict with imported file path and format.
@@ -62,8 +62,7 @@ def export_file(
 ) -> dict[str, Any]:
     """Export scene or selected objects to a 3D file.
 
-    Supports FBX, OBJ, GLTF/GLB, USD, STL, PLY, Alembic (ABC), Collada (DAE),
-    SVG, and X3D formats.
+    Supports FBX, OBJ, GLTF/GLB, USD, STL, PLY, and Alembic (ABC) formats.
 
     Args:
         filepath: Absolute path for the export file.

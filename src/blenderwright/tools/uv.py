@@ -9,7 +9,7 @@ from blenderwright.validators import (
     validate_numeric_range,
 )
 
-ALLOWED_UNWRAP_METHODS = {"ANGLE_BASED", "CONFORMAL", "SLIM"}
+ALLOWED_UNWRAP_METHODS = {"ANGLE_BASED", "CONFORMAL", "MINIMUM_STRETCH"}
 ALLOWED_PROJECTIONS = {"CUBE", "CYLINDER", "SPHERE"}
 
 
@@ -61,7 +61,8 @@ def uv_unwrap(
 
     Args:
         object_name: Name of the mesh object.
-        method: Unwrap method - ANGLE_BASED or CONFORMAL.
+        method: Unwrap method - ANGLE_BASED, CONFORMAL, or MINIMUM_STRETCH
+            (the SLIM unwrapper; least distortion, slower).
 
     Returns:
         Confirmation dict with object name.

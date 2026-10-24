@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any
 
 # Allowed file extensions for import/export
-ALLOWED_IMPORT_EXTENSIONS = {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usda", ".usdc", ".usdz", ".stl", ".ply", ".abc", ".dae", ".svg", ".x3d"}
-ALLOWED_EXPORT_EXTENSIONS = {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usda", ".usdc", ".usdz", ".stl", ".ply", ".abc", ".dae", ".svg", ".x3d"}
+ALLOWED_IMPORT_EXTENSIONS = {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usda", ".usdc", ".usdz", ".stl", ".ply", ".abc", ".svg"}
+ALLOWED_EXPORT_EXTENSIONS = {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usda", ".usdc", ".usdz", ".stl", ".ply", ".abc"}
 
 # Limits
 MAX_OBJECT_NAME_LENGTH = 63  # Blender's internal limit
