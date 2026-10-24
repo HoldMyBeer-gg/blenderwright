@@ -7,6 +7,20 @@ import pytest
 from blenderwright.connection import BlenderConnection, BlenderConnectionError
 
 
+@pytest.fixture(autouse=True)
+def _transport_only(monkeypatch):
+    """These tests cover framing, retries and timeouts. The handshake and
+    signatures are covered over real sockets in tests/test_handshake.py."""
+
+    def handshake(self):
+        self._key = b"k" * 32
+        self._seq = 0
+        return True
+
+    monkeypatch.setattr(BlenderConnection, "_handshake", handshake)
+    monkeypatch.setattr(BlenderConnection, "_verify_reply", lambda self, reply, seq: reply)
+
+
 class TestConnect:
     def test_connect_success(self, mock_socket):
         conn = BlenderConnection()
@@ -106,7 +120,8 @@ class TestSendCommand:
 
         call_args = mock_socket.sendall.call_args[0][0]
         sent_payload = json.loads(call_args[4:].decode("utf-8"))
-        assert "params" not in sent_payload
+        # Signed commands always carry params, empty when none are given
+        assert sent_payload["params"] == {}
 
     def test_send_command_invalid_response(self, mock_socket):
         """Non-dict JSON response raises error."""
