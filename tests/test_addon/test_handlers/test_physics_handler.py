@@ -81,3 +81,82 @@ class TestBakePhysics:
         handler.handle_bake_physics({"object_name": "Cube", "physics_type": "PARTICLE_SYSTEM"})
 
         _assert_baked_with_override(ps.point_cache)
+
+
+class TestForceFieldCollisionSoftBody:
+    def test_force_field_comes_from_effector_add(self, handler, monkeypatch):
+        """An empty made with bpy.data.objects.new has no field data (obj.field is
+        None); only the effector_add operator allocates it."""
+        import bpy
+        from types import SimpleNamespace
+
+        made = []
+
+        def effector_add(type, location, rotation):
+            obj = SimpleNamespace(name=type.title(), location=location,
+                                  rotation_euler=rotation,
+                                  field=SimpleNamespace(type=type))
+            made.append(obj)
+            bpy.context.active_object = obj
+            return {"FINISHED"}
+
+        monkeypatch.setattr(bpy.ops.object, "effector_add", effector_add, raising=False)
+        monkeypatch.setattr(handler, "_ensure_object_mode", lambda: None, raising=False)
+        result = handler.handle_add_force_field({
+            "type": "WIND", "name": "Gust", "location": [0, 0, 1], "rotation": [1.57, 0, 0],
+            "strength": 5.0, "flow": 1.0, "noise": 0.5, "seed": 3, "falloff_type": "TUBE",
+            "falloff_power": 2.0, "max_distance": 4.0})
+        obj = made[0]
+        f = obj.field
+        assert obj.name == "Gust"
+        assert (f.type, f.strength, f.flow, f.noise, f.seed, f.falloff_type,
+                f.falloff_power, f.use_max_distance, f.distance_max) == (
+            "WIND", 5.0, 1.0, 0.5, 3, "TUBE", 2.0, True, 4.0)
+        assert result["name"] == "Gust"
+
+    def test_unknown_field_type_refused(self, handler):
+        with pytest.raises(ValueError):
+            handler.handle_add_force_field({"type": "BOID"})
+
+    def test_collision(self, handler):
+        from types import SimpleNamespace
+
+        coll = SimpleNamespace()
+        mods = []
+        obj = _object()
+        obj.type = "MESH"
+        obj.modifiers = SimpleNamespace(new=lambda name, type: mods.append(type),
+                                        __iter__=None)
+        obj.collision = coll
+        handler.handle_add_collision({"object_name": "Cube", "thickness": 0.05,
+                                      "damping": 0.2, "friction": 10.0, "stickiness": 0.0,
+                                      "permeability": 0.1})
+        assert mods == ["COLLISION"]
+        assert (coll.thickness_outer, coll.damping, coll.cloth_friction,
+                coll.permeability) == (0.05, 0.2, 10.0, 0.1)
+
+    def test_soft_body(self, handler):
+        from types import SimpleNamespace
+
+        sb = SimpleNamespace()
+        mods = []
+        obj = _object()
+        obj.type = "MESH"
+        obj.modifiers = SimpleNamespace(new=lambda name, type: mods.append(type))
+        obj.soft_body = sb
+        handler.handle_add_soft_body({"object_name": "Cube", "mass": 2.0, "goal": False,
+                                      "goal_strength": 0.7, "pull": 0.9, "push": 0.8,
+                                      "bend": 0.5, "damping": 1.0, "friction": 0.5,
+                                      "self_collision": True})
+        assert mods == ["SOFT_BODY"]
+        assert (sb.mass, sb.use_goal, sb.pull, sb.push, sb.bend, sb.use_self_collision) == (
+            2.0, False, 0.9, 0.8, 0.5, True)
+
+    def test_soft_body_bakes(self, handler):
+        import bpy
+
+        soft = MagicMock()
+        soft.type = "SOFT_BODY"
+        _object(modifiers=[soft])
+        handler.handle_bake_physics({"object_name": "Cube", "physics_type": "SOFT_BODY"})
+        bpy.context.temp_override.assert_any_call(point_cache=soft.point_cache)

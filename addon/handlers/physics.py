@@ -303,6 +303,13 @@ def handle_bake_physics(params: dict) -> dict:
                 baked.append("PARTICLE_SYSTEM")
                 break
 
+        if physics_type == "SOFT_BODY" or not physics_type:
+            for mod in obj.modifiers:
+                if mod.type == 'SOFT_BODY':
+                    _bake_cache(mod.point_cache)
+                    baked.append("SOFT_BODY")
+                    break
+
         if physics_type == "FLUID" or not physics_type:
             for mod in obj.modifiers:
                 if mod.type == 'FLUID' and mod.domain_settings is not None:
@@ -439,6 +446,78 @@ def handle_set_particle_rendering(params: dict) -> dict:
         raise RuntimeError(f"Failed to set particle rendering: {e}")
 
 
+FIELD_TYPES = {"FORCE", "WIND", "VORTEX", "MAGNET", "HARMONIC", "CHARGE", "LENNARDJ",
+               "TURBULENCE", "DRAG"}
+
+
+def _get_mesh(name):
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        raise ValueError(f"Object '{name}' not found")
+    if obj.type != "MESH":
+        raise ValueError(f"Object '{name}' is not a mesh (type: {obj.type})")
+    return obj
+
+
+def handle_add_force_field(params: dict) -> dict:
+    """Create an empty carrying a force field."""
+    field_type = params.get("type")
+    if field_type not in FIELD_TYPES:
+        raise ValueError(f"Unknown force field type {field_type!r}")
+    # Only the operator allocates field data; an empty from objects.new has none
+    if bpy.context.object is not None and bpy.context.object.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.effector_add(type=field_type,
+                                location=tuple(params.get("location", (0, 0, 0))),
+                                rotation=tuple(params.get("rotation", (0, 0, 0))))
+    obj = bpy.context.active_object
+    if params.get("name"):
+        obj.name = params["name"]
+    field = obj.field
+    field.type = field_type
+    field.strength = params.get("strength", 1.0)
+    field.flow = params.get("flow", 0.0)
+    field.noise = params.get("noise", 0.0)
+    field.seed = params.get("seed", 1)
+    field.falloff_type = params.get("falloff_type", "SPHERE")
+    field.falloff_power = params.get("falloff_power", 0.0)
+    max_distance = params.get("max_distance", 0.0)
+    field.use_max_distance = max_distance > 0
+    field.distance_max = max_distance
+    return {"name": obj.name, "type": field.type, "strength": field.strength}
+
+
+def handle_add_collision(params: dict) -> dict:
+    """Add a Collision modifier and set its surface response."""
+    obj = _get_mesh(params.get("object_name"))
+    obj.modifiers.new(name="Collision", type="COLLISION")
+    coll = obj.collision
+    coll.thickness_outer = params.get("thickness", 0.02)
+    coll.damping = params.get("damping", 0.1)
+    coll.cloth_friction = params.get("friction", 5.0)
+    coll.stickiness = params.get("stickiness", 0.0)
+    coll.permeability = params.get("permeability", 0.0)
+    return {"object_name": obj.name, "thickness": coll.thickness_outer,
+            "damping": coll.damping, "friction": coll.cloth_friction}
+
+
+def handle_add_soft_body(params: dict) -> dict:
+    """Add a Soft Body modifier and set its springs and goal."""
+    obj = _get_mesh(params.get("object_name"))
+    obj.modifiers.new(name="Softbody", type="SOFT_BODY")
+    sb = obj.soft_body
+    sb.mass = params.get("mass", 1.0)
+    sb.use_goal = bool(params.get("goal", True))
+    sb.goal_default = params.get("goal_strength", 0.7)
+    sb.pull = params.get("pull", 0.5)
+    sb.push = params.get("push", 0.5)
+    sb.bend = params.get("bend", 0.0)
+    sb.damping = params.get("damping", 0.5)
+    sb.friction = params.get("friction", 0.5)
+    sb.use_self_collision = bool(params.get("self_collision", False))
+    return {"object_name": obj.name, "goal": sb.use_goal, "mass": sb.mass}
+
+
 def register():
     """Register physics handlers with the dispatcher."""
     dispatcher.register_handler("add_rigid_body", handle_add_rigid_body)
@@ -450,3 +529,6 @@ def register():
     dispatcher.register_handler("delete_particle_system", handle_delete_particle_system)
     dispatcher.register_handler("set_particle_velocity", handle_set_particle_velocity)
     dispatcher.register_handler("set_particle_rendering", handle_set_particle_rendering)
+    dispatcher.register_handler("add_force_field", handle_add_force_field)
+    dispatcher.register_handler("add_collision", handle_add_collision)
+    dispatcher.register_handler("add_soft_body", handle_add_soft_body)

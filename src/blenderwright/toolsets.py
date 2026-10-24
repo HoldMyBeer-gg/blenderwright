@@ -66,7 +66,8 @@ TOOLSETS: dict[str, str] = {
     "sculpting": "Sculpt mode, brushes, remesh, multires, symmetry, dyntopo",
     "uv": "UV unwrap, smart project, projection, pack islands, average scale, relax, "
           "randomize, arrange, texel density",
-    "physics": "Rigid body, cloth, fluid, particles, bake",
+    "physics": "Rigid body, cloth, fluid, particles, soft body, force fields (wind, "
+               "turbulence, vortex), colliders, bake",
     "geometry_nodes": "Geometry node trees: create, add, connect, set inputs; ready-made "
                       "array, scatter on surface, instance on elements, curve to tube",
     "armature": "Armatures, bones, constraints, weights, pose, bone collections, IK "
