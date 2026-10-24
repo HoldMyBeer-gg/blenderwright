@@ -1,6 +1,6 @@
 """Toolsets: load a subset of the tools, or let the model load them on demand.
 
-All 191 tool schemas cost about 48k tokens on every request. Claude-class
+All the tool schemas together cost about 48k tokens on every request. Claude-class
 clients absorb that; a 32k local model has nothing left for the conversation
 and starts dropping messages. The default stays the full set, because that is
 what the featured output was made with. Opting down is explicit, except in the
@@ -249,3 +249,26 @@ class TestModuleSurface:
         for attr in ("CORE", "TOOLSETS", "apply_toolsets", "enable_toolset",
                      "restore_all", "parse_spec", "tools_by_toolset"):
             assert hasattr(toolsets, attr)
+
+
+class TestModelCanFindEveryGroup:
+    """A model in auto mode only enables what it knows exists."""
+
+    def test_enable_toolset_description_carries_the_whole_menu(self):
+        apply_toolsets(mcp, "auto")
+        tool = next(t for t in asyncio.run(mcp.list_tools()) if t.name == "enable_toolset")
+        for name, summary in TOOLSETS.items():
+            assert name in tool.description
+            assert summary in tool.description
+
+    def test_render_settings_is_its_own_optional_group(self):
+        grouped = tools_by_toolset(mcp)
+        assert "render_settings" in TOOLSETS and "render_settings" not in CORE
+        assert {"set_color_management", "set_film", "set_denoising", "set_cycles_sampling",
+                "set_light_paths", "set_motion_blur",
+                "set_render_passes"} == set(grouped["render_settings"])
+
+    def test_core_rendering_keeps_only_the_basics(self):
+        grouped = tools_by_toolset(mcp)
+        assert "set_color_management" not in grouped["rendering"]
+        assert "render_image" in grouped["rendering"]
