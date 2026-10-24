@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 234 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 234 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 236 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 236 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 234 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 236 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>234</b> tools</span>
+    <span><b>236</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -120,7 +120,7 @@ footer a { color: var(--accent); }
 </header>
 <div class="layout">
   <nav aria-label="Tool categories"><a href="#animation">Animation <span class="n">12</span></a>
-<a href="#armature">Armature &amp; Rigging <span class="n">6</span></a>
+<a href="#armature">Armature &amp; Rigging <span class="n">8</span></a>
 <a href="#baking">baking <span class="n">1</span></a>
 <a href="#booltool">Bool Tool <span class="n">4</span></a>
 <a href="#camera">Camera <span class="n">6</span></a>
@@ -198,15 +198,25 @@ For location, rotation and scale, insert_keyframe is simpler.</p><table class="a
 <tr><th>end</th><td>End frame number. Must be greater than start.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new frame range.</p></article><article class="tool" id="set_interpolation" data-search="set_interpolation set the interpolation type for keyframes on a property."><h3><a href="#set_interpolation">set_interpolation</a></h3><pre class="sig"><code>set_interpolation(object_name: str, data_path: str, interpolation: str = &#x27;BEZIER&#x27;)</code></pre><p>Set the interpolation type for keyframes on a property.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>data_path</th><td>Property data path.</td></tr>
 <tr><th>interpolation</th><td>Interpolation type. One of: CONSTANT, LINEAR, BEZIER, SINE, QUAD, CUBIC, QUART, QUINT, EXPO, CIRC, BACK, BOUNCE, ELASTIC.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
-<section class="module" id="armature" data-module="armature &amp; rigging"><h2>Armature &amp; Rigging <span class="n">6</span></h2><article class="tool" id="add_bone" data-search="add_bone add a bone to an armature. enters edit mode automatically."><h3><a href="#add_bone">add_bone</a></h3><pre class="sig"><code>add_bone(armature_name: str, bone_name: str, head: list[float] | tuple[float, ...] = (0, 0, 0), tail: list[float] | tuple[float, ...] = (0, 0, 1), parent_bone: str = &#x27;&#x27;)</code></pre><p>Add a bone to an armature. Enters edit mode automatically.</p><table class="args"><tbody><tr><th>armature_name</th><td>Name of the armature object.</td></tr>
+<section class="module" id="armature" data-module="armature &amp; rigging"><h2>Armature &amp; Rigging <span class="n">8</span></h2><article class="tool" id="add_bone" data-search="add_bone add a bone to an armature. enters edit mode automatically."><h3><a href="#add_bone">add_bone</a></h3><pre class="sig"><code>add_bone(armature_name: str, bone_name: str, head: list[float] | tuple[float, ...] = (0, 0, 0), tail: list[float] | tuple[float, ...] = (0, 0, 1), parent_bone: str = &#x27;&#x27;)</code></pre><p>Add a bone to an armature. Enters edit mode automatically.</p><table class="args"><tbody><tr><th>armature_name</th><td>Name of the armature object.</td></tr>
 <tr><th>bone_name</th><td>Name for the new bone.</td></tr>
 <tr><th>head</th><td>XYZ position of the bone head (root). Defaults to (0, 0, 0).</td></tr>
 <tr><th>tail</th><td>XYZ position of the bone tail (tip). Defaults to (0, 0, 1).</td></tr>
 <tr><th>parent_bone</th><td>Optional name of the parent bone for hierarchy.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created bone&#x27;s name, head, and tail positions.</p></article><article class="tool" id="add_constraint" data-search="add_constraint add a constraint to an object or bone."><h3><a href="#add_constraint">add_constraint</a></h3><pre class="sig"><code>add_constraint(object_name: str, bone_name: str = &#x27;&#x27;, constraint_type: str = &#x27;&#x27;, properties: dict[str, Any] | None = None)</code></pre><p>Add a constraint to an object or bone.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object (armature for bone constraints).</td></tr>
 <tr><th>bone_name</th><td>Name of the bone (empty string for object-level constraints).</td></tr>
-<tr><th>constraint_type</th><td>Constraint type. One of: IK, COPY_ROTATION, COPY_LOCATION, COPY_SCALE, COPY_TRANSFORMS, TRACK_TO, DAMPED_TRACK, LOCKED_TRACK, LIMIT_ROTATION, LIMIT_LOCATION, LIMIT_SCALE, STRETCH_TO, FLOOR, CLAMP_TO, TRANSFORM, MAINTAIN_VOLUME, CHILD_OF, PIVOT, ARMATURE.</td></tr>
-<tr><th>properties</th><td>Optional dict of constraint properties to set (e.g., target, subtarget, chain_count, influence, etc.).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created constraint&#x27;s name and type.</p></article><article class="tool" id="create_armature" data-search="create_armature create a new armature object."><h3><a href="#create_armature">create_armature</a></h3><pre class="sig"><code>create_armature(name: str = &#x27;Armature&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Create a new armature object.</p><table class="args"><tbody><tr><th>name</th><td>Name for the armature. Defaults to &quot;Armature&quot;.</td></tr>
-<tr><th>location</th><td>XYZ position for the armature. Defaults to origin.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created armature&#x27;s name and location.</p></article><article class="tool" id="parent_mesh_to_armature" data-search="parent_mesh_to_armature parent a mesh object to an armature with automatic weights or other methods."><h3><a href="#parent_mesh_to_armature">parent_mesh_to_armature</a></h3><pre class="sig"><code>parent_mesh_to_armature(mesh_name: str, armature_name: str, type: str = &#x27;ARMATURE_AUTO&#x27;)</code></pre><p>Parent a mesh object to an armature with automatic weights or other methods.</p><table class="args"><tbody><tr><th>mesh_name</th><td>Name of the mesh object to parent.</td></tr>
+<tr><th>constraint_type</th><td>Constraint type. One of: IK, COPY_ROTATION, COPY_LOCATION, COPY_SCALE, COPY_TRANSFORMS, TRACK_TO, DAMPED_TRACK, LOCKED_TRACK, LIMIT_ROTATION, LIMIT_LOCATION, LIMIT_SCALE, STRETCH_TO, FLOOR, CLAMP_TO, TRANSFORM, MAINTAIN_VOLUME, CHILD_OF, PIVOT, ARMATURE, LIMIT_DISTANCE, SPLINE_IK, ACTION, FOLLOW_PATH, SHRINKWRAP, GEOMETRY_ATTRIBUTE.</td></tr>
+<tr><th>properties</th><td>Optional dict of the constraint&#x27;s own settings, e.g. target (an object name), subtarget (a bone name), influence, chain_count, owner_space. Only settings Blender declares on that constraint type are accepted. For a full IK setup use setup_ik_chain.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created constraint&#x27;s name and type.</p></article><article class="tool" id="create_armature" data-search="create_armature create a new armature object."><h3><a href="#create_armature">create_armature</a></h3><pre class="sig"><code>create_armature(name: str = &#x27;Armature&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Create a new armature object.</p><table class="args"><tbody><tr><th>name</th><td>Name for the armature. Defaults to &quot;Armature&quot;.</td></tr>
+<tr><th>location</th><td>XYZ position for the armature. Defaults to origin.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created armature&#x27;s name and location.</p></article><article class="tool" id="manage_bone_collection" data-search="manage_bone_collection organise an armature&#x27;s bones into collections and show or hide them.
+
+typical rig layout: &quot;deform&quot; (hidden), &quot;controls&quot; (visible),
+&quot;mechanism&quot; (hidden)."><h3><a href="#manage_bone_collection">manage_bone_collection</a></h3><pre class="sig"><code>manage_bone_collection(armature_name: str, action: str, collection_name: str, bones: list[str] | None = None, parent: str = &#x27;&#x27;)</code></pre><p>Organise an armature&#x27;s bones into collections and show or hide them.
+
+Typical rig layout: &quot;Deform&quot; (hidden), &quot;Controls&quot; (visible),
+&quot;Mechanism&quot; (hidden).</p><table class="args"><tbody><tr><th>armature_name</th><td>Armature object.</td></tr>
+<tr><th>action</th><td>CREATE (optionally with bones and a parent collection), DELETE, ASSIGN or UNASSIGN bones, SHOW or HIDE the collection.</td></tr>
+<tr><th>collection_name</th><td>Bone collection to act on.</td></tr>
+<tr><th>bones</th><td>Bone names for CREATE, ASSIGN and UNASSIGN, at most 1000.</td></tr>
+<tr><th>parent</th><td>CREATE only: nest under this existing collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the armature&#x27;s collections, their bones and visibility.</p></article><article class="tool" id="parent_mesh_to_armature" data-search="parent_mesh_to_armature parent a mesh object to an armature with automatic weights or other methods."><h3><a href="#parent_mesh_to_armature">parent_mesh_to_armature</a></h3><pre class="sig"><code>parent_mesh_to_armature(mesh_name: str, armature_name: str, type: str = &#x27;ARMATURE_AUTO&#x27;)</code></pre><p>Parent a mesh object to an armature with automatic weights or other methods.</p><table class="args"><tbody><tr><th>mesh_name</th><td>Name of the mesh object to parent.</td></tr>
 <tr><th>armature_name</th><td>Name of the armature object.</td></tr>
 <tr><th>type</th><td>Parenting method. One of: ARMATURE_AUTO (automatic weights), ARMATURE_NAME (by bone names), ARMATURE_ENVELOPE (by envelope).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_bone_property" data-search="set_bone_property set a property on a bone in an armature."><h3><a href="#set_bone_property">set_bone_property</a></h3><pre class="sig"><code>set_bone_property(armature_name: str, bone_name: str, property: str, value: Any)</code></pre><p>Set a property on a bone in an armature.</p><table class="args"><tbody><tr><th>armature_name</th><td>Name of the armature object.</td></tr>
 <tr><th>bone_name</th><td>Name of the bone.</td></tr>
@@ -215,7 +225,24 @@ For location, rotation and scale, insert_keyframe is simpler.</p><table class="a
 <tr><th>bone_name</th><td>Name of the bone to pose.</td></tr>
 <tr><th>location</th><td>Optional XYZ location offset for the bone.</td></tr>
 <tr><th>rotation</th><td>Optional XYZ Euler rotation in radians.</td></tr>
-<tr><th>scale</th><td>Optional XYZ scale.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the bone&#x27;s new pose values.</p></article></section>
+<tr><th>scale</th><td>Optional XYZ scale.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the bone&#x27;s new pose values.</p></article><article class="tool" id="setup_ik_chain" data-search="setup_ik_chain give a limb inverse kinematics: move the target and the chain follows.
+
+put the ik on the last bone of the limb (forearm, shin). a pole target
+(an empty or bone in front of the knee or behind the elbow) keeps the
+joint bending the right way."><h3><a href="#setup_ik_chain">setup_ik_chain</a></h3><pre class="sig"><code>setup_ik_chain(armature_name: str, bone_name: str, target_object: str, target_bone: str = &#x27;&#x27;, chain_count: int = 2, pole_object: str = &#x27;&#x27;, pole_bone: str = &#x27;&#x27;, pole_angle: float = 0.0, use_stretch: bool = False, iterations: int = 500)</code></pre><p>Give a limb inverse kinematics: move the target and the chain follows.
+
+Put the IK on the last bone of the limb (forearm, shin). A pole target
+(an empty or bone in front of the knee or behind the elbow) keeps the
+joint bending the right way.</p><table class="args"><tbody><tr><th>armature_name</th><td>Armature object.</td></tr>
+<tr><th>bone_name</th><td>Last bone of the chain (the IK sits on it).</td></tr>
+<tr><th>target_object</th><td>Object the chain reaches for (often the armature itself when target_bone names a control bone).</td></tr>
+<tr><th>target_bone</th><td>Bone in target_object to reach for, if any.</td></tr>
+<tr><th>chain_count</th><td>Bones in the chain counting up from bone_name, 0 to 255 (0 means the whole chain to the root).</td></tr>
+<tr><th>pole_object</th><td>Object that sets the joint&#x27;s bend direction, if any.</td></tr>
+<tr><th>pole_bone</th><td>Bone in pole_object, if any.</td></tr>
+<tr><th>pole_angle</th><td>Rotate the pole&#x27;s effect, radians, -3.142 to 3.142; -1.571 (-90 degrees) is a common fix for a twisted limb.</td></tr>
+<tr><th>use_stretch</th><td>Let bones stretch to reach a target out of range.</td></tr>
+<tr><th>iterations</th><td>Solver iterations, 1 to 10000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the constraint and chain details.</p></article></section>
 <section class="module" id="baking" data-module="baking"><h2>baking <span class="n">1</span></h2><article class="tool" id="bake_texture" data-search="bake_texture bake a texture map from an object&#x27;s materials (or a high-poly source) into an image.
 
 the object needs uvs (smart_uv_project) and a material. cycles is used

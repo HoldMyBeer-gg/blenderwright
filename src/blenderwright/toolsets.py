@@ -69,7 +69,8 @@ TOOLSETS: dict[str, str] = {
     "physics": "Rigid body, cloth, fluid, particles, bake",
     "geometry_nodes": "Geometry node trees: create, add, connect, set inputs; ready-made "
                       "array, scatter on surface, instance on elements, curve to tube",
-    "armature": "Armatures, bones, constraints, weights, pose",
+    "armature": "Armatures, bones, constraints, weights, pose, bone collections, IK "
+                "chains with pole targets",
     "deform": "Vertex groups and weights (normalize, smooth, limit), shape keys and "
               "blend shapes, animating them",
     "gpencil": "Annotation layers and strokes",
