@@ -350,3 +350,176 @@ def test_non_animatable_property_is_explained(handler, monkeypatch):
     with pytest.raises(ValueError, match="cannot be animated"):
         handler.handle_keyframe_property({"target": "OBJECT", "object_name": "Cube",
                                           "data_path": "name", "frame": 1})
+
+
+class Slots(list):
+    def new(self, id_type, name):
+        slot = SimpleNamespace(identifier="OB" + name, id_type=id_type)
+        self.append(slot)
+        return slot
+
+
+def _action(name):
+    return SimpleNamespace(name=name, slots=Slots(), frame_range=(1.0, 24.0))
+
+
+class FakeStrip(SimpleNamespace):
+    """Like Blender: turning on use_animated_influence creates an influence
+    F-curve keyed at the current value (0.0), and from then on the curve wins."""
+
+    def __setattr__(self, name, value):
+        if name == "use_animated_influence" and value:
+            point = SimpleNamespace(co=[1.0, 0.0])
+            self.fcurves = SimpleNamespace(find=lambda path, p=[point]: SimpleNamespace(
+                data_path="influence", keyframe_points=p) if path == "influence" else None)
+        super().__setattr__(name, value)
+
+    def effective_influence(self):
+        if not getattr(self, "use_animated_influence", False):
+            return 1.0
+        return self.fcurves.find("influence").keyframe_points[0].co[1]
+
+
+class Strips(list):
+    def new(self, name, start, action):
+        strip = FakeStrip(name=name, action=action, action_slot=None,
+                          frame_start=float(start), frame_end=float(start) + 23,
+                          blend_type="REPLACE", repeat=1.0, scale=1.0,
+                          extrapolation="HOLD", blend_in=0.0, blend_out=0.0,
+                          influence=1.0, use_animated_influence=False)
+        self.append(strip)
+        return strip
+
+
+class Tracks(list):
+    def new(self):
+        track = SimpleNamespace(name=f"NlaTrack.{len(self):03d}", strips=Strips(), mute=False)
+        self.append(track)
+        return track
+
+
+@pytest.fixture
+def anim(monkeypatch):
+    import bpy
+
+    actions = {"Bounce": _action("Bounce"), "Wave": _action("Wave")}
+    actions["Bounce"].slots.new("OBJECT", "Cube")
+
+    class Actions(dict):
+        def new(self, name):
+            self[name] = _action(name)
+            return self[name]
+
+    store = Actions(actions)
+    monkeypatch.setattr(bpy.data, "actions", store)
+    adt = SimpleNamespace(action=None, action_slot=None, nla_tracks=Tracks())
+    cube = SimpleNamespace(name="Cube", animation_data=adt, id_type="OBJECT")
+    cube.animation_data_create = lambda: adt
+    bpy.data.objects.get = MagicMock(side_effect={"Cube": cube}.get)
+    return SimpleNamespace(cube=cube, adt=adt, actions=store)
+
+
+class TestActions:
+    def test_assign_shares_an_existing_slot(self, handler, anim):
+        result = handler.handle_manage_action({"object_name": "Cube", "operation": "ASSIGN",
+                                               "action_name": "Bounce"})
+        assert anim.adt.action is anim.actions["Bounce"]
+        assert anim.adt.action_slot.identifier == "OBCube"
+        assert result["action"] == "Bounce"
+
+    def test_new_action(self, handler, anim):
+        handler.handle_manage_action({"object_name": "Cube", "operation": "NEW",
+                                      "action_name": "Jump"})
+        assert anim.adt.action.name == "Jump"
+
+    def test_new_refuses_existing_name(self, handler, anim):
+        with pytest.raises(ValueError, match="Bounce"):
+            handler.handle_manage_action({"object_name": "Cube", "operation": "NEW",
+                                          "action_name": "Bounce"})
+
+    def test_push_down(self, handler, anim):
+        handler.handle_manage_action({"object_name": "Cube", "operation": "ASSIGN",
+                                      "action_name": "Bounce"})
+        result = handler.handle_manage_action({"object_name": "Cube",
+                                               "operation": "PUSH_DOWN"})
+        strip = anim.adt.nla_tracks[0].strips[0]
+        assert strip.action is anim.actions["Bounce"] and anim.adt.action is None
+        assert strip.action_slot.identifier == "OBCube"
+        assert result["action"] is None
+
+    def test_missing_action(self, handler, anim):
+        with pytest.raises(ValueError, match="Nope"):
+            handler.handle_manage_action({"object_name": "Cube", "operation": "ASSIGN",
+                                          "action_name": "Nope"})
+
+
+class TestNlaHandler:
+    def test_strip_on_a_named_track(self, handler, anim):
+        handler.handle_add_nla_strip({
+            "object_name": "Cube", "action_name": "Bounce", "frame_start": 10,
+            "track_name": "Base", "blend_type": "COMBINE", "repeat": 3.0, "scale": 1.0,
+            "extrapolation": "HOLD_FORWARD", "blend_in": 2.0, "blend_out": 0.0,
+            "influence": 0.5})
+        track = anim.adt.nla_tracks[0]
+        strip = track.strips[0]
+        assert track.name == "Base"
+        assert (strip.blend_type, strip.repeat, strip.extrapolation, strip.blend_in) == (
+            "COMBINE", 3.0, "HOLD_FORWARD", 2.0)
+        assert strip.effective_influence() == 0.5
+        assert strip.action_slot.identifier == "OBCube"
+        listing = handler.handle_list_nla({"object_name": "Cube"})
+        assert listing["tracks"][0]["strips"][0]["action"] == "Bounce"
+
+    def test_unknown_blend_refused(self, handler, anim):
+        with pytest.raises(ValueError):
+            handler.handle_add_nla_strip({"object_name": "Cube", "action_name": "Bounce",
+                                          "blend_type": "__class__"})
+
+
+class TestFcurveModifierHandler:
+    def _curves(self, monkeypatch):
+        from bpy_extras import anim_utils
+
+        def modifier(kind):
+            props = {"mode_after": SimpleNamespace(type="ENUM", is_readonly=False),
+                     "strength": SimpleNamespace(type="FLOAT", is_readonly=False),
+                     "type": SimpleNamespace(type="ENUM", is_readonly=True)}
+            m = SimpleNamespace(type=kind, mode_after="NONE", strength=1.0)
+            m.bl_rna = SimpleNamespace(properties=props)
+            return m
+
+        curves = []
+        for i in range(3):
+            mods = []
+            curves.append(SimpleNamespace(data_path="location", array_index=i, mods=mods,
+                                          modifiers=SimpleNamespace(
+                                              new=lambda kind, mods=mods: mods.append(
+                                                  modifier(kind)) or mods[-1],
+                                              remove=lambda m, mods=mods: mods.remove(m))))
+        anim_utils.action_get_channelbag_for_slot.return_value = SimpleNamespace(fcurves=curves)
+        return curves
+
+    def test_every_component_gets_it(self, handler, anim, monkeypatch):
+        anim.adt.action = anim.actions["Bounce"]
+        curves = self._curves(monkeypatch)
+        result = handler.handle_add_fcurve_modifier({
+            "object_name": "Cube", "data_path": "location", "index": -1, "modifier": "CYCLES",
+            "settings": {"mode_after": "REPEAT_OFFSET"}})
+        assert [c.mods[0].mode_after for c in curves] == ["REPEAT_OFFSET"] * 3
+        assert result["curves"] == 3
+
+    @pytest.mark.parametrize("key", ["__class__", "bl_rna", "type", "frobnicate"])
+    def test_settings_are_rna_only(self, handler, anim, monkeypatch, key):
+        anim.adt.action = anim.actions["Bounce"]
+        curves = self._curves(monkeypatch)
+        with pytest.raises(ValueError, match=key):
+            handler.handle_add_fcurve_modifier({
+                "object_name": "Cube", "data_path": "location", "index": 0,
+                "modifier": "NOISE", "settings": {key: 1}})
+        assert curves[0].mods == []
+
+    def test_no_animation(self, handler, anim):
+        with pytest.raises(ValueError, match="no animation"):
+            handler.handle_add_fcurve_modifier({"object_name": "Cube", "data_path": "location",
+                                                "index": -1, "modifier": "CYCLES",
+                                                "settings": {}})

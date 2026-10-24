@@ -443,6 +443,156 @@ def handle_keyframe_property(params):
             "value": _plain(owner.path_resolve(owner_path, False))}
 
 
+ACTION_OPERATIONS = {"LIST", "NEW", "ASSIGN", "UNASSIGN", "PUSH_DOWN"}
+NLA_BLEND_TYPES = {"REPLACE", "COMBINE", "ADD", "SUBTRACT", "MULTIPLY"}
+NLA_EXTRAPOLATIONS = {"NOTHING", "HOLD", "HOLD_FORWARD"}
+FCURVE_MODIFIERS = {"CYCLES", "NOISE", "STEPPED", "SMOOTH"}
+SETTABLE_RNA_TYPES = {"BOOLEAN", "INT", "FLOAT", "ENUM", "STRING"}
+
+
+def _get_action(name):
+    action = bpy.data.actions.get(name)
+    if action is None:
+        raise ValueError(f"Action '{name}' not found")
+    return action
+
+
+def _slot_for(action, obj):
+    """The action's slot for this object: its own by name, else the first
+    object slot (so several objects can share one action), else a new one."""
+    own = "OB" + obj.name
+    for slot in action.slots:
+        if slot.identifier == own:
+            return slot
+    for slot in action.slots:
+        if getattr(slot, "id_type", "OBJECT") == "OBJECT":
+            return slot
+    return action.slots.new(id_type="OBJECT", name=obj.name)
+
+
+def _action_summary(obj):
+    adt = obj.animation_data
+    action = adt.action if adt is not None else None
+    slot = adt.action_slot if adt is not None and action is not None else None
+    return {"object": obj.name, "action": action.name if action else None,
+            "slot": slot.identifier if slot else None,
+            "actions": sorted(a for a in bpy.data.actions.keys())}
+
+
+def handle_manage_action(params):
+    obj = _get_object(params["object_name"])
+    operation = params.get("operation")
+    if operation not in ACTION_OPERATIONS:
+        raise ValueError(f"Unknown action operation {operation!r}")
+    if operation == "LIST":
+        return _action_summary(obj)
+    adt = obj.animation_data or obj.animation_data_create()
+    if operation == "NEW":
+        name = params["action_name"]
+        if bpy.data.actions.get(name) is not None:
+            raise ValueError(f"An action named '{name}' already exists; ASSIGN it instead")
+        adt.action = bpy.data.actions.new(name)
+    elif operation == "ASSIGN":
+        action = _get_action(params["action_name"])
+        adt.action = action
+        adt.action_slot = _slot_for(action, obj)
+    elif operation == "UNASSIGN":
+        adt.action = None
+    else:  # PUSH_DOWN
+        action = adt.action
+        if action is None:
+            raise ValueError(f"'{obj.name}' has no active action to push down")
+        slot = adt.action_slot or _slot_for(action, obj)
+        track = adt.nla_tracks.new()
+        strip = track.strips.new(action.name, int(action.frame_range[0]), action)
+        strip.action_slot = slot
+        adt.action = None
+    return _action_summary(obj)
+
+
+def _strip_summary(strip):
+    return {"name": strip.name, "action": strip.action.name if strip.action else None,
+            "frame_start": strip.frame_start, "frame_end": strip.frame_end,
+            "blend_type": strip.blend_type, "repeat": strip.repeat, "scale": strip.scale,
+            "extrapolation": strip.extrapolation}
+
+
+def handle_add_nla_strip(params):
+    obj = _get_object(params["object_name"])
+    blend = params.get("blend_type", "REPLACE")
+    extrapolation = params.get("extrapolation", "HOLD_FORWARD")
+    if blend not in NLA_BLEND_TYPES or extrapolation not in NLA_EXTRAPOLATIONS:
+        raise ValueError("Unknown blend type or extrapolation")
+    action = _get_action(params["action_name"])
+    adt = obj.animation_data or obj.animation_data_create()
+    name = params.get("track_name", "")
+    track = next((t for t in adt.nla_tracks if t.name == name), None) if name else None
+    if track is None:
+        track = adt.nla_tracks.new()
+        if name:
+            track.name = name
+    strip = track.strips.new(action.name, int(params.get("frame_start", 1)), action)
+    strip.action_slot = _slot_for(action, obj)
+    strip.blend_type = blend
+    strip.extrapolation = extrapolation
+    strip.scale = float(params.get("scale", 1.0))
+    strip.repeat = float(params.get("repeat", 1.0))
+    strip.blend_in = float(params.get("blend_in", 0.0))
+    strip.blend_out = float(params.get("blend_out", 0.0))
+    if "influence" in params:
+        # A fixed influence needs use_animated_influence, which creates an
+        # influence F-curve keyed at the current value; that curve then wins,
+        # so the value goes into its keys
+        value = float(params["influence"])
+        strip.use_animated_influence = True
+        strip.influence = value
+        curve = strip.fcurves.find("influence")
+        if curve is not None:
+            for point in curve.keyframe_points:
+                point.co[1] = value
+    return {"object": obj.name, "track": track.name, **_strip_summary(strip)}
+
+
+def handle_list_nla(params):
+    obj = _get_object(params["object_name"])
+    adt = obj.animation_data
+    tracks = list(adt.nla_tracks) if adt is not None else []
+    return {"object": obj.name,
+            "tracks": [{"name": t.name, "mute": t.mute,
+                        "strips": [_strip_summary(s) for s in t.strips]}
+                       for t in reversed(tracks)]}
+
+
+def handle_add_fcurve_modifier(params):
+    obj = _get_object(params["object_name"])
+    kind = params.get("modifier")
+    if kind not in FCURVE_MODIFIERS:
+        raise ValueError(f"Unknown F-curve modifier {kind!r}")
+    path = _check_path(params["data_path"])
+    index = int(params.get("index", -1))
+    if obj.animation_data is None or obj.animation_data.action is None:
+        raise ValueError(f"'{obj.name}' has no animation; key it first")
+    curves = [fc for fc in _action_fcurves(obj)
+              if fc.data_path == path and (index < 0 or fc.array_index == index)]
+    if not curves:
+        raise ValueError(f"'{obj.name}' has no keyframes on '{path}'")
+    added = []
+    try:
+        for fcurve in curves:
+            mod = fcurve.modifiers.new(kind)
+            added.append((fcurve, mod))
+            for key, value in params.get("settings", {}).items():
+                rna = mod.bl_rna.properties.get(key)
+                if rna is None or rna.is_readonly or rna.type not in SETTABLE_RNA_TYPES:
+                    raise ValueError(f"'{key}' is not a setting of the {kind} modifier")
+                setattr(mod, key, value)
+    except Exception:
+        for fcurve, mod in added:
+            fcurve.modifiers.remove(mod)
+        raise
+    return {"object": obj.name, "data_path": path, "modifier": kind, "curves": len(curves)}
+
+
 def register():
     """Register all animation handlers with the dispatcher."""
     dispatcher.register_handler("insert_keyframe", handle_insert_keyframe)
@@ -457,3 +607,7 @@ def register():
     dispatcher.register_handler("remove_driver", handle_remove_driver)
     dispatcher.register_handler("list_drivers", handle_list_drivers)
     dispatcher.register_handler("keyframe_property", handle_keyframe_property)
+    dispatcher.register_handler("manage_action", handle_manage_action)
+    dispatcher.register_handler("add_nla_strip", handle_add_nla_strip)
+    dispatcher.register_handler("list_nla", handle_list_nla)
+    dispatcher.register_handler("add_fcurve_modifier", handle_add_fcurve_modifier)
