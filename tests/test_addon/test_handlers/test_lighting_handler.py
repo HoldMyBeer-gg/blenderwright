@@ -112,3 +112,78 @@ def test_sky(h, world):
 def test_unknown_sky_type_refused(h, world):
     with pytest.raises(Exception):
         h.handle_set_world_sky({"sky_type": "__class__"})
+
+
+class Collection:
+    """Like Blender: collection_objects line up with objects, and carry no .object."""
+
+    def __init__(self, name):
+        self.name = name
+        self.members = []
+        self.collection_objects = []
+        col = self
+
+        class Objects:
+            def __iter__(self):
+                return iter(list(col.members))
+
+            def link(self, obj):
+                col.members.append(obj)
+                col.collection_objects.append(SimpleNamespace(
+                    light_linking=SimpleNamespace(link_state="INCLUDE")))
+
+            def unlink(self, obj):
+                i = col.members.index(obj)
+                col.members.pop(i)
+                col.collection_objects.pop(i)
+
+        self.objects = Objects()
+
+
+@pytest.fixture
+def linking(monkeypatch):
+    import bpy
+
+    objs = {n: SimpleNamespace(name=n) for n in ("Hero", "Prop", "Wall")}
+    key = SimpleNamespace(name="Key", light_linking=SimpleNamespace(
+        receiver_collection=None, blocker_collection=None))
+    objs["Key"] = key
+    made = {}
+    monkeypatch.setattr(bpy.data, "objects", SimpleNamespace(get=objs.get))
+    monkeypatch.setattr(bpy.data, "collections", SimpleNamespace(
+        new=lambda name: made.setdefault(name, Collection(name)), get=made.get))
+    return SimpleNamespace(key=key, objs=objs, made=made)
+
+
+def test_light_linking_receivers(h, linking):
+    result = h.handle_set_light_linking({"light_name": "Key", "objects": ["Hero", "Prop"],
+                                         "role": "RECEIVERS", "mode": "INCLUDE"})
+    col = linking.key.light_linking.receiver_collection
+    assert [o.name for o in col.members] == ["Hero", "Prop"]
+    assert all(co.light_linking.link_state == "INCLUDE" for co in col.collection_objects)
+    assert result["objects"] == ["Hero", "Prop"]
+
+
+def test_light_linking_replaces_and_excludes(h, linking):
+    h.handle_set_light_linking({"light_name": "Key", "objects": ["Hero", "Prop"],
+                                "role": "RECEIVERS", "mode": "INCLUDE"})
+    h.handle_set_light_linking({"light_name": "Key", "objects": ["Wall"],
+                                "role": "RECEIVERS", "mode": "EXCLUDE"})
+    col = linking.key.light_linking.receiver_collection
+    assert [o.name for o in col.members] == ["Wall"]
+    assert col.collection_objects[0].light_linking.link_state == "EXCLUDE"
+
+
+def test_light_linking_blockers_and_clear(h, linking):
+    h.handle_set_light_linking({"light_name": "Key", "objects": ["Wall"],
+                                "role": "BLOCKERS", "mode": "INCLUDE"})
+    assert linking.key.light_linking.blocker_collection is not None
+    h.handle_set_light_linking({"light_name": "Key", "objects": [], "role": "BLOCKERS",
+                                "mode": "INCLUDE"})
+    assert linking.key.light_linking.blocker_collection is None
+
+
+def test_light_linking_missing_object(h, linking):
+    with pytest.raises(ValueError, match="Ghost"):
+        h.handle_set_light_linking({"light_name": "Key", "objects": ["Ghost"],
+                                    "role": "RECEIVERS", "mode": "INCLUDE"})

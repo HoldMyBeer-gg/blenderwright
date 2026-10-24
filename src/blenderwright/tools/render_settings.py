@@ -12,6 +12,7 @@ from blenderwright.validators import (
     validate_enum,
     validate_int,
     validate_numeric_range,
+    validate_object_name,
     ValidationError,
 )
 
@@ -378,3 +379,186 @@ def set_render_passes(passes: list[str], enabled: bool = True) -> dict[str, Any]
             names.append(name)
     return _send_render_command("set_render_passes", {"passes": names,
                                                       "enabled": bool(enabled)})
+
+
+RAY_VISIBILITY_FLAGS = ("camera", "diffuse", "glossy", "transmission", "volume_scatter",
+                        "shadow", "holdout", "shadow_catcher")
+ALLOWED_RAY_TRACING_METHODS = {"PROBE", "SCREEN"}
+ALLOWED_FAST_GI_METHODS = {"AMBIENT_OCCLUSION_ONLY", "GLOBAL_ILLUMINATION"}
+ALLOWED_SHADOW_POOL_SIZES = {16, 32, 64, 128, 256, 512, 1024, 1536, 2048}
+ALLOWED_VOLUME_TILE_SIZES = {1, 2, 4, 8, 16}
+ALLOWED_TEXTURE_LIMITS = {"OFF", "128", "256", "512", "1024", "2048", "4096", "8192"}
+ALLOWED_ANISOTROPIC = {0, 2, 4, 8, 16}
+
+
+@mcp.tool()
+def set_object_ray_visibility(
+    object_name: str,
+    camera: bool | None = None,
+    diffuse: bool | None = None,
+    glossy: bool | None = None,
+    transmission: bool | None = None,
+    volume_scatter: bool | None = None,
+    shadow: bool | None = None,
+    holdout: bool | None = None,
+    shadow_catcher: bool | None = None,
+) -> dict[str, Any]:
+    """Choose which rays see an object: hide it from the camera but keep its
+    shadow, keep it out of reflections, or turn it into a shadow catcher.
+
+    Leave anything unset to keep it.
+
+    Args:
+        object_name: Object to change.
+        camera: Seen directly by the camera.
+        diffuse: Lights matte surfaces by bounced light.
+        glossy: Shows in reflections.
+        transmission: Shows through glass.
+        volume_scatter: Affects smoke and fog.
+        shadow: Casts shadows.
+        holdout: Cut a transparent hole where the object is, for compositing.
+        shadow_catcher: Cycles only. Show only the shadows other objects cast
+            on it, for placing renders into photos (pair with set_film
+            transparent).
+
+    Returns:
+        Dict with every visibility flag after the change.
+    """
+    params: dict[str, Any] = {"object_name": validate_object_name(object_name)}
+    given = {k: v for k, v in locals().items() if k in RAY_VISIBILITY_FLAGS and v is not None}
+    if not given:
+        raise ValidationError("Set at least one visibility flag")
+    params.update({k: bool(v) for k, v in given.items()})
+    return _send_render_command("set_object_ray_visibility", params)
+
+
+@mcp.tool()
+def set_eevee_quality(
+    raytracing: bool | None = None,
+    ray_tracing_method: str = "",
+    fast_gi: bool | None = None,
+    fast_gi_method: str = "",
+    shadow_pool_size: int | None = None,
+    shadow_rays: int | None = None,
+    shadow_steps: int | None = None,
+    volumetric_samples: int | None = None,
+    volumetric_tile_size: int | None = None,
+    volumetric_shadows: bool | None = None,
+    clamp_direct: float | None = None,
+    clamp_indirect: float | None = None,
+) -> dict[str, Any]:
+    """Tune EEVEE's reflections, global illumination, shadows and volumes.
+
+    Leave anything unset to keep it.
+
+    Args:
+        raytracing: Screen-space ray traced reflections and refraction.
+        ray_tracing_method: PROBE (fast, uses light probes) or SCREEN
+            (accurate for what is on screen).
+        fast_gi: Approximate bounced light.
+        fast_gi_method: GLOBAL_ILLUMINATION or AMBIENT_OCCLUSION_ONLY.
+        shadow_pool_size: Shadow memory in MB: 16 to 2048 in powers of two,
+            plus 1536 (new in 5.2). Raise it if shadows go blocky.
+        shadow_rays: Soft shadow rays per light, 1 to 4.
+        shadow_steps: Soft shadow steps, 1 to 16.
+        volumetric_samples: Fog and smoke slices, 1 to 256.
+        volumetric_tile_size: Volume detail in pixels: 1, 2, 4, 8 or 16
+            (smaller is sharper and slower).
+        volumetric_shadows: Volumes cast shadows on themselves.
+        clamp_direct: Cap on direct light per sample, 0 for none.
+        clamp_indirect: Cap on bounced light per sample, 0 for none.
+
+    Returns:
+        Dict with the EEVEE settings after the change.
+    """
+    params: dict[str, Any] = {}
+    for key, value in (("raytracing", raytracing), ("fast_gi", fast_gi),
+                       ("volumetric_shadows", volumetric_shadows)):
+        if value is not None:
+            params[key] = bool(value)
+    if ray_tracing_method:
+        params["ray_tracing_method"] = validate_enum(
+            ray_tracing_method, ALLOWED_RAY_TRACING_METHODS, name="ray_tracing_method")
+    if fast_gi_method:
+        params["fast_gi_method"] = validate_enum(fast_gi_method, ALLOWED_FAST_GI_METHODS,
+                                                 name="fast_gi_method")
+    if shadow_pool_size is not None:
+        size = validate_int(shadow_pool_size, 16, 2048, name="shadow_pool_size")
+        if size not in ALLOWED_SHADOW_POOL_SIZES:
+            raise ValidationError(f"shadow_pool_size must be one of "
+                                  f"{sorted(ALLOWED_SHADOW_POOL_SIZES)}")
+        params["shadow_pool_size"] = size
+    for key, value, lo, hi in (("shadow_rays", shadow_rays, 1, 4),
+                               ("shadow_steps", shadow_steps, 1, 16),
+                               ("volumetric_samples", volumetric_samples, 1, 256)):
+        if value is not None:
+            params[key] = validate_int(value, lo, hi, name=key)
+    if volumetric_tile_size is not None:
+        tile = validate_int(volumetric_tile_size, 1, 16, name="volumetric_tile_size")
+        if tile not in ALLOWED_VOLUME_TILE_SIZES:
+            raise ValidationError("volumetric_tile_size must be 1, 2, 4, 8 or 16")
+        params["volumetric_tile_size"] = tile
+    for key, value in (("clamp_direct", clamp_direct), ("clamp_indirect", clamp_indirect)):
+        if value is not None:
+            params[key] = validate_numeric_range(value, min_val=0.0, max_val=1000000.0,
+                                                 name=key)
+    if not params:
+        raise ValidationError("Set at least one EEVEE option")
+    return _send_render_command("set_eevee_quality", params)
+
+
+@mcp.tool()
+def set_render_performance(
+    simplify: bool | None = None,
+    max_subdivision: int | None = None,
+    texture_limit: str = "",
+    texture_resolution: float | None = None,
+    persistent_data: bool | None = None,
+    auto_tile: bool | None = None,
+    tile_size: int | None = None,
+    anisotropic_filter: int | None = None,
+) -> dict[str, Any]:
+    """Speed up heavy renders or fit them in memory.
+
+    Leave anything unset to keep it.
+
+    Args:
+        simplify: Turn on Simplify, which max_subdivision and the texture
+            settings need.
+        max_subdivision: Cap subdivision levels at render, 0 to 6.
+        texture_limit: Cycles: largest texture size at render, OFF or 128 to
+            8192.
+        texture_resolution: Cycles: scale all textures, 0.0 to 1.0 (new in 5.2).
+        persistent_data: Cycles: keep scene data between frames of an
+            animation for faster re-renders, at the cost of memory.
+        auto_tile: Cycles: render in tiles to save memory.
+        tile_size: Cycles tile size in pixels, 8 to 8192.
+        anisotropic_filter: Texture filtering for angled surfaces: 0, 2, 4, 8
+            or 16.
+
+    Returns:
+        Dict with the performance settings after the change.
+    """
+    params: dict[str, Any] = {}
+    for key, value in (("simplify", simplify), ("persistent_data", persistent_data),
+                       ("auto_tile", auto_tile)):
+        if value is not None:
+            params[key] = bool(value)
+    if max_subdivision is not None:
+        params["max_subdivision"] = validate_int(max_subdivision, 0, 6, name="max_subdivision")
+    if texture_limit:
+        params["texture_limit"] = validate_enum(str(texture_limit), ALLOWED_TEXTURE_LIMITS,
+                                                name="texture_limit")
+    if texture_resolution is not None:
+        params["texture_resolution"] = validate_numeric_range(
+            texture_resolution, min_val=0.0, max_val=1.0, name="texture_resolution")
+    if tile_size is not None:
+        params["tile_size"] = validate_int(tile_size, 8, 8192, name="tile_size")
+    if anisotropic_filter is not None:
+        level = validate_int(anisotropic_filter, 0, 16, name="anisotropic_filter")
+        if level not in ALLOWED_ANISOTROPIC:
+            raise ValidationError("anisotropic_filter must be 0, 2, 4, 8 or 16")
+        params["anisotropic_filter"] = level
+    if not params:
+        raise ValidationError("Set at least one performance option")
+    return _send_render_command("set_render_performance", params)

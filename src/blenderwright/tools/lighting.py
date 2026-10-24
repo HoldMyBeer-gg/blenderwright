@@ -45,6 +45,9 @@ ALLOWED_BUILTIN_HDRIS = {
     "city", "courtyard", "forest", "interior", "night", "studio", "sunrise", "sunset",
 }
 ALLOWED_SKY_TYPES = {"MULTIPLE_SCATTERING", "SINGLE_SCATTERING", "PREETHAM", "HOSEK_WILKIE"}
+ALLOWED_LINK_ROLES = {"RECEIVERS", "BLOCKERS"}
+ALLOWED_LINK_MODES = {"INCLUDE", "EXCLUDE"}
+MAX_LINKED_OBJECTS = 1000
 
 
 def _send_light_command(command: str, params: dict[str, Any] | None = None) -> Any:
@@ -316,4 +319,44 @@ def set_shadow_settings(
         "name": object_name,
         "use_shadow": use_shadow,
         "shadow_soft_size": shadow_soft_size,
+    })
+
+
+@mcp.tool()
+def set_light_linking(
+    light_name: str,
+    objects: list[str],
+    role: str = "RECEIVERS",
+    mode: str = "INCLUDE",
+) -> dict[str, Any]:
+    """Limit which objects a light lights, or which objects block its shadows.
+
+    Classic uses: a rim light that touches only the hero, or a fill light
+    that skips the background. Replaces the light's list each call; an
+    empty list removes the link so the light affects everything again.
+
+    Args:
+        light_name: The light (or emissive object).
+        objects: Objects in the link list, at most 1000.
+        role: RECEIVERS (objects the light lights) or BLOCKERS (objects that
+            cast its shadows).
+        mode: INCLUDE (only these) or EXCLUDE (everything except these).
+
+    Returns:
+        Dict with the light, the link collection and its objects.
+    """
+    if not isinstance(objects, list):
+        raise ValidationError("objects must be a list of object names")
+    if len(objects) > MAX_LINKED_OBJECTS:
+        raise ValidationError(f"At most {MAX_LINKED_OBJECTS} objects")
+    clean: list[str] = []
+    for object_name in objects:
+        object_name = validate_object_name(object_name)
+        if object_name not in clean:
+            clean.append(object_name)
+    return _send_light_command("set_light_linking", {
+        "light_name": validate_object_name(light_name),
+        "objects": clean,
+        "role": validate_enum(role, ALLOWED_LINK_ROLES, name="role"),
+        "mode": validate_enum(mode, ALLOWED_LINK_MODES, name="mode"),
     })

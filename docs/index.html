@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 226 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 226 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 230 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 230 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 226 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 230 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>226</b> tools</span>
+    <span><b>230</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -132,7 +132,7 @@ footer a { color: var(--accent); }
 <a href="#file_ops">File I/O <span class="n">7</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">6</span></a>
 <a href="#gpencil">Grease Pencil <span class="n">5</span></a>
-<a href="#lighting">Lighting <span class="n">8</span></a>
+<a href="#lighting">Lighting <span class="n">9</span></a>
 <a href="#materials">Materials &amp; Shaders <span class="n">25</span></a>
 <a href="#mesh_editing">Mesh Editing <span class="n">19</span></a>
 <a href="#mesh_quality">Mesh Quality <span class="n">3</span></a>
@@ -140,7 +140,7 @@ footer a { color: var(--accent); }
 <a href="#objects">Objects <span class="n">15</span></a>
 <a href="#physics">Physics <span class="n">9</span></a>
 <a href="#print3d">print3d <span class="n">1</span></a>
-<a href="#render_settings">render_settings <span class="n">7</span></a>
+<a href="#render_settings">render_settings <span class="n">10</span></a>
 <a href="#rendering">Rendering <span class="n">7</span></a>
 <a href="#scene">Scene <span class="n">6</span></a>
 <a href="#sculpting">Sculpting <span class="n">8</span></a>
@@ -497,13 +497,24 @@ Unlike Grease Pencil objects, annotations are not positioned in 3D space.</p><ta
 <tr><th>stroke_index</th><td>Index of the stroke in the layer (0-based).</td></tr>
 <tr><th>property</th><td>Property to set. One of: line_width, material_index, display_mode.</td></tr>
 <tr><th>value</th><td>The value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
-<section class="module" id="lighting" data-module="lighting"><h2>Lighting <span class="n">8</span></h2><article class="tool" id="create_light" data-search="create_light create a new light in the scene."><h3><a href="#create_light">create_light</a></h3><pre class="sig"><code>create_light(type: str, name: str = &#x27;&#x27;, location: list = [0, 0, 0], energy: float = 1000.0, color: list = [1.0, 1.0, 1.0])</code></pre><p>Create a new light in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Light type. One of: POINT, SUN, SPOT, AREA.</td></tr>
+<section class="module" id="lighting" data-module="lighting"><h2>Lighting <span class="n">9</span></h2><article class="tool" id="create_light" data-search="create_light create a new light in the scene."><h3><a href="#create_light">create_light</a></h3><pre class="sig"><code>create_light(type: str, name: str = &#x27;&#x27;, location: list = [0, 0, 0], energy: float = 1000.0, color: list = [1.0, 1.0, 1.0])</code></pre><p>Create a new light in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Light type. One of: POINT, SUN, SPOT, AREA.</td></tr>
 <tr><th>name</th><td>Optional name for the light.</td></tr>
 <tr><th>location</th><td>XYZ location as [x, y, z], default [0, 0, 0].</td></tr>
 <tr><th>energy</th><td>Light energy/power, default 1000.</td></tr>
 <tr><th>color</th><td>RGB color as [r, g, b], default [1.0, 1.0, 1.0].</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with light name and properties.</p></article><article class="tool" id="create_light_rig" data-search="create_light_rig create a pre-built lighting rig (multiple lights arranged for common setups)."><h3><a href="#create_light_rig">create_light_rig</a></h3><pre class="sig"><code>create_light_rig(type: str, target: str = &#x27;&#x27;, intensity: float = 1000.0)</code></pre><p>Create a pre-built lighting rig (multiple lights arranged for common setups).</p><table class="args"><tbody><tr><th>type</th><td>Rig type. One of: THREE_POINT, STUDIO, RIM, OUTDOOR.</td></tr>
 <tr><th>target</th><td>Optional name of the object the rig should point at.</td></tr>
-<tr><th>intensity</th><td>Overall intensity of the lights, default 1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with names of all created lights.</p></article><article class="tool" id="delete_light" data-search="delete_light delete a light object from the scene."><h3><a href="#delete_light">delete_light</a></h3><pre class="sig"><code>delete_light(object_name: str)</code></pre><p>Delete a light object from the scene.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the light object to delete.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="list_lights" data-search="list_lights list all light objects in the scene."><h3><a href="#list_lights">list_lights</a></h3><pre class="sig"><code>list_lights()</code></pre><p>List all light objects in the scene.</p><p class="ret"><span>Returns</span> List of dicts with light name, type, energy, color, and location.</p></article><article class="tool" id="set_light_property" data-search="set_light_property set a property on a light object."><h3><a href="#set_light_property">set_light_property</a></h3><pre class="sig"><code>set_light_property(object_name: str, property: str, value: Any)</code></pre><p>Set a property on a light object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the light object.</td></tr>
+<tr><th>intensity</th><td>Overall intensity of the lights, default 1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with names of all created lights.</p></article><article class="tool" id="delete_light" data-search="delete_light delete a light object from the scene."><h3><a href="#delete_light">delete_light</a></h3><pre class="sig"><code>delete_light(object_name: str)</code></pre><p>Delete a light object from the scene.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the light object to delete.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="list_lights" data-search="list_lights list all light objects in the scene."><h3><a href="#list_lights">list_lights</a></h3><pre class="sig"><code>list_lights()</code></pre><p>List all light objects in the scene.</p><p class="ret"><span>Returns</span> List of dicts with light name, type, energy, color, and location.</p></article><article class="tool" id="set_light_linking" data-search="set_light_linking limit which objects a light lights, or which objects block its shadows.
+
+classic uses: a rim light that touches only the hero, or a fill light
+that skips the background. replaces the light&#x27;s list each call; an
+empty list removes the link so the light affects everything again."><h3><a href="#set_light_linking">set_light_linking</a></h3><pre class="sig"><code>set_light_linking(light_name: str, objects: list[str], role: str = &#x27;RECEIVERS&#x27;, mode: str = &#x27;INCLUDE&#x27;)</code></pre><p>Limit which objects a light lights, or which objects block its shadows.
+
+Classic uses: a rim light that touches only the hero, or a fill light
+that skips the background. Replaces the light&#x27;s list each call; an
+empty list removes the link so the light affects everything again.</p><table class="args"><tbody><tr><th>light_name</th><td>The light (or emissive object).</td></tr>
+<tr><th>objects</th><td>Objects in the link list, at most 1000.</td></tr>
+<tr><th>role</th><td>RECEIVERS (objects the light lights) or BLOCKERS (objects that cast its shadows).</td></tr>
+<tr><th>mode</th><td>INCLUDE (only these) or EXCLUDE (everything except these).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the light, the link collection and its objects.</p></article><article class="tool" id="set_light_property" data-search="set_light_property set a property on a light object."><h3><a href="#set_light_property">set_light_property</a></h3><pre class="sig"><code>set_light_property(object_name: str, property: str, value: Any)</code></pre><p>Set a property on a light object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the light object.</td></tr>
 <tr><th>property</th><td>Property to set. One of: energy, color, shadow_soft_size, spot_size, spot_blend, area_size, area_size_y, use_shadow, angle, specular_factor, diffuse_factor, volume_factor.</td></tr>
 <tr><th>value</th><td>The value to set. Type depends on the property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_shadow_settings" data-search="set_shadow_settings configure shadow settings for a light."><h3><a href="#set_shadow_settings">set_shadow_settings</a></h3><pre class="sig"><code>set_shadow_settings(object_name: str, use_shadow: bool = True, shadow_soft_size: float = 0.25)</code></pre><p>Configure shadow settings for a light.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the light object.</td></tr>
 <tr><th>use_shadow</th><td>Whether to enable shadows, default True.</td></tr>
@@ -1147,7 +1158,7 @@ enable it; suggest_extensions also reports whether it is on.</p><table class="ar
 <tr><th>sharp_angle</th><td>Sharp-edge threshold in RADIANS.</td></tr>
 <tr><th>nonplanar_angle</th><td>Non-flat face threshold in RADIANS.</td></tr>
 <tr><th>zero_threshold</th><td>Area below which a face counts as zero-area.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with a count (and sample indices) per check that ran, plus checks_run, issues_found, and print_blocking: the defects that stop a print, as opposed to overhangs and sharp edges which are advisory.</p></article></section>
-<section class="module" id="render_settings" data-module="render_settings"><h2>render_settings <span class="n">7</span></h2><article class="tool" id="set_color_management" data-search="set_color_management set how the scene&#x27;s light becomes final pixel colours.
+<section class="module" id="render_settings" data-module="render_settings"><h2>render_settings <span class="n">10</span></h2><article class="tool" id="set_color_management" data-search="set_color_management set how the scene&#x27;s light becomes final pixel colours.
 
 agx (the default) handles bright highlights gracefully; standard is for
 flat graphics and ui shots; khronos pbr neutral keeps product colours
@@ -1184,7 +1195,22 @@ beat 2048 raw ones. Leave anything unset to keep it.</p><table class="args"><tbo
 <tr><th>prefilter</th><td>How the albedo and normal guides are cleaned: ACCURATE (sharpest detail), FAST, or NONE.</td></tr>
 <tr><th>input_passes</th><td>Guides the denoiser uses: RGB, RGB_ALBEDO, or RGB_ALBEDO_NORMAL (best edges).</td></tr>
 <tr><th>use_gpu</th><td>Run the denoiser on the GPU when one is available.</td></tr>
-<tr><th>viewport</th><td>Denoise the rendered viewport preview too.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the denoising settings after the change.</p></article><article class="tool" id="set_film" data-search="set_film set film options: transparent background and pixel filter."><h3><a href="#set_film">set_film</a></h3><pre class="sig"><code>set_film(transparent: bool | None = None, transparent_glass: bool | None = None, filter_width: float | None = None)</code></pre><p>Set film options: transparent background and pixel filter.</p><table class="args"><tbody><tr><th>transparent</th><td>Render the world background as transparent, for compositing or product cut-outs. Needs PNG or EXR output to keep the alpha.</td></tr>
+<tr><th>viewport</th><td>Denoise the rendered viewport preview too.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the denoising settings after the change.</p></article><article class="tool" id="set_eevee_quality" data-search="set_eevee_quality tune eevee&#x27;s reflections, global illumination, shadows and volumes.
+
+leave anything unset to keep it."><h3><a href="#set_eevee_quality">set_eevee_quality</a></h3><pre class="sig"><code>set_eevee_quality(raytracing: bool | None = None, ray_tracing_method: str = &#x27;&#x27;, fast_gi: bool | None = None, fast_gi_method: str = &#x27;&#x27;, shadow_pool_size: int | None = None, shadow_rays: int | None = None, shadow_steps: int | None = None, volumetric_samples: int | None = None, volumetric_tile_size: int | None = None, volumetric_shadows: bool | None = None, clamp_direct: float | None = None, clamp_indirect: float | None = None)</code></pre><p>Tune EEVEE&#x27;s reflections, global illumination, shadows and volumes.
+
+Leave anything unset to keep it.</p><table class="args"><tbody><tr><th>raytracing</th><td>Screen-space ray traced reflections and refraction.</td></tr>
+<tr><th>ray_tracing_method</th><td>PROBE (fast, uses light probes) or SCREEN (accurate for what is on screen).</td></tr>
+<tr><th>fast_gi</th><td>Approximate bounced light.</td></tr>
+<tr><th>fast_gi_method</th><td>GLOBAL_ILLUMINATION or AMBIENT_OCCLUSION_ONLY.</td></tr>
+<tr><th>shadow_pool_size</th><td>Shadow memory in MB: 16 to 2048 in powers of two, plus 1536 (new in 5.2). Raise it if shadows go blocky.</td></tr>
+<tr><th>shadow_rays</th><td>Soft shadow rays per light, 1 to 4.</td></tr>
+<tr><th>shadow_steps</th><td>Soft shadow steps, 1 to 16.</td></tr>
+<tr><th>volumetric_samples</th><td>Fog and smoke slices, 1 to 256.</td></tr>
+<tr><th>volumetric_tile_size</th><td>Volume detail in pixels: 1, 2, 4, 8 or 16 (smaller is sharper and slower).</td></tr>
+<tr><th>volumetric_shadows</th><td>Volumes cast shadows on themselves.</td></tr>
+<tr><th>clamp_direct</th><td>Cap on direct light per sample, 0 for none.</td></tr>
+<tr><th>clamp_indirect</th><td>Cap on bounced light per sample, 0 for none.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the EEVEE settings after the change.</p></article><article class="tool" id="set_film" data-search="set_film set film options: transparent background and pixel filter."><h3><a href="#set_film">set_film</a></h3><pre class="sig"><code>set_film(transparent: bool | None = None, transparent_glass: bool | None = None, filter_width: float | None = None)</code></pre><p>Set film options: transparent background and pixel filter.</p><table class="args"><tbody><tr><th>transparent</th><td>Render the world background as transparent, for compositing or product cut-outs. Needs PNG or EXR output to keep the alpha.</td></tr>
 <tr><th>transparent_glass</th><td>Cycles only. Let the background show through glass and other transmissive surfaces when transparent is on.</td></tr>
 <tr><th>filter_width</th><td>Cycles pixel filter width in pixels, 0.01 to 10.0. 1.5 is Blender&#x27;s default; lower is sharper, higher is softer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the film settings after the change.</p></article><article class="tool" id="set_light_paths" data-search="set_light_paths set cycles light bounce limits and caustics.
 
@@ -1205,7 +1231,21 @@ anything unset to keep it.</p><table class="args"><tbody><tr><th>total</th><td>O
 <tr><th>filter_glossy</th><td>Blur sharp reflections to cut noise, 0.0 to 10.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the light path settings after the change.</p></article><article class="tool" id="set_motion_blur" data-search="set_motion_blur set render motion blur for moving objects and cameras."><h3><a href="#set_motion_blur">set_motion_blur</a></h3><pre class="sig"><code>set_motion_blur(enabled: bool | None = None, shutter: float | None = None, position: str = &#x27;&#x27;, eevee_steps: int | None = None)</code></pre><p>Set render motion blur for moving objects and cameras.</p><table class="args"><tbody><tr><th>enabled</th><td>Turn motion blur on or off.</td></tr>
 <tr><th>shutter</th><td>Shutter time in frames, 0.0 to 2.0. 0.5 is a film-like 180 degree shutter.</td></tr>
 <tr><th>position</th><td>Where the shutter opens around the frame: START, CENTER or END.</td></tr>
-<tr><th>eevee_steps</th><td>EEVEE only. Blur passes, 1 to 64. More gives smoother curved motion.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the motion blur settings after the change.</p></article><article class="tool" id="set_render_passes" data-search="set_render_passes turn render passes on or off for the active view layer.
+<tr><th>eevee_steps</th><td>EEVEE only. Blur passes, 1 to 64. More gives smoother curved motion.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the motion blur settings after the change.</p></article><article class="tool" id="set_object_ray_visibility" data-search="set_object_ray_visibility choose which rays see an object: hide it from the camera but keep its
+shadow, keep it out of reflections, or turn it into a shadow catcher.
+
+leave anything unset to keep it."><h3><a href="#set_object_ray_visibility">set_object_ray_visibility</a></h3><pre class="sig"><code>set_object_ray_visibility(object_name: str, camera: bool | None = None, diffuse: bool | None = None, glossy: bool | None = None, transmission: bool | None = None, volume_scatter: bool | None = None, shadow: bool | None = None, holdout: bool | None = None, shadow_catcher: bool | None = None)</code></pre><p>Choose which rays see an object: hide it from the camera but keep its
+shadow, keep it out of reflections, or turn it into a shadow catcher.
+
+Leave anything unset to keep it.</p><table class="args"><tbody><tr><th>object_name</th><td>Object to change.</td></tr>
+<tr><th>camera</th><td>Seen directly by the camera.</td></tr>
+<tr><th>diffuse</th><td>Lights matte surfaces by bounced light.</td></tr>
+<tr><th>glossy</th><td>Shows in reflections.</td></tr>
+<tr><th>transmission</th><td>Shows through glass.</td></tr>
+<tr><th>volume_scatter</th><td>Affects smoke and fog.</td></tr>
+<tr><th>shadow</th><td>Casts shadows.</td></tr>
+<tr><th>holdout</th><td>Cut a transparent hole where the object is, for compositing.</td></tr>
+<tr><th>shadow_catcher</th><td>Cycles only. Show only the shadows other objects cast on it, for placing renders into photos (pair with set_film transparent).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with every visibility flag after the change.</p></article><article class="tool" id="set_render_passes" data-search="set_render_passes turn render passes on or off for the active view layer.
 
 passes are extra images saved with a multilayer exr or used in the
 compositor: depth for fog and focus, mist, normals, cryptomatte masks
@@ -1214,7 +1254,18 @@ for picking objects later."><h3><a href="#set_render_passes">set_render_passes</
 Passes are extra images saved with a multilayer EXR or used in the
 compositor: depth for fog and focus, mist, normals, cryptomatte masks
 for picking objects later.</p><table class="args"><tbody><tr><th>passes</th><td>Pass names: combined, z (alias depth), mist, normal, position, vector, uv, object_index, material_index, ambient_occlusion (alias ao), shadow, emit (alias emission), environment, diffuse_direct, diffuse_indirect, diffuse_color, glossy_direct, glossy_indirect, glossy_color, transmission_direct, transmission_indirect, transmission_color, subsurface_direct, subsurface_indirect, subsurface_color, cryptomatte_object, cryptomatte_material, cryptomatte_asset, shadow_catcher (Cycles), volume_direct, volume_indirect (Cycles), transparent (EEVEE), grease_pencil.</td></tr>
-<tr><th>enabled</th><td>True to turn them on, False to turn them off.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the view layer name and the passes changed.</p></article></section>
+<tr><th>enabled</th><td>True to turn them on, False to turn them off.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the view layer name and the passes changed.</p></article><article class="tool" id="set_render_performance" data-search="set_render_performance speed up heavy renders or fit them in memory.
+
+leave anything unset to keep it."><h3><a href="#set_render_performance">set_render_performance</a></h3><pre class="sig"><code>set_render_performance(simplify: bool | None = None, max_subdivision: int | None = None, texture_limit: str = &#x27;&#x27;, texture_resolution: float | None = None, persistent_data: bool | None = None, auto_tile: bool | None = None, tile_size: int | None = None, anisotropic_filter: int | None = None)</code></pre><p>Speed up heavy renders or fit them in memory.
+
+Leave anything unset to keep it.</p><table class="args"><tbody><tr><th>simplify</th><td>Turn on Simplify, which max_subdivision and the texture settings need.</td></tr>
+<tr><th>max_subdivision</th><td>Cap subdivision levels at render, 0 to 6.</td></tr>
+<tr><th>texture_limit</th><td>Cycles: largest texture size at render, OFF or 128 to 8192.</td></tr>
+<tr><th>texture_resolution</th><td>Cycles: scale all textures, 0.0 to 1.0 (new in 5.2).</td></tr>
+<tr><th>persistent_data</th><td>Cycles: keep scene data between frames of an animation for faster re-renders, at the cost of memory.</td></tr>
+<tr><th>auto_tile</th><td>Cycles: render in tiles to save memory.</td></tr>
+<tr><th>tile_size</th><td>Cycles tile size in pixels, 8 to 8192.</td></tr>
+<tr><th>anisotropic_filter</th><td>Texture filtering for angled surfaces: 0, 2, 4, 8 or 16.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the performance settings after the change.</p></article></section>
 <section class="module" id="rendering" data-module="rendering"><h2>Rendering <span class="n">7</span></h2><article class="tool" id="render_animation" data-search="render_animation render the animation sequence to image files."><h3><a href="#render_animation">render_animation</a></h3><pre class="sig"><code>render_animation(filepath: str = &#x27;&#x27;, format: str = &#x27;PNG&#x27;)</code></pre><p>Render the animation sequence to image files.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path prefix for the rendered frames. Each frame will be saved with a frame number suffix. The directory must exist. Empty means render_ in the system temp directory.</td></tr>
 <tr><th>format</th><td>Output format. One of: PNG, JPEG, OPEN_EXR, TIFF, BMP.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with output details.</p></article><article class="tool" id="render_image" data-search="render_image render the current scene to an image file."><h3><a href="#render_image">render_image</a></h3><pre class="sig"><code>render_image(filepath: str = &#x27;&#x27;)</code></pre><p>Render the current scene to an image file.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path for the rendered image. Must be an absolute path with a valid image extension (.png, .jpg, .exr, .tiff, .bmp) in a directory that exists. Empty means render.png in the system temp directory.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the output file path.</p></article><article class="tool" id="set_eevee_light_path" data-search="set_eevee_light_path set eevee light intensity controls (blender 5.1+).
 

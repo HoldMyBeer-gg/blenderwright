@@ -339,6 +339,49 @@ def handle_set_shadow_settings(params: dict) -> dict:
         raise RuntimeError(f"Failed to set shadow settings: {e}")
 
 
+LINK_ROLES = {"RECEIVERS": ("receiver_collection", "Light Linking for"),
+              "BLOCKERS": ("blocker_collection", "Shadow Linking for")}
+
+
+def handle_set_light_linking(params: dict) -> dict:
+    """Replace a light's receiver or blocker list."""
+    light_name = params.get("light_name")
+    light = bpy.data.objects.get(light_name)
+    if light is None:
+        raise ValueError(f"Light '{light_name}' not found")
+    role = params.get("role", "RECEIVERS")
+    if role not in LINK_ROLES:
+        raise ValueError(f"Unknown role {role!r}")
+    mode = params.get("mode", "INCLUDE")
+    if mode not in ("INCLUDE", "EXCLUDE"):
+        raise ValueError(f"Unknown mode {mode!r}")
+    targets = []
+    for name in params.get("objects", []):
+        obj = bpy.data.objects.get(name)
+        if obj is None:
+            raise ValueError(f"Object '{name}' not found")
+        targets.append(obj)
+
+    attr, prefix = LINK_ROLES[role]
+    if not targets:
+        setattr(light.light_linking, attr, None)
+        return {"light": light.name, "role": role, "collection": None, "objects": []}
+
+    collection = getattr(light.light_linking, attr)
+    if collection is None:
+        collection = bpy.data.collections.new(f"{prefix} {light.name}")
+        setattr(light.light_linking, attr, collection)
+    for obj in list(collection.objects):
+        collection.objects.unlink(obj)
+    for obj in targets:
+        collection.objects.link(obj)
+    # collection_objects line up with objects; each carries the link state
+    for entry in collection.collection_objects:
+        entry.light_linking.link_state = mode
+    return {"light": light.name, "role": role, "mode": mode, "collection": collection.name,
+            "objects": [o.name for o in collection.objects]}
+
+
 def register():
     """Register all lighting handlers with the dispatcher."""
     dispatcher.register_handler("create_light", handle_create_light)
@@ -349,3 +392,4 @@ def register():
     dispatcher.register_handler("delete_light", handle_delete_light)
     dispatcher.register_handler("set_shadow_settings", handle_set_shadow_settings)
     dispatcher.register_handler("set_world_sky", handle_set_world_sky)
+    dispatcher.register_handler("set_light_linking", handle_set_light_linking)
