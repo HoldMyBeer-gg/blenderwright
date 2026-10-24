@@ -51,7 +51,8 @@ TOOLSETS: dict[str, str] = {
     "camera": "Create and aim cameras, depth of field, set from view, capture viewport",
     "animation": "Keyframes on anything (transforms, material colours, light power, "
                  "world, camera lens), interpolation, frame range, follow-path animation, "
-                 "drivers (one property driving another)",
+                 "drivers (one property driving another), actions and the NLA (loop, "
+                 "layer, repeat), curve modifiers (cycles, noise, stepped)",
     "rendering": "Engine, resolution, samples, output format, render stills and animations",
     "render_settings": "Finished look: colour management (AgX, exposure, looks), "
                        "transparent background, denoising, Cycles sampling and bounces, "

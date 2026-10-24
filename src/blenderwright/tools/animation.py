@@ -1,5 +1,6 @@
 """MCP tools for Blender animation operations."""
 
+import re
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
@@ -458,3 +459,157 @@ def keyframe_property(
     if value is not None:
         params["value"] = _key_value(value)
     return _send_animation_command("keyframe_property", params)
+
+
+ALLOWED_ACTION_OPERATIONS = {"LIST", "NEW", "ASSIGN", "UNASSIGN", "PUSH_DOWN"}
+ALLOWED_BLEND_TYPES = {"REPLACE", "COMBINE", "ADD", "SUBTRACT", "MULTIPLY"}
+ALLOWED_EXTRAPOLATIONS = {"NOTHING", "HOLD", "HOLD_FORWARD"}
+ALLOWED_FCURVE_MODIFIERS = {"CYCLES", "NOISE", "STEPPED", "SMOOTH"}
+FCURVE_SETTING_PATTERN = re.compile(r"^[a-z][a-z_]{0,31}$")
+
+
+@mcp.tool()
+def manage_action(object_name: str, operation: str, action_name: str = "") -> dict[str, Any]:
+    """Work with an object's actions (its saved animations).
+
+    Args:
+        object_name: Animated object.
+        operation: LIST (the file's actions and which one the object plays),
+            NEW (start an empty action named action_name and assign it),
+            ASSIGN (play an existing action; several objects can share one),
+            UNASSIGN (stop playing the active action, keep it in the file),
+            PUSH_DOWN (move the active action into an NLA strip so another
+            action can be layered on top).
+        action_name: Needed for NEW and ASSIGN.
+
+    Returns:
+        Dict with the object's active action and slot, and the file's actions.
+    """
+    params: dict[str, Any] = {
+        "object_name": validate_object_name(object_name),
+        "operation": validate_enum(operation, ALLOWED_ACTION_OPERATIONS, name="operation"),
+    }
+    if operation in ("NEW", "ASSIGN"):
+        if not action_name:
+            raise ValidationError(f"{operation} needs action_name")
+        params["action_name"] = validate_object_name(action_name)
+    return _send_animation_command("manage_action", params)
+
+
+@mcp.tool()
+def add_nla_strip(
+    object_name: str,
+    action_name: str,
+    frame_start: int = 1,
+    track_name: str = "",
+    blend_type: str = "REPLACE",
+    repeat: float = 1.0,
+    scale: float = 1.0,
+    extrapolation: str = "HOLD_FORWARD",
+    blend_in: float = 0.0,
+    blend_out: float = 0.0,
+    influence: float | None = None,
+) -> dict[str, Any]:
+    """Place an action on the NLA timeline as a strip: repeat a walk cycle,
+    sequence clips, or layer a wave on top of a walk.
+
+    Args:
+        object_name: Object to animate.
+        action_name: Action to place.
+        frame_start: Frame the strip starts.
+        track_name: NLA track to put it on; created if missing. Empty adds a
+            new track on top.
+        blend_type: How it mixes with the tracks below: REPLACE, COMBINE
+            (adds rotations properly, best for layering), ADD, SUBTRACT,
+            MULTIPLY.
+        repeat: Times to play the action, 0.1 to 1000.
+        scale: Playback stretch, 0.01 to 100 (2 is half speed).
+        extrapolation: After (and before) the strip: NOTHING, HOLD or
+            HOLD_FORWARD.
+        blend_in: Frames to fade in, 0 or more.
+        blend_out: Frames to fade out, 0 or more.
+        influence: Fixed strength 0.0 to 1.0; leave unset for full.
+
+    Returns:
+        Dict with the track, strip, and its frame range.
+    """
+    params: dict[str, Any] = {
+        "object_name": validate_object_name(object_name),
+        "action_name": validate_object_name(action_name),
+        "frame_start": validate_int(frame_start, -MAX_FRAME, MAX_FRAME, name="frame_start"),
+        "track_name": validate_object_name(track_name) if track_name else "",
+        "blend_type": validate_enum(blend_type, ALLOWED_BLEND_TYPES, name="blend_type"),
+        "repeat": float(validate_numeric_range(repeat, min_val=0.1, max_val=1000.0,
+                                               name="repeat")),
+        "scale": float(validate_numeric_range(scale, min_val=0.01, max_val=100.0, name="scale")),
+        "extrapolation": validate_enum(extrapolation, ALLOWED_EXTRAPOLATIONS,
+                                       name="extrapolation"),
+        "blend_in": float(validate_numeric_range(blend_in, min_val=0.0, max_val=MAX_FRAME,
+                                                 name="blend_in")),
+        "blend_out": float(validate_numeric_range(blend_out, min_val=0.0, max_val=MAX_FRAME,
+                                                  name="blend_out")),
+    }
+    if influence is not None:
+        params["influence"] = float(validate_numeric_range(influence, min_val=0.0,
+                                                           max_val=1.0, name="influence"))
+    return _send_animation_command("add_nla_strip", params)
+
+
+@mcp.tool()
+def list_nla(object_name: str) -> dict[str, Any]:
+    """List an object's NLA tracks and strips, top to bottom.
+
+    Args:
+        object_name: Animated object.
+
+    Returns:
+        Dict with each track and its strips (action, frames, blend, repeat).
+    """
+    return _send_animation_command("list_nla", {"object_name": validate_object_name(object_name)})
+
+
+@mcp.tool()
+def add_fcurve_modifier(
+    object_name: str,
+    data_path: str,
+    modifier: str,
+    index: int = -1,
+    settings: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Add a modifier to animation curves of the object's active action.
+
+    Args:
+        object_name: Animated object.
+        data_path: Animated property, e.g. "location", "rotation_euler".
+        modifier: CYCLES (repeat the keys forever: settings mode_before /
+            mode_after REPEAT, REPEAT_OFFSET for walking forward, MIRROR),
+            NOISE (organic jitter: strength, scale, phase, offset, depth),
+            STEPPED (stop-motion look: frame_step, frame_offset),
+            SMOOTH (Gaussian smoothing: sigma, filter_width).
+        index: One component (0, 1, 2) or -1 for every component.
+        settings: Modifier settings by name, plain values.
+
+    Returns:
+        Dict with how many curves got the modifier.
+    """
+    clean: dict[str, Any] = {}
+    for key, value in (settings or {}).items():
+        if not isinstance(key, str) or not FCURVE_SETTING_PATTERN.match(key):
+            raise ValidationError(f"Invalid modifier setting name: {key!r}")
+        if isinstance(value, bool):
+            clean[key] = value
+        elif isinstance(value, (int, float)):
+            clean[key] = validate_numeric_range(value, min_val=-MAX_KEY_VALUE,
+                                                max_val=MAX_KEY_VALUE, name=key)
+        elif isinstance(value, str) and len(value) <= 32 and value.isidentifier():
+            clean[key] = value
+        else:
+            raise ValidationError(f"Modifier setting '{key}' must be a number, true/false "
+                                  f"or an option name")
+    return _send_animation_command("add_fcurve_modifier", {
+        "object_name": validate_object_name(object_name),
+        "data_path": validate_data_path(data_path),
+        "index": validate_int(index, -1, 3, name="index"),
+        "modifier": validate_enum(modifier, ALLOWED_FCURVE_MODIFIERS, name="modifier"),
+        "settings": clean,
+    })
