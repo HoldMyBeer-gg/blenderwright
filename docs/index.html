@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 193 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 193 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 198 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 198 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 193 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 198 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>193</b> tools</span>
+    <span><b>198</b> tools</span>
     <span><b>28</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -137,7 +137,7 @@ footer a { color: var(--accent); }
 <a href="#objects">Objects <span class="n">15</span></a>
 <a href="#physics">Physics <span class="n">9</span></a>
 <a href="#print3d">print3d <span class="n">1</span></a>
-<a href="#rendering">Rendering <span class="n">9</span></a>
+<a href="#rendering">Rendering <span class="n">14</span></a>
 <a href="#scene">Scene <span class="n">6</span></a>
 <a href="#sculpting">Sculpting <span class="n">8</span></a>
 <a href="#selection">Selection <span class="n">6</span></a>
@@ -958,7 +958,7 @@ enable it; suggest_extensions also reports whether it is on.</p><table class="ar
 <tr><th>sharp_angle</th><td>Sharp-edge threshold in RADIANS.</td></tr>
 <tr><th>nonplanar_angle</th><td>Non-flat face threshold in RADIANS.</td></tr>
 <tr><th>zero_threshold</th><td>Area below which a face counts as zero-area.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with a count (and sample indices) per check that ran, plus checks_run, issues_found, and print_blocking: the defects that stop a print, as opposed to overhangs and sharp edges which are advisory.</p></article></section>
-<section class="module" id="rendering" data-module="rendering"><h2>Rendering <span class="n">9</span></h2><article class="tool" id="render_animation" data-search="render_animation render the animation sequence to image files."><h3><a href="#render_animation">render_animation</a></h3><pre class="sig"><code>render_animation(filepath: str = &#x27;&#x27;, format: str = &#x27;PNG&#x27;)</code></pre><p>Render the animation sequence to image files.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path prefix for the rendered frames. Each frame will be saved with a frame number suffix. The directory must exist. Empty means render_ in the system temp directory.</td></tr>
+<section class="module" id="rendering" data-module="rendering"><h2>Rendering <span class="n">14</span></h2><article class="tool" id="render_animation" data-search="render_animation render the animation sequence to image files."><h3><a href="#render_animation">render_animation</a></h3><pre class="sig"><code>render_animation(filepath: str = &#x27;&#x27;, format: str = &#x27;PNG&#x27;)</code></pre><p>Render the animation sequence to image files.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path prefix for the rendered frames. Each frame will be saved with a frame number suffix. The directory must exist. Empty means render_ in the system temp directory.</td></tr>
 <tr><th>format</th><td>Output format. One of: PNG, JPEG, OPEN_EXR, TIFF, BMP.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with output details.</p></article><article class="tool" id="render_image" data-search="render_image render the current scene to an image file."><h3><a href="#render_image">render_image</a></h3><pre class="sig"><code>render_image(filepath: str = &#x27;&#x27;)</code></pre><p>Render the current scene to an image file.</p><table class="args"><tbody><tr><th>filepath</th><td>Output file path for the rendered image. Must be an absolute path with a valid image extension (.png, .jpg, .exr, .tiff, .bmp) in a directory that exists. Empty means render.png in the system temp directory.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the output file path.</p></article><article class="tool" id="set_color_management" data-search="set_color_management set how the scene&#x27;s light becomes final pixel colours.
 
 agx (the default) handles bright highlights gracefully; standard is for
@@ -972,7 +972,31 @@ true. A look adds contrast on top. Leave anything unset to keep it.</p><table cl
 <tr><th>exposure</th><td>Brightness in stops. Range -10.0 to 10.0; 0 is unchanged.</td></tr>
 <tr><th>gamma</th><td>Extra gamma. Range 0.0 to 5.0; 1.0 is unchanged.</td></tr>
 <tr><th>display_device</th><td>One of: sRGB, Display P3, Rec.1886, Rec.2020, Rec.2100-PQ, Rec.2100-HLG.</td></tr>
-<tr><th>white_balance_temperature</th><td>Kelvin, 1800 to 100000. Lower warms the image, higher cools it. Setting it turns white balance on.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the full colour management state after the change.</p></article><article class="tool" id="set_eevee_light_path" data-search="set_eevee_light_path set eevee light intensity controls (blender 5.1+).
+<tr><th>white_balance_temperature</th><td>Kelvin, 1800 to 100000. Lower warms the image, higher cools it. Setting it turns white balance on.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the full colour management state after the change.</p></article><article class="tool" id="set_cycles_sampling" data-search="set_cycles_sampling tune how cycles spends samples. set the sample count with set_render_samples.
+
+leave anything unset to keep it."><h3><a href="#set_cycles_sampling">set_cycles_sampling</a></h3><pre class="sig"><code>set_cycles_sampling(adaptive: bool | None = None, noise_threshold: float | None = None, min_samples: int | None = None, time_limit: float | None = None, clamp_direct: float | None = None, clamp_indirect: float | None = None, path_guiding: bool | None = None, seed: int | None = None, animated_seed: bool | None = None)</code></pre><p>Tune how Cycles spends samples. Set the sample count with set_render_samples.
+
+Leave anything unset to keep it.</p><table class="args"><tbody><tr><th>adaptive</th><td>Stop sampling pixels once they are clean enough.</td></tr>
+<tr><th>noise_threshold</th><td>Adaptive cut-off, 0.0 to 1.0. 0.01 is Blender&#x27;s default; 0.05 renders faster and noisier, 0.001 slower and cleaner.</td></tr>
+<tr><th>min_samples</th><td>Samples every pixel gets before adaptive stopping, 0 to 4096. 0 lets Blender choose.</td></tr>
+<tr><th>time_limit</th><td>Seconds per frame before stopping, 0 to 86400. 0 means no limit.</td></tr>
+<tr><th>clamp_direct</th><td>Cap on direct light per sample, 0 to 1000000. 0 means no clamp. Lowers fireflies at the cost of some energy.</td></tr>
+<tr><th>clamp_indirect</th><td>Cap on bounced light per sample, 0 to 1000000. 10 is Blender&#x27;s default; lower removes fireflies.</td></tr>
+<tr><th>path_guiding</th><td>Learn where light comes from; helps interiors lit through small openings. CPU only.</td></tr>
+<tr><th>seed</th><td>Noise pattern seed, 0 or more.</td></tr>
+<tr><th>animated_seed</th><td>Change the seed every frame so noise does not stick to the screen in animations.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the sampling settings after the change.</p></article><article class="tool" id="set_denoising" data-search="set_denoising configure cycles denoising for final renders and the viewport.
+
+denoising lets a render use far fewer samples: 128 denoised samples often
+beat 2048 raw ones. leave anything unset to keep it."><h3><a href="#set_denoising">set_denoising</a></h3><pre class="sig"><code>set_denoising(enabled: bool | None = None, denoiser: str = &#x27;&#x27;, quality: str = &#x27;&#x27;, prefilter: str = &#x27;&#x27;, input_passes: str = &#x27;&#x27;, use_gpu: bool | None = None, viewport: bool | None = None)</code></pre><p>Configure Cycles denoising for final renders and the viewport.
+
+Denoising lets a render use far fewer samples: 128 denoised samples often
+beat 2048 raw ones. Leave anything unset to keep it.</p><table class="args"><tbody><tr><th>enabled</th><td>Denoise final renders.</td></tr>
+<tr><th>denoiser</th><td>OPENIMAGEDENOISE (any machine) or OPTIX (NVIDIA GPUs only).</td></tr>
+<tr><th>quality</th><td>HIGH, BALANCED or FAST.</td></tr>
+<tr><th>prefilter</th><td>How the albedo and normal guides are cleaned: ACCURATE (sharpest detail), FAST, or NONE.</td></tr>
+<tr><th>input_passes</th><td>Guides the denoiser uses: RGB, RGB_ALBEDO, or RGB_ALBEDO_NORMAL (best edges).</td></tr>
+<tr><th>use_gpu</th><td>Run the denoiser on the GPU when one is available.</td></tr>
+<tr><th>viewport</th><td>Denoise the rendered viewport preview too.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the denoising settings after the change.</p></article><article class="tool" id="set_eevee_light_path" data-search="set_eevee_light_path set eevee light intensity controls (blender 5.1+).
 
 scales how strongly direct and indirect lighting contribute. only applies
 when the render engine is eevee."><h3><a href="#set_eevee_light_path">set_eevee_light_path</a></h3><pre class="sig"><code>set_eevee_light_path(direct_intensity: float | None = None, indirect_intensity: float | None = None)</code></pre><p>Set EEVEE light intensity controls (Blender 5.1+).
@@ -981,8 +1005,36 @@ Scales how strongly direct and indirect lighting contribute. Only applies
 when the render engine is EEVEE.</p><table class="args"><tbody><tr><th>direct_intensity</th><td>Multiplier for light arriving straight from a lamp. Range 0.0-10.0, 1.0 is unchanged. Leave unset to keep the current value.</td></tr>
 <tr><th>indirect_intensity</th><td>Multiplier for bounced light. Range 0.0-10.0, 1.0 is unchanged. Leave unset to keep the current value.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with both intensities after the change.</p></article><article class="tool" id="set_film" data-search="set_film set film options: transparent background and pixel filter."><h3><a href="#set_film">set_film</a></h3><pre class="sig"><code>set_film(transparent: bool | None = None, transparent_glass: bool | None = None, filter_width: float | None = None)</code></pre><p>Set film options: transparent background and pixel filter.</p><table class="args"><tbody><tr><th>transparent</th><td>Render the world background as transparent, for compositing or product cut-outs. Needs PNG or EXR output to keep the alpha.</td></tr>
 <tr><th>transparent_glass</th><td>Cycles only. Let the background show through glass and other transmissive surfaces when transparent is on.</td></tr>
-<tr><th>filter_width</th><td>Cycles pixel filter width in pixels, 0.01 to 10.0. 1.5 is Blender&#x27;s default; lower is sharper, higher is softer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the film settings after the change.</p></article><article class="tool" id="set_output_format" data-search="set_output_format set the render output format and optionally the output file path."><h3><a href="#set_output_format">set_output_format</a></h3><pre class="sig"><code>set_output_format(format: str, filepath: str = &#x27;&#x27;)</code></pre><p>Set the render output format and optionally the output file path.</p><table class="args"><tbody><tr><th>format</th><td>Output format. One of: PNG, JPEG, OPEN_EXR, TIFF, BMP.</td></tr>
-<tr><th>filepath</th><td>Optional output file path. Must be an absolute path.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new output settings.</p></article><article class="tool" id="set_render_engine" data-search="set_render_engine set the render engine."><h3><a href="#set_render_engine">set_render_engine</a></h3><pre class="sig"><code>set_render_engine(engine: str)</code></pre><p>Set the render engine.</p><table class="args"><tbody><tr><th>engine</th><td>Render engine to use. One of: BLENDER_EEVEE, CYCLES, BLENDER_WORKBENCH.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the active render engine.</p></article><article class="tool" id="set_render_resolution" data-search="set_render_resolution set the render resolution."><h3><a href="#set_render_resolution">set_render_resolution</a></h3><pre class="sig"><code>set_render_resolution(width: int, height: int, percentage: int = 100)</code></pre><p>Set the render resolution.</p><table class="args"><tbody><tr><th>width</th><td>Render width in pixels. Range: 1-8192.</td></tr>
+<tr><th>filter_width</th><td>Cycles pixel filter width in pixels, 0.01 to 10.0. 1.5 is Blender&#x27;s default; lower is sharper, higher is softer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the film settings after the change.</p></article><article class="tool" id="set_light_paths" data-search="set_light_paths set cycles light bounce limits and caustics.
+
+fewer bounces render faster; glass and liquids need enough transmission
+bounces or they turn black. each bounce count is 0 to 1024. leave
+anything unset to keep it."><h3><a href="#set_light_paths">set_light_paths</a></h3><pre class="sig"><code>set_light_paths(total: int | None = None, diffuse: int | None = None, glossy: int | None = None, transmission: int | None = None, volume: int | None = None, transparent: int | None = None, caustics_reflective: bool | None = None, caustics_refractive: bool | None = None, filter_glossy: float | None = None)</code></pre><p>Set Cycles light bounce limits and caustics.
+
+Fewer bounces render faster; glass and liquids need enough transmission
+bounces or they turn black. Each bounce count is 0 to 1024. Leave
+anything unset to keep it.</p><table class="args"><tbody><tr><th>total</th><td>Overall bounce cap (Blender default 12).</td></tr>
+<tr><th>diffuse</th><td>Bounces off matte surfaces (default 4).</td></tr>
+<tr><th>glossy</th><td>Bounces off shiny surfaces (default 4).</td></tr>
+<tr><th>transmission</th><td>Bounces through glass and liquid (default 12).</td></tr>
+<tr><th>volume</th><td>Bounces inside smoke and fog (default 0).</td></tr>
+<tr><th>transparent</th><td>Layers of alpha-transparent surfaces such as leaves (default 8).</td></tr>
+<tr><th>caustics_reflective</th><td>Allow light focused by mirrors.</td></tr>
+<tr><th>caustics_refractive</th><td>Allow light focused by glass; turning it off removes much glass noise.</td></tr>
+<tr><th>filter_glossy</th><td>Blur sharp reflections to cut noise, 0.0 to 10.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the light path settings after the change.</p></article><article class="tool" id="set_motion_blur" data-search="set_motion_blur set render motion blur for moving objects and cameras."><h3><a href="#set_motion_blur">set_motion_blur</a></h3><pre class="sig"><code>set_motion_blur(enabled: bool | None = None, shutter: float | None = None, position: str = &#x27;&#x27;, eevee_steps: int | None = None)</code></pre><p>Set render motion blur for moving objects and cameras.</p><table class="args"><tbody><tr><th>enabled</th><td>Turn motion blur on or off.</td></tr>
+<tr><th>shutter</th><td>Shutter time in frames, 0.0 to 2.0. 0.5 is a film-like 180 degree shutter.</td></tr>
+<tr><th>position</th><td>Where the shutter opens around the frame: START, CENTER or END.</td></tr>
+<tr><th>eevee_steps</th><td>EEVEE only. Blur passes, 1 to 64. More gives smoother curved motion.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the motion blur settings after the change.</p></article><article class="tool" id="set_output_format" data-search="set_output_format set the render output format and optionally the output file path."><h3><a href="#set_output_format">set_output_format</a></h3><pre class="sig"><code>set_output_format(format: str, filepath: str = &#x27;&#x27;)</code></pre><p>Set the render output format and optionally the output file path.</p><table class="args"><tbody><tr><th>format</th><td>Output format. One of: PNG, JPEG, OPEN_EXR, TIFF, BMP.</td></tr>
+<tr><th>filepath</th><td>Optional output file path. Must be an absolute path.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new output settings.</p></article><article class="tool" id="set_render_engine" data-search="set_render_engine set the render engine."><h3><a href="#set_render_engine">set_render_engine</a></h3><pre class="sig"><code>set_render_engine(engine: str)</code></pre><p>Set the render engine.</p><table class="args"><tbody><tr><th>engine</th><td>Render engine to use. One of: BLENDER_EEVEE, CYCLES, BLENDER_WORKBENCH.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the active render engine.</p></article><article class="tool" id="set_render_passes" data-search="set_render_passes turn render passes on or off for the active view layer.
+
+passes are extra images saved with a multilayer exr or used in the
+compositor: depth for fog and focus, mist, normals, cryptomatte masks
+for picking objects later."><h3><a href="#set_render_passes">set_render_passes</a></h3><pre class="sig"><code>set_render_passes(passes: list[str], enabled: bool = True)</code></pre><p>Turn render passes on or off for the active view layer.
+
+Passes are extra images saved with a multilayer EXR or used in the
+compositor: depth for fog and focus, mist, normals, cryptomatte masks
+for picking objects later.</p><table class="args"><tbody><tr><th>passes</th><td>Pass names: combined, z (alias depth), mist, normal, position, vector, uv, object_index, material_index, ambient_occlusion (alias ao), shadow, emit (alias emission), environment, diffuse_direct, diffuse_indirect, diffuse_color, glossy_direct, glossy_indirect, glossy_color, transmission_direct, transmission_indirect, transmission_color, subsurface_direct, subsurface_indirect, subsurface_color, cryptomatte_object, cryptomatte_material, cryptomatte_asset, shadow_catcher (Cycles), volume_direct, volume_indirect (Cycles), transparent (EEVEE), grease_pencil.</td></tr>
+<tr><th>enabled</th><td>True to turn them on, False to turn them off.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the view layer name and the passes changed.</p></article><article class="tool" id="set_render_resolution" data-search="set_render_resolution set the render resolution."><h3><a href="#set_render_resolution">set_render_resolution</a></h3><pre class="sig"><code>set_render_resolution(width: int, height: int, percentage: int = 100)</code></pre><p>Set the render resolution.</p><table class="args"><tbody><tr><th>width</th><td>Render width in pixels. Range: 1-8192.</td></tr>
 <tr><th>height</th><td>Render height in pixels. Range: 1-8192.</td></tr>
 <tr><th>percentage</th><td>Resolution percentage scale. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new resolution settings.</p></article><article class="tool" id="set_render_samples" data-search="set_render_samples set the number of render samples."><h3><a href="#set_render_samples">set_render_samples</a></h3><pre class="sig"><code>set_render_samples(samples: int)</code></pre><p>Set the number of render samples.</p><table class="args"><tbody><tr><th>samples</th><td>Number of samples. Range: 1-10000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new sample count.</p></article></section>
 <section class="module" id="scene" data-module="scene"><h2>Scene <span class="n">6</span></h2><article class="tool" id="create_scene" data-search="create_scene create a new scene."><h3><a href="#create_scene">create_scene</a></h3><pre class="sig"><code>create_scene(name: str)</code></pre><p>Create a new scene.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the created scene name.</p></article><article class="tool" id="delete_scene" data-search="delete_scene delete a scene by name."><h3><a href="#delete_scene">delete_scene</a></h3><pre class="sig"><code>delete_scene(scene_name: str)</code></pre><p>Delete a scene by name.</p><table class="args"><tbody><tr><th>scene_name</th><td>Name of the scene to delete. Cannot delete the last remaining scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="get_scene_info" data-search="get_scene_info get full scene information including object tree, hierarchy, counts, frame range, fps, and render engine.
