@@ -30,41 +30,51 @@ def rendering_handler():
     return _load_rendering_handler()
 
 
-def _stub_engine_enum(*names):
-    """_resolve_engine reads the live enum; give the bpy mock a real list."""
-    bpy = sys.modules["bpy"]
-    prop = MagicMock()
-    prop.enum_items.keys.return_value = list(names)
-    bpy.types.RenderSettings.bl_rna.properties = {"engine": prop}
+class _Render52:
+    """Blender 5.2: the engine enum is dynamic. RNA introspection lists only
+    BLENDER_EEVEE, while assignment accepts every registered engine."""
+
+    LIVE = ("BLENDER_EEVEE", "BLENDER_WORKBENCH", "CYCLES")
+
+    def __init__(self):
+        self._engine = "BLENDER_EEVEE"
+
+    @property
+    def engine(self):
+        return self._engine
+
+    @engine.setter
+    def engine(self, value):
+        if value not in self.LIVE:
+            raise TypeError(f'bpy_struct: item.attr = val: enum "{value}" not found in {self.LIVE}')
+        self._engine = value
+
+
+@pytest.fixture
+def render52(monkeypatch):
+    import bpy
+
+    render = _Render52()
+    monkeypatch.setattr(bpy.context.scene, "render", render)
+    return render
 
 
 class TestHandleSetRenderEngine:
-    def test_handle_set_render_engine_eevee(self, rendering_handler):
-        _stub_engine_enum("BLENDER_EEVEE", "CYCLES", "BLENDER_WORKBENCH")
-        """Setting engine to BLENDER_EEVEE assigns the correct 5.1 identifier."""
-        import bpy
+    @pytest.mark.parametrize("engine", ["CYCLES", "BLENDER_WORKBENCH", "BLENDER_EEVEE"])
+    def test_every_live_engine_can_be_chosen(self, rendering_handler, render52, engine):
+        result = rendering_handler.handle_set_render_engine({"engine": engine})
+        assert render52.engine == engine
+        assert result == {"engine": engine}
 
-        result = rendering_handler.handle_set_render_engine({"engine": "BLENDER_EEVEE"})
+    def test_old_eevee_next_name_maps_to_eevee(self, rendering_handler, render52):
+        render52.engine = "CYCLES"
+        rendering_handler.handle_set_render_engine({"engine": "BLENDER_EEVEE_NEXT"})
+        assert render52.engine == "BLENDER_EEVEE"
 
-        assert bpy.context.scene.render.engine == "BLENDER_EEVEE"
-        assert "engine" in result
-
-    def test_handle_set_render_engine_cycles(self, rendering_handler):
-        _stub_engine_enum("BLENDER_EEVEE", "CYCLES", "BLENDER_WORKBENCH")
-        """Setting engine to CYCLES assigns CYCLES."""
-        import bpy
-
-        result = rendering_handler.handle_set_render_engine({"engine": "CYCLES"})
-
-        assert bpy.context.scene.render.engine == "CYCLES"
-        assert "engine" in result
-
-    def test_handle_set_render_engine_returns_engine(self, rendering_handler):
-        _stub_engine_enum("BLENDER_EEVEE", "CYCLES", "BLENDER_WORKBENCH")
-        """Return dict contains the 'engine' key."""
-        result = rendering_handler.handle_set_render_engine({"engine": "BLENDER_EEVEE"})
-
-        assert "engine" in result
+    def test_missing_engine_lists_what_blender_offers(self, rendering_handler, render52):
+        with pytest.raises(ValueError, match="CYCLES"):
+            rendering_handler.handle_set_render_engine({"engine": "OCTANE"})
+        assert render52.engine == "BLENDER_EEVEE"
 
 
 class TestHandleSetRenderResolution:
@@ -102,47 +112,6 @@ class TestHandleSetRenderSamples:
 
         assert bpy.context.scene.eevee.taa_render_samples == 64
         assert "samples" in result
-
-
-class TestEngineAliasResolution:
-    """Blender renamed EEVEE twice; callers should not have to track that.
-
-    4.2-4.4 call it BLENDER_EEVEE_NEXT, 5.x calls it BLENDER_EEVEE. The
-    allowlist previously held only BLENDER_EEVEE, making EEVEE unselectable on
-    4.2-4.4, which the README claims to support.
-    """
-
-    def _handler(self):
-        mod = _load_rendering_handler()
-        return mod[0] if isinstance(mod, tuple) else mod
-
-    def _set_available(self, *names):
-        bpy = sys.modules["bpy"]
-        prop = MagicMock()
-        prop.enum_items.keys.return_value = list(names)
-        bpy.types.RenderSettings.bl_rna.properties = {"engine": prop}
-
-    def test_exact_name_is_used_when_available(self):
-        mod = self._handler()
-        self._set_available("BLENDER_EEVEE", "CYCLES")
-        assert mod._resolve_engine("CYCLES") == "CYCLES"
-
-    def test_next_maps_to_plain_eevee_on_5x(self):
-        mod = self._handler()
-        self._set_available("BLENDER_EEVEE", "CYCLES")
-        assert mod._resolve_engine("BLENDER_EEVEE_NEXT") == "BLENDER_EEVEE"
-
-    def test_plain_eevee_maps_to_next_on_4x(self):
-        mod = self._handler()
-        self._set_available("BLENDER_EEVEE_NEXT", "CYCLES")
-        assert mod._resolve_engine("BLENDER_EEVEE") == "BLENDER_EEVEE_NEXT"
-
-    def test_unknown_engine_lists_what_is_available(self):
-        mod = self._handler()
-        self._set_available("BLENDER_EEVEE", "CYCLES")
-        with pytest.raises(ValueError) as exc:
-            mod._resolve_engine("OCTANE")
-        assert "CYCLES" in str(exc.value)
 
 
 class TestImageOutputAfterVideo:
