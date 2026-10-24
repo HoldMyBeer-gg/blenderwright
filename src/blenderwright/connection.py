@@ -2,8 +2,10 @@
 
 import json
 import logging
+import os
 import socket
 import struct
+import sys
 import threading
 import time
 from typing import Any, NoReturn
@@ -11,9 +13,52 @@ from typing import Any, NoReturn
 logger = logging.getLogger(__name__)
 
 
+ENV_TOKEN_FILE = "BLENDERWRIGHT_TOKEN_FILE"
+
+
 class BlenderConnectionError(Exception):
     """Raised when connection to Blender fails."""
     pass
+
+
+class BlenderAuthError(BlenderConnectionError):
+    """Blender refused the token, or there is no token to send."""
+
+
+def token_path() -> str:
+    """Where the addon writes its auth token. Mirrors addon/auth.py."""
+    override = os.environ.get(ENV_TOKEN_FILE)
+    if override:
+        return override
+    home = os.path.expanduser("~")
+    if sys.platform == "win32":
+        base = os.environ.get("APPDATA") or os.path.join(home, "AppData", "Roaming")
+    elif sys.platform == "darwin":
+        base = os.path.join(home, "Library", "Application Support")
+    else:
+        base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(home, ".config")
+    return os.path.join(base, "blenderwright", "token")
+
+
+def read_token() -> str:
+    """Read the token the addon wrote when its server started."""
+    path = token_path()
+    try:
+        with open(path, encoding="utf-8") as f:
+            token = f.read().strip()
+    except FileNotFoundError:
+        raise BlenderAuthError(
+            f"No blenderwright auth token at {path}. Click Start Server in "
+            f"Blender's blenderwright panel. If this MCP server runs somewhere "
+            f"that can't see that file (WSL, Docker), set {ENV_TOKEN_FILE} to it."
+        ) from None
+    if not token:
+        raise BlenderAuthError(f"The blenderwright auth token at {path} is empty.")
+    return token
+
+
+def _is_unauthorized(response: Any) -> bool:
+    return isinstance(response, dict) and response.get("code") == "unauthorized"
 
 
 class BlenderConnection:
@@ -36,6 +81,7 @@ class BlenderConnection:
         self._port = port
         self._timeout = timeout
         self._socket: socket.socket | None = None
+        self._token: str | None = None
         self._lock = threading.Lock()
 
     @property
@@ -97,13 +143,44 @@ class BlenderConnection:
             remaining -= len(chunk)
         return b"".join(chunks)
 
-    def _exchange(self, message: dict[str, Any], timeout: float | None) -> Any:
-        """Send one message and return the decoded reply."""
+    def _roundtrip(self, message: dict[str, Any], timeout: float | None) -> Any:
+        """Send one message with the token and return the decoded reply."""
         if self._socket is None:
             raise BlenderConnectionError("Not connected to Blender")
+        if self._token is None:
+            self._token = read_token()
         self._socket.settimeout(self._timeout if timeout is None else timeout)
-        self._send_raw(json.dumps(message).encode("utf-8"))
+        self._send_raw(json.dumps({**message, "token": self._token}).encode("utf-8"))
         return json.loads(self._recv_raw().decode("utf-8"))
+
+    def _exchange(self, message: dict[str, Any], timeout: float | None) -> Any:
+        """Send one message and return the reply, re-reading a stale token once.
+
+        Blender writes a new token each time its server starts, so a rejection
+        right after a Blender restart is expected: read the file again and
+        resend. A second rejection means the token is wrong, and that is raised.
+        """
+        response = self._roundtrip(message, timeout)
+        if not _is_unauthorized(response):
+            return response
+
+        # Blender closes the socket after a rejection
+        self.disconnect()
+        stale = self._token
+        self._token = read_token()
+        if self._token != stale:
+            self.connect()
+            response = self._roundtrip(message, timeout)
+            if not _is_unauthorized(response):
+                return response
+            self.disconnect()
+
+        raise BlenderAuthError(
+            f"Blender rejected the blenderwright auth token from {token_path()}. "
+            f"Another program may be listening on {self._host}:{self._port}, or "
+            f"the token file belongs to a different Blender. Restart the server "
+            f"from Blender's blenderwright panel, then retry."
+        )
 
     def _raise_unanswered(
         self, command: str, timeout: float | None, error: Exception
@@ -153,6 +230,8 @@ class BlenderConnection:
 
                 try:
                     response = self._exchange(message, timeout)
+                except BlenderAuthError:
+                    raise
                 except TimeoutError as e:
                     self._raise_unanswered(command, timeout, e)
                 except (OSError, json.JSONDecodeError, BlenderConnectionError) as e:
@@ -180,6 +259,8 @@ class BlenderConnection:
 
                     try:
                         response = self._exchange(message, timeout)
+                    except BlenderAuthError:
+                        raise
                     except TimeoutError as e:
                         self._raise_unanswered(command, timeout, e)
                     except (OSError, json.JSONDecodeError, BlenderConnectionError):

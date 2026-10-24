@@ -4,11 +4,13 @@ Listens for commands from the MCP server over a TCP socket.
 Commands are executed on Blender's main thread via thread_safety module.
 """
 
+import hmac
 import json
 import socket
 import struct
 import threading
 
+from . import auth
 from . import dispatcher
 from . import thread_safety
 from .render_guard import render_guard
@@ -36,6 +38,8 @@ class BlenderServer:
         self._thread: threading.Thread | None = None
         self._clients: list[socket.socket] = []
         self._lock = threading.Lock()
+        self._token = ""
+        self.rejected_connections = 0
 
     @property
     def is_running(self) -> bool:
@@ -45,6 +49,9 @@ class BlenderServer:
         """Start the socket server in a background thread."""
         if self._running:
             return
+
+        self._token = auth.new_token()
+        auth.write_token(self._token)
 
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -82,6 +89,7 @@ class BlenderServer:
             self._thread = None
 
         thread_safety.unregister_timer()
+        auth.clear_token()
 
     def _accept_loop(self) -> None:
         """Accept incoming connections."""
@@ -114,6 +122,9 @@ class BlenderServer:
                     message = json.loads(
                         data.decode("utf-8"), parse_constant=_reject_non_finite
                     )
+                    if not self._is_authorized(message):
+                        self._reject(client)
+                        break
                     command = message.get("command", "")
                     params = message.get("params", {})
 
@@ -159,6 +170,28 @@ class BlenderServer:
                 client.close()
             except OSError:
                 pass
+
+    def _is_authorized(self, message) -> bool:
+        if not isinstance(message, dict) or not self._token:
+            return False
+        sent = message.get("token")
+        if not isinstance(sent, str):
+            return False
+        return hmac.compare_digest(sent.encode("utf-8"), self._token.encode("utf-8"))
+
+    def _reject(self, client: socket.socket) -> None:
+        """Answer a bad token loudly, then the caller drops the connection."""
+        self.rejected_connections += 1
+        print(
+            "blenderwright: refused a connection with a missing or wrong auth "
+            f"token ({self.rejected_connections} so far)"
+        )
+        self._send_message(client, json.dumps({
+            "status": "error",
+            "code": "unauthorized",
+            "result": "Unauthorized: missing or wrong blenderwright auth token. "
+                      "The connection was closed and the command was not run.",
+        }).encode("utf-8"))
 
     def _send_message(self, sock: socket.socket, data: bytes) -> None:
         """Send a length-prefixed message.

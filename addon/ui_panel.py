@@ -21,6 +21,11 @@ class BLENDERWRIGHT_PT_MainPanel(bpy.types.Panel):
         if srv.is_running:
             port = srv._port
             layout.label(text=f"Server: Running (port {port})", icon="CHECKMARK")
+            if srv.rejected_connections:
+                layout.label(
+                    text=f"Refused {srv.rejected_connections} connection(s): wrong auth token",
+                    icon="ERROR",
+                )
             layout.operator("blenderwright.stop_server", text="Stop Server", icon="CANCEL")
         else:
             layout.label(text="Server: Stopped", icon="X")
