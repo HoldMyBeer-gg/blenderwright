@@ -26,7 +26,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ## Key Features
 
-- **[214 tools](https://blenderwright.holdmybeer.gg/)** across 31 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **[217 tools](https://blenderwright.holdmybeer.gg/)** across 31 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **13 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -239,7 +239,7 @@ blenderwright includes 13 MCP prompts that guide the LLM toward professional-qua
 ## Tool Domains
 
 <details>
-<summary><strong>All 214 tools across 31 modules</strong></summary>
+<summary><strong>All 217 tools across 31 modules</strong></summary>
 
 Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://blenderwright.holdmybeer.gg/)**
 
@@ -249,7 +249,7 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 | Objects | 15 | Create primitives, duplicate, parent, join, visibility, origin, convert, auto-smooth |
 | Transforms | 6 | Position, rotation (euler/quat), scale, apply, snap |
 | Modeling | 13 | Modifiers, booleans, subdivide, extrude, bevel, loop cut, bridge edge loops |
-| Mesh Editing | 16 | Inset, fill, grid fill, mark seam/sharp, normals, dissolve, knife project, spin, crease |
+| Mesh Editing | 19 | Inset, fill, grid fill, mark seam/sharp, normals, dissolve, knife project, spin, crease, symmetrize, bisect, loop tools (circle, space evenly, flatten) |
 | Selection | 6 | Select by index, by axis, by face sides, by similarity; invert; report what is selected |
 | Mesh Quality | 3 | Analyze mesh defects: non-manifold, loose verts, zero-area faces, duplicates and repair them; decimate to reduce polycount |
 | Bool Tool | 4 | Auto union, difference, intersect, slice (via Blender's Bool Tool addon) |
@@ -389,7 +389,7 @@ blenderwright/
 │   ├── server.py           # FastMCP entry point
 │   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
-│   ├── tools/              # 31 tool modules (214 tools)
+│   ├── tools/              # 31 tool modules (217 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 13 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)

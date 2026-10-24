@@ -19,6 +19,12 @@ from blenderwright.validators import (
 # keeps; see the select_* tools in blenderwright.tools.selection.
 ALLOWED_SELECTION_MODES = {"ALL", "CURRENT"}
 
+ALLOWED_SYMMETRIZE_DIRECTIONS = {
+    "NEGATIVE_X", "POSITIVE_X", "NEGATIVE_Y", "POSITIVE_Y", "NEGATIVE_Z", "POSITIVE_Z",
+}
+ALLOWED_LOOP_OPERATIONS = {"CIRCLE", "SPACE", "FLATTEN"}
+MAX_COORDINATE = 1_000_000.0
+
 @mcp.tool()
 def inset_faces(
     object_name: str, thickness: float = 0.1, depth: float = 0.0,
@@ -574,3 +580,135 @@ def select_linked(object_name: str) -> dict[str, Any]:
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
+
+
+def _send_mesh_command(command: str, params: dict[str, Any]) -> Any:
+    conn = get_connection()
+    response = conn.send_command(command, params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+def _finite_vector(vec: Any, name: str) -> list[float]:
+    validate_vector(vec, size=3, name=name)
+    return [float(validate_numeric_range(v, min_val=-MAX_COORDINATE, max_val=MAX_COORDINATE,
+                                         name=name)) for v in vec]
+
+
+@mcp.tool()
+def symmetrize_mesh(
+    object_name: str,
+    direction: str = "NEGATIVE_X",
+    threshold: float = 0.0001,
+    selection: str = "ALL",
+) -> dict[str, Any]:
+    """Make a mesh symmetrical by copying one half onto the other.
+
+    Fixes a model that drifted out of symmetry, or builds the second half of
+    a half-modelled object. Works in the object's local axes.
+
+    Args:
+        object_name: Mesh object.
+        direction: Which half is copied where. NEGATIVE_X copies the -X side
+            onto +X; POSITIVE_X the reverse; likewise for Y and Z.
+        threshold: Distance within which vertices on the centre line merge,
+            0.0 to 1.0.
+        selection: "ALL" for the whole mesh, or "CURRENT" for the part already
+            selected with the select_* tools.
+
+    Returns:
+        Dict with the direction and the vertex count afterwards.
+    """
+    return _send_mesh_command("symmetrize_mesh", {
+        "object_name": validate_object_name(object_name),
+        "direction": validate_enum(direction, ALLOWED_SYMMETRIZE_DIRECTIONS, name="direction"),
+        "threshold": validate_numeric_range(threshold, min_val=0.0, max_val=1.0,
+                                            name="threshold"),
+        "selection": validate_enum(selection, ALLOWED_SELECTION_MODES, name="selection"),
+    })
+
+
+@mcp.tool()
+def bisect_mesh(
+    object_name: str,
+    plane_point: list[float] | tuple[float, ...] = (0, 0, 0),
+    plane_normal: list[float] | tuple[float, ...] = (0, 0, 1),
+    clear_inner: bool = False,
+    clear_outer: bool = False,
+    fill: bool = False,
+    selection: str = "ALL",
+) -> dict[str, Any]:
+    """Slice a mesh with a plane, optionally deleting one side and capping the cut.
+
+    Cuts a new edge loop where the plane crosses, which is also a clean way
+    to halve a model before adding a Mirror modifier.
+
+    Args:
+        object_name: Mesh object.
+        plane_point: A point on the cutting plane, in world space.
+        plane_normal: The plane's direction, in world space; it need not be
+            unit length but must not be zero. [0, 0, 1] is a horizontal cut.
+        clear_inner: Delete everything behind the plane (against the normal).
+        clear_outer: Delete everything in front of the plane (along the normal).
+        fill: Cap the cut with a face. Only useful when one side is cleared.
+        selection: "ALL" for the whole mesh, or "CURRENT" for the part already
+            selected.
+
+    Returns:
+        Dict with the vertex count afterwards.
+    """
+    point = _finite_vector(plane_point, "plane_point")
+    normal = _finite_vector(plane_normal, "plane_normal")
+    if not any(normal):
+        raise ValidationError("plane_normal has zero length, so the plane has no direction")
+    if clear_inner and clear_outer:
+        raise ValidationError("clear_inner and clear_outer together would delete everything")
+    return _send_mesh_command("bisect_mesh", {
+        "object_name": validate_object_name(object_name),
+        "plane_point": point,
+        "plane_normal": normal,
+        "clear_inner": bool(clear_inner),
+        "clear_outer": bool(clear_outer),
+        "fill": bool(fill),
+        "selection": validate_enum(selection, ALLOWED_SELECTION_MODES, name="selection"),
+    })
+
+
+@mcp.tool()
+def loop_tools(
+    object_name: str,
+    operation: str,
+    factor: float = 1.0,
+    radius: float | None = None,
+    selection: str = "CURRENT",
+) -> dict[str, Any]:
+    """Reshape selected loops: make them round, even or flat.
+
+    Blender 5.2's built-in versions of the LoopTools add-on. Select a loop or
+    region first with the select_* tools.
+
+    Args:
+        object_name: Mesh object.
+        operation: CIRCLE (shape the selection into a circle: round holes
+            for bolts and pipes), SPACE (space vertices evenly along the loop),
+            or FLATTEN (press the selection onto a best-fit plane).
+        factor: How far to move toward the result, 0.0 to 1.0.
+        radius: CIRCLE only: a fixed radius instead of the best fit, above 0.
+        selection: "CURRENT" (default) for what is selected, or "ALL".
+
+    Returns:
+        Dict with the operation and the object.
+    """
+    params: dict[str, Any] = {
+        "object_name": validate_object_name(object_name),
+        "operation": validate_enum(operation, ALLOWED_LOOP_OPERATIONS, name="operation"),
+        "factor": validate_numeric_range(factor, min_val=0.0, max_val=1.0, name="factor"),
+        "selection": validate_enum(selection, ALLOWED_SELECTION_MODES, name="selection"),
+    }
+    if radius is not None:
+        if operation != "CIRCLE":
+            raise ValidationError("radius only applies to the CIRCLE operation")
+        params["radius"] = validate_numeric_range(radius, min_val=1e-6, max_val=MAX_COORDINATE,
+                                                  name="radius")
+    return _send_mesh_command("loop_tools", params)
