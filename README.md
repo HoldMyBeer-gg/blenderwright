@@ -26,7 +26,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ## Key Features
 
-- **[236 tools](https://blenderwright.holdmybeer.gg/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **[239 tools](https://blenderwright.holdmybeer.gg/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **13 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -239,7 +239,7 @@ blenderwright includes 13 MCP prompts that guide the LLM toward professional-qua
 ## Tool Domains
 
 <details>
-<summary><strong>All 236 tools across 32 modules</strong></summary>
+<summary><strong>All 239 tools across 32 modules</strong></summary>
 
 Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://blenderwright.holdmybeer.gg/)**
 
@@ -268,7 +268,7 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 | Sequencer | 5 | Image-sequence strips, sound strips, list and remove strips, render to MP4, MKV or WebM with audio |
 | Sculpting | 8 | Brushes, remesh, multires, symmetry, dynamic topology, stroke_method |
 | UV Mapping | 7 | Smart project, unwrap (ANGLE_BASED, CONFORMAL, MINIMUM_STRETCH), projection, pack islands, island operations (average scale, minimize stretch, randomize, arrange, weld), texel density |
-| Physics | 9 | Rigid body, cloth, fluid, particles (velocity, rendering, delete), bake |
+| Physics | 12 | Rigid body, cloth, fluid, particles (velocity, rendering, delete), bake, force fields, colliders, soft body |
 | Geometry Nodes | 6 | Create node trees, add/connect nodes, set inputs, Essentials modifiers (array, scatter on surface, instance on elements, curve to tube, ...) |
 | Armature | 8 | Bones, constraints, auto weights, pose, bone collections, IK chains with pole targets, more constraint types |
 | Annotations | 5 | Annotation layers and strokes (5.1 Annotation API) |
@@ -390,7 +390,7 @@ blenderwright/
 │   ├── server.py           # FastMCP entry point
 │   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
-│   ├── tools/              # 32 tool modules (236 tools)
+│   ├── tools/              # 32 tool modules (239 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 13 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)

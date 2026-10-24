@@ -241,7 +241,7 @@ class TestBakePhysics:
         from blenderwright.tools.physics import bake_physics
 
         with pytest.raises(ValidationError):
-            bake_physics("Cube", physics_type="SOFT_BODY")
+            bake_physics("Cube", physics_type="DYNAMIC_PAINT")
 
     def test_bake_invalid_name(self, mock_conn):
         from blenderwright.tools.physics import bake_physics
@@ -369,3 +369,10 @@ class TestBlenderErrorHandling:
         mock_conn.send_command.return_value = {"status": "error", "result": "Object not found"}
         with pytest.raises(RuntimeError, match="Blender error"):
             add_rigid_body("Cube")
+
+
+def test_soft_body_can_be_baked(mock_conn):
+    from blenderwright.tools.physics import bake_physics
+
+    bake_physics("Cube", physics_type="SOFT_BODY")
+    assert mock_conn.send_command.call_args[0][1]["physics_type"] == "SOFT_BODY"

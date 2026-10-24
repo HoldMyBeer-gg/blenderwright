@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 236 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 236 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 239 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 239 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 236 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 239 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>236</b> tools</span>
+    <span><b>239</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -138,7 +138,7 @@ footer a { color: var(--accent); }
 <a href="#mesh_quality">Mesh Quality <span class="n">3</span></a>
 <a href="#modeling">Modeling <span class="n">13</span></a>
 <a href="#objects">Objects <span class="n">15</span></a>
-<a href="#physics">Physics <span class="n">9</span></a>
+<a href="#physics">Physics <span class="n">12</span></a>
 <a href="#print3d">print3d <span class="n">1</span></a>
 <a href="#render_settings">render_settings <span class="n">10</span></a>
 <a href="#rendering">Rendering <span class="n">7</span></a>
@@ -1155,19 +1155,55 @@ below the given threshold, giving clean results on hard-surface models."><h3><a 
 Smooths faces only where the angle between adjacent face normals is
 below the given threshold, giving clean results on hard-surface models.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>angle</th><td>Auto-smooth angle threshold in radians (0.0 to pi). Defaults to ~30 degrees (0.523599 rad).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
-<section class="module" id="physics" data-module="physics"><h2>Physics <span class="n">9</span></h2><article class="tool" id="add_cloth_sim" data-search="add_cloth_sim add a cloth physics simulation to an object."><h3><a href="#add_cloth_sim">add_cloth_sim</a></h3><pre class="sig"><code>add_cloth_sim(object_name: str, quality: int = 5, mass: float = 0.3)</code></pre><p>Add a cloth physics simulation to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<section class="module" id="physics" data-module="physics"><h2>Physics <span class="n">12</span></h2><article class="tool" id="add_cloth_sim" data-search="add_cloth_sim add a cloth physics simulation to an object."><h3><a href="#add_cloth_sim">add_cloth_sim</a></h3><pre class="sig"><code>add_cloth_sim(object_name: str, quality: int = 5, mass: float = 0.3)</code></pre><p>Add a cloth physics simulation to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>quality</th><td>Simulation quality steps (1-80).</td></tr>
-<tr><th>mass</th><td>Mass of the cloth in kg.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with cloth settings.</p></article><article class="tool" id="add_fluid_sim" data-search="add_fluid_sim add a fluid physics simulation to an object."><h3><a href="#add_fluid_sim">add_fluid_sim</a></h3><pre class="sig"><code>add_fluid_sim(object_name: str, type: str = &#x27;DOMAIN&#x27;, domain_type: str = &#x27;GAS&#x27;)</code></pre><p>Add a fluid physics simulation to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>mass</th><td>Mass of the cloth in kg.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with cloth settings.</p></article><article class="tool" id="add_collision" data-search="add_collision make an object solid to cloth, particles and soft bodies.
+
+without it, a cloth falls straight through the floor."><h3><a href="#add_collision">add_collision</a></h3><pre class="sig"><code>add_collision(object_name: str, thickness: float = 0.02, damping: float = 0.1, friction: float = 5.0, stickiness: float = 0.0, permeability: float = 0.0)</code></pre><p>Make an object solid to cloth, particles and soft bodies.
+
+Without it, a cloth falls straight through the floor.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object to collide with.</td></tr>
+<tr><th>thickness</th><td>Outer collision distance, 0.001 to 1.0. Raise it if cloth pokes through.</td></tr>
+<tr><th>damping</th><td>How much bounce is lost, 0.0 to 1.0.</td></tr>
+<tr><th>friction</th><td>Cloth friction against the surface, 0 to 80.</td></tr>
+<tr><th>stickiness</th><td>Particles stick to the surface, 0 to 10.</td></tr>
+<tr><th>permeability</th><td>Share of particles that pass through, 0.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the collision settings.</p></article><article class="tool" id="add_fluid_sim" data-search="add_fluid_sim add a fluid physics simulation to an object."><h3><a href="#add_fluid_sim">add_fluid_sim</a></h3><pre class="sig"><code>add_fluid_sim(object_name: str, type: str = &#x27;DOMAIN&#x27;, domain_type: str = &#x27;GAS&#x27;)</code></pre><p>Add a fluid physics simulation to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>type</th><td>Fluid type - DOMAIN (container), FLOW (emitter), or EFFECTOR (obstacle).</td></tr>
-<tr><th>domain_type</th><td>Domain simulation type - GAS (smoke/fire) or LIQUID. Only used when type is DOMAIN.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with fluid settings.</p></article><article class="tool" id="add_particle_system" data-search="add_particle_system add a particle system to an object."><h3><a href="#add_particle_system">add_particle_system</a></h3><pre class="sig"><code>add_particle_system(object_name: str, count: int = 1000, lifetime: float = 50.0, emit_from: str = &#x27;FACE&#x27;)</code></pre><p>Add a particle system to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>domain_type</th><td>Domain simulation type - GAS (smoke/fire) or LIQUID. Only used when type is DOMAIN.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with fluid settings.</p></article><article class="tool" id="add_force_field" data-search="add_force_field add a force field that pushes cloth, particles, soft and rigid bodies."><h3><a href="#add_force_field">add_force_field</a></h3><pre class="sig"><code>add_force_field(type: str, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), rotation: list[float] | tuple[float, ...] = (0, 0, 0), strength: float = 1.0, flow: float = 0.0, noise: float = 0.0, seed: int = 1, falloff_type: str = &#x27;SPHERE&#x27;, falloff_power: float = 0.0, max_distance: float = 0.0)</code></pre><p>Add a force field that pushes cloth, particles, soft and rigid bodies.</p><table class="args"><tbody><tr><th>type</th><td>WIND (blows along its local Z), TURBULENCE (random gusts), VORTEX (spins around Z), FORCE (pushes outward, negative pulls in), MAGNET, HARMONIC (springs to the centre), CHARGE, LENNARDJ (keeps things apart), DRAG (slows everything down).</td></tr>
+<tr><th>name</th><td>Name for the field object; empty uses the type.</td></tr>
+<tr><th>location</th><td>Position [x, y, z].</td></tr>
+<tr><th>rotation</th><td>Euler rotation in radians; aims WIND and VORTEX.</td></tr>
+<tr><th>strength</th><td>-100000 to 100000. Negative reverses the push.</td></tr>
+<tr><th>flow</th><td>Air flow, 0 to 100; for WIND it carries particles along.</td></tr>
+<tr><th>noise</th><td>Randomness added to the force, 0 to 100.</td></tr>
+<tr><th>seed</th><td>Noise seed, 1 to 128.</td></tr>
+<tr><th>falloff_type</th><td>SPHERE, TUBE or PLANE: the shape the force fades over.</td></tr>
+<tr><th>falloff_power</th><td>How fast it fades with distance, 0 to 10.</td></tr>
+<tr><th>max_distance</th><td>Range beyond which there is no force; 0 for unlimited.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the field object&#x27;s name and settings.</p></article><article class="tool" id="add_particle_system" data-search="add_particle_system add a particle system to an object."><h3><a href="#add_particle_system">add_particle_system</a></h3><pre class="sig"><code>add_particle_system(object_name: str, count: int = 1000, lifetime: float = 50.0, emit_from: str = &#x27;FACE&#x27;)</code></pre><p>Add a particle system to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>count</th><td>Number of particles (max 1000000).</td></tr>
 <tr><th>lifetime</th><td>Particle lifetime in frames.</td></tr>
 <tr><th>emit_from</th><td>Emission source - VERT, FACE, or VOLUME.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with particle system settings.</p></article><article class="tool" id="add_rigid_body" data-search="add_rigid_body add a rigid body physics simulation to an object."><h3><a href="#add_rigid_body">add_rigid_body</a></h3><pre class="sig"><code>add_rigid_body(object_name: str, type: str = &#x27;ACTIVE&#x27;, mass: float = 1.0, friction: float = 0.5, restitution: float = 0.0)</code></pre><p>Add a rigid body physics simulation to an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>type</th><td>Rigid body type - ACTIVE (affected by physics) or PASSIVE (static collider).</td></tr>
 <tr><th>mass</th><td>Mass of the object in kg.</td></tr>
 <tr><th>friction</th><td>Surface friction coefficient (0.0-1.0).</td></tr>
-<tr><th>restitution</th><td>Bounciness (0.0-1.0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with rigid body settings.</p></article><article class="tool" id="bake_physics" data-search="bake_physics bake a physics simulation for an object."><h3><a href="#bake_physics">bake_physics</a></h3><pre class="sig"><code>bake_physics(object_name: str, physics_type: str = &#x27;&#x27;)</code></pre><p>Bake a physics simulation for an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with physics.</td></tr>
-<tr><th>physics_type</th><td>Optional physics type to bake. If empty, bakes all physics on the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="delete_particle_system" data-search="delete_particle_system remove a particle system from an object."><h3><a href="#delete_particle_system">delete_particle_system</a></h3><pre class="sig"><code>delete_particle_system(object_name: str, particle_system_name: str = &#x27;&#x27;)</code></pre><p>Remove a particle system from an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
+<tr><th>restitution</th><td>Bounciness (0.0-1.0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with rigid body settings.</p></article><article class="tool" id="add_soft_body" data-search="add_soft_body make an object soft and wobbly: jelly, cushions, bellies, antennae.
+
+bake it with bake_physics. with goal on, vertices are pulled back to
+their shape (higher goal_strength is stiffer); with goal off the object
+sags and bounces freely, like a water balloon. add collision to the floor."><h3><a href="#add_soft_body">add_soft_body</a></h3><pre class="sig"><code>add_soft_body(object_name: str, mass: float = 1.0, goal: bool = True, goal_strength: float = 0.7, pull: float = 0.5, push: float = 0.5, bend: float = 0.0, damping: float = 0.5, friction: float = 0.5, self_collision: bool = False)</code></pre><p>Make an object soft and wobbly: jelly, cushions, bellies, antennae.
+
+Bake it with bake_physics. With goal on, vertices are pulled back to
+their shape (higher goal_strength is stiffer); with goal off the object
+sags and bounces freely, like a water balloon. Add collision to the floor.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>mass</th><td>Vertex mass, 0.001 to 50.</td></tr>
+<tr><th>goal</th><td>Pull vertices back toward the original shape.</td></tr>
+<tr><th>goal_strength</th><td>How strongly, 0.0 to 1.0.</td></tr>
+<tr><th>pull</th><td>Edge stiffness when stretched, 0.0 to 0.999.</td></tr>
+<tr><th>push</th><td>Edge stiffness when squashed, 0.0 to 0.999.</td></tr>
+<tr><th>bend</th><td>Resistance to bending, 0 to 10.</td></tr>
+<tr><th>damping</th><td>Edge spring damping, 0 to 50.</td></tr>
+<tr><th>friction</th><td>Air friction, 0 to 50.</td></tr>
+<tr><th>self_collision</th><td>Stop the body passing through itself (slower).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the soft body settings.</p></article><article class="tool" id="bake_physics" data-search="bake_physics bake a physics simulation for an object."><h3><a href="#bake_physics">bake_physics</a></h3><pre class="sig"><code>bake_physics(object_name: str, physics_type: str = &#x27;&#x27;)</code></pre><p>Bake a physics simulation for an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with physics.</td></tr>
+<tr><th>physics_type</th><td>Optional physics type to bake: RIGID_BODY, CLOTH, FLUID, PARTICLE_SYSTEM or SOFT_BODY. If empty, bakes all physics on the object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="delete_particle_system" data-search="delete_particle_system remove a particle system from an object."><h3><a href="#delete_particle_system">delete_particle_system</a></h3><pre class="sig"><code>delete_particle_system(object_name: str, particle_system_name: str = &#x27;&#x27;)</code></pre><p>Remove a particle system from an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>particle_system_name</th><td>Name of the particle system to remove. If empty, removes the first particle system.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_particle_rendering" data-search="set_particle_rendering set rendering mode for an object&#x27;s particle system."><h3><a href="#set_particle_rendering">set_particle_rendering</a></h3><pre class="sig"><code>set_particle_rendering(object_name: str, render_type: str = &#x27;PATH&#x27;, instance_object: str = &#x27;&#x27;, instance_collection: str = &#x27;&#x27;)</code></pre><p>Set rendering mode for an object&#x27;s particle system.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object with a particle system.</td></tr>
 <tr><th>render_type</th><td>Render type. One of: NONE, PATH, OBJECT, COLLECTION.</td></tr>
 <tr><th>instance_object</th><td>Object to instance (when render_type is OBJECT).</td></tr>
