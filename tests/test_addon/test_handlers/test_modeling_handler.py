@@ -3,6 +3,7 @@
 import os
 import sys
 import importlib.util
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 import pytest
 
@@ -31,120 +32,101 @@ def modeling_handler():
     return _load_modeling_handler()
 
 
-def _make_params(prop, value, current_value, obj_name="Cube", mod_name="Subdivision"):
-    """Build params dict and a mock object with a modifier holding current_value."""
-    mock_mod = MagicMock()
-    mock_mod.get.return_value = mock_mod
-    setattr(mock_mod, prop, current_value)
+def _rna(kind, readonly=False, fixed=None, array=False):
+    return SimpleNamespace(type=kind, is_readonly=readonly, is_array=array,
+                           fixed_type=SimpleNamespace(identifier=fixed) if fixed else None)
 
-    mock_obj = MagicMock()
-    mock_obj.modifiers.get.return_value = mock_mod
 
+class FakeModifier:
+    """A modifier whose RNA declares its properties, like Blender's."""
+
+    PROPS = {
+        "levels": _rna("INT"), "ratio": _rna("FLOAT"), "use_smooth": _rna("BOOLEAN"),
+        "wrap_method": _rna("ENUM"), "offset": _rna("FLOAT", array=True),
+        "target": _rna("POINTER", fixed="Object"),
+        "collection": _rna("POINTER", fixed="Collection"),
+        "node_group": _rna("POINTER", fixed="NodeTree"),
+        "is_active": _rna("BOOLEAN", readonly=True),
+        "projectors": _rna("COLLECTION"),
+        "name": _rna("STRING"),
+    }
+
+    def __init__(self, kind="SUBSURF"):
+        self.type = kind
+        self.name = "Mod"
+        self.levels, self.ratio, self.use_smooth = 1, 1.0, False
+        self.wrap_method, self.offset = "NEAREST_SURFACEPOINT", [0.0, 0.0, 0.0]
+        self.target = self.collection = self.node_group = None
+        self.bl_rna = SimpleNamespace(properties=self.PROPS)
+
+
+@pytest.fixture
+def mod_env(monkeypatch, modeling_handler):
     import bpy
-    bpy.data.objects.get.return_value = mock_obj
 
-    return {
-        "object_name": obj_name,
-        "modifier_name": mod_name,
-        "property": prop,
-        "value": value,
-    }, mock_mod
+    modifier = FakeModifier()
+    obj = SimpleNamespace(name="Cube", modifiers=SimpleNamespace(get={"Mod": modifier}.get))
+    ground = SimpleNamespace(name="Ground")
+    rocks = SimpleNamespace(name="Rocks")
+    monkeypatch.setattr(bpy.data, "objects", SimpleNamespace(
+        get={"Cube": obj, "Ground": ground}.get))
+    monkeypatch.setattr(bpy.data, "collections", SimpleNamespace(get={"Rocks": rocks}.get))
+    return SimpleNamespace(mod=modifier, ground=ground, rocks=rocks)
+
+
+def _set(handler, prop, value):
+    return handler.handle_set_modifier_property({
+        "object_name": "Cube", "modifier_name": "Mod", "property": prop, "value": value})
 
 
 class TestSetModifierPropertyTypeCoercion:
-    def test_string_coerced_to_int(self, modeling_handler):
-        """String '3' is coerced to int 3 when property is currently int."""
-        params, mock_mod = _make_params("levels", "3", 1)
-        modeling_handler.handle_set_modifier_property(params)
-        mock_mod.levels = 3  # verify setattr was called with int
-        args = [call for call in dir(mock_mod) if call == "levels"]
-        assert args  # property exists on mock
+    @pytest.mark.parametrize("prop, value, expected", [
+        ("levels", "3", 3), ("ratio", "2.5", 2.5), ("use_smooth", 1, True),
+        ("use_smooth", "true", True), ("use_smooth", "false", False), ("levels", 2, 2),
+        ("offset", [0, 0, 1], [0, 0, 1]), ("wrap_method", "PROJECT", "PROJECT"),
+    ])
+    def test_values_are_coerced_to_the_property_type(self, modeling_handler, mod_env,
+                                                     prop, value, expected):
+        _set(modeling_handler, prop, value)
+        assert getattr(mod_env.mod, prop) == expected
 
-    def test_string_coerced_to_float(self, modeling_handler):
-        """String '2.5' is coerced to float when property is currently float."""
-        params, mock_mod = _make_params("ratio", "2.5", 1.0)
-        modeling_handler.handle_set_modifier_property(params)
 
-    def test_int_coerced_to_bool_true(self, modeling_handler):
-        """Integer 1 is coerced to bool True when property is currently bool."""
-        params, mock_mod = _make_params("use_smooth", 1, True)
-        modeling_handler.handle_set_modifier_property(params)
+class TestObjectAndCollectionSettings:
+    """Shrinkwrap, Lattice, Curve, Surface Deform and others need an object."""
 
-    def test_string_true_coerced_to_bool(self, modeling_handler):
-        """String 'true' is coerced to bool True when property is currently bool."""
-        params, mock_mod = _make_params("use_smooth", "true", True)
-        modeling_handler.handle_set_modifier_property(params)
+    def test_object_by_name(self, modeling_handler, mod_env):
+        result = _set(modeling_handler, "target", "Ground")
+        assert mod_env.mod.target is mod_env.ground
+        assert result["value"] == "Ground"
 
-    def test_string_false_coerced_to_bool(self, modeling_handler):
-        """String 'false' is coerced to bool False when property is currently bool."""
-        params, mock_mod = _make_params("use_smooth", "false", False)
-        modeling_handler.handle_set_modifier_property(params)
+    def test_collection_by_name(self, modeling_handler, mod_env):
+        _set(modeling_handler, "collection", "Rocks")
+        assert mod_env.mod.collection is mod_env.rocks
 
-    def test_none_current_skips_coercion(self, modeling_handler):
-        """When current value is None, coercion is skipped: value passed as-is."""
-        params, mock_mod = _make_params("custom_prop", "anything", None)
-        # Should not raise
-        modeling_handler.handle_set_modifier_property(params)
+    def test_missing_object(self, modeling_handler, mod_env):
+        with pytest.raises(ValueError, match="Ghost"):
+            _set(modeling_handler, "target", "Ghost")
 
-    def test_list_current_skips_coercion(self, modeling_handler):
-        """When current value is a list, coercion is skipped."""
-        params, mock_mod = _make_params("offset", [0, 0, 1], [0, 0, 0])
-        modeling_handler.handle_set_modifier_property(params)
-
-    def test_tuple_current_skips_coercion(self, modeling_handler):
-        """When current value is a tuple, coercion is skipped."""
-        params, mock_mod = _make_params("offset", (0, 0, 1), (0, 0, 0))
-        modeling_handler.handle_set_modifier_property(params)
-
-    def test_already_correct_type_passthrough(self, modeling_handler):
-        """When value already matches property type, no coercion needed."""
-        params, mock_mod = _make_params("levels", 3, 1)
-        modeling_handler.handle_set_modifier_property(params)
-
-    def test_failed_coercion_falls_through(self, modeling_handler):
-        """When coercion fails (e.g. 'abc' for int property), setattr is still called."""
-        params, mock_mod = _make_params("levels", "abc", 1)
-        # setattr will be called with "abc", and the mock won't raise, so no error
-        modeling_handler.handle_set_modifier_property(params)
+    def test_unsupported_pointer_type(self, modeling_handler, mod_env):
+        with pytest.raises(ValueError, match="node_group"):
+            _set(modeling_handler, "node_group", "Tree")
 
 
 class TestModifierPropertyErrorIsActionable:
-    """Naming the valid properties turns a dead end into one retry.
+    """Naming the valid properties turns a dead end into one retry."""
 
-    A model set 'subdivisions' on a Subdivision Surface modifier; the real
-    name is 'levels'. The error said only that 'subdivisions' was wrong.
-    """
-
-    def test_unknown_property_lists_the_valid_ones(self):
-        mod = _load_modeling_handler()
-        bpy = sys.modules["bpy"]
-
-        prop = MagicMock()
-        prop.identifier = "levels"
-        prop.is_readonly = False
-        rna_type = MagicMock()
-        rna_type.identifier = "rna_type"
-        rna_type.is_readonly = False
-
-        modifier = MagicMock(spec=["bl_rna", "name"])
-        modifier.name = "Subdivision Surface"
-        modifier.bl_rna.properties = [prop, rna_type]
-
-        obj = MagicMock()
-        obj.name = "Apple_Body"
-        obj.modifiers.get.return_value = modifier
-        bpy.data.objects.get.return_value = obj
-
+    def test_unknown_property_lists_the_valid_ones(self, modeling_handler, mod_env):
         with pytest.raises(ValueError) as exc:
-            mod.handle_set_modifier_property({
-                "object_name": "Apple_Body",
-                "modifier_name": "Subdivision Surface",
-                "property": "subdivisions",
-                "value": 2,
-            })
+            _set(modeling_handler, "subdivisions", 2)
         message = str(exc.value)
-        assert "levels" in message, "the valid property was not offered"
-        assert "rna_type" not in message, "internal properties should not be listed"
+        assert "levels" in message and "target" in message
+        assert "is_active" not in message and "projectors" not in message
+
+    @pytest.mark.parametrize("prop", ["__class__", "bl_rna", "is_active", "projectors",
+                                      "type"])
+    def test_only_declared_writable_settings(self, modeling_handler, mod_env, prop):
+        with pytest.raises(ValueError, match=prop):
+            _set(modeling_handler, prop, 1)
 
 
 class TestExtrudeDirection:

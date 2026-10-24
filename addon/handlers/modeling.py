@@ -96,6 +96,16 @@ MODIFIER_PROPERTY_LIMITS = {
 }
 
 
+# Pointer types a caller may set by name, and the bpy.data collection to look in
+POINTER_SOURCES = {"Object": "objects", "Collection": "collections",
+                   "Texture": "textures", "Image": "images"}
+
+
+def _pointer_source(rna):
+    fixed = getattr(rna, "fixed_type", None)
+    return POINTER_SOURCES.get(getattr(fixed, "identifier", None))
+
+
 def handle_set_modifier_property(params):
     """Set a property on a modifier."""
     obj = _get_object(params["object_name"])
@@ -107,16 +117,18 @@ def handle_set_modifier_property(params):
     if mod is None:
         raise ValueError(f"Modifier '{modifier_name}' not found on '{obj.name}'")
 
-    if not hasattr(mod, prop):
+    rna = mod.bl_rna.properties.get(prop)
+    if rna is None or rna.is_readonly or rna.type == "COLLECTION":
         # Saying only what is wrong makes the caller guess again. Blender
         # exposes the valid names, so offer them: a model asked a Subdivision
         # modifier for "subdivisions" when it wanted "levels".
         available = sorted(
-            p.identifier for p in mod.bl_rna.properties
-            if not p.is_readonly and p.identifier != "rna_type"
+            name for name, p in mod.bl_rna.properties.items()
+            if not p.is_readonly and p.type != "COLLECTION" and name != "rna_type"
+            and (p.type != "POINTER" or _pointer_source(p) is not None)
         )
         raise ValueError(
-            f"Modifier '{modifier_name}' has no property '{prop}'. "
+            f"Modifier '{modifier_name}' has no setting '{prop}'. "
             f"Available: {', '.join(available)}"
         )
 
@@ -136,20 +148,27 @@ def handle_set_modifier_property(params):
                 f"Higher values hang Blender rather than failing."
             )
 
-    # Coerce value to match the property's current type.
-    # LLMs often pass numbers as strings (e.g., "3" for int property).
-    current = getattr(mod, prop)
-    if current is not None and not isinstance(current, (list, tuple)):
-        target_type = type(current)
-        # Check bool before int: bool is a subclass of int
-        if target_type is bool:
-            if isinstance(value, str):
-                value = value.lower() in ("true", "1", "yes")
-            else:
-                value = bool(value)
-        elif not isinstance(value, target_type):
+    if rna.type == "POINTER":
+        # Objects, collections, textures and images are given by name
+        source = _pointer_source(rna)
+        if source is None:
+            raise ValueError(f"'{prop}' on '{modifier_name}' cannot be set by name")
+        target = getattr(bpy.data, source).get(value) if isinstance(value, str) else None
+        if target is None:
+            raise ValueError(f"'{prop}' needs an existing {source[:-1]}; "
+                             f"'{value}' not found")
+        setattr(mod, prop, target)
+        return {"object": obj.name, "modifier": modifier_name, "property": prop,
+                "value": target.name}
+
+    # LLMs often pass numbers as strings (e.g., "3" for an int property)
+    if not getattr(rna, "is_array", False):
+        if rna.type == "BOOLEAN":
+            value = value.lower() in ("true", "1", "yes") if isinstance(value, str) \
+                else bool(value)
+        elif rna.type in ("INT", "FLOAT"):
             try:
-                value = target_type(value)
+                value = int(float(value)) if rna.type == "INT" else float(value)
             except (TypeError, ValueError):
                 pass  # Let setattr raise Blender's own error
     setattr(mod, prop, value)

@@ -48,7 +48,7 @@ ALLOWED_SHADER_NODE_TYPES = {
     # Shader
     "ShaderNodeBsdfPrincipled", "ShaderNodeBsdfDiffuse", "ShaderNodeBsdfGlossy",
     "ShaderNodeBsdfGlass", "ShaderNodeBsdfTransparent", "ShaderNodeBsdfTranslucent",
-    "ShaderNodeBsdfAnisotropic", "ShaderNodeBsdfToon", "ShaderNodeBsdfHair",
+    "ShaderNodeBsdfToon", "ShaderNodeBsdfHair",
     "ShaderNodeEmission", "ShaderNodeMixShader", "ShaderNodeAddShader",
     "ShaderNodeSubsurfaceScattering", "ShaderNodeVolumeAbsorption",
     "ShaderNodeVolumePrincipled", "ShaderNodeVolumeScatter",
@@ -77,6 +77,17 @@ ALLOWED_SHADER_NODE_TYPES = {
     "ShaderNodeOutputMaterial", "ShaderNodeOutputWorld",
     # Blender 5.1+ nodes
     "ShaderNodeRaycast",
+    # Added in 3.1, verified to create in Blender 5.2
+    "ShaderNodeBackground", "ShaderNodeBsdfMetallic", "ShaderNodeBsdfSheen",
+    "ShaderNodeBsdfRefraction", "ShaderNodeBsdfHairPrincipled", "ShaderNodeBsdfRayPortal",
+    "ShaderNodeHoldout", "ShaderNodeAmbientOcclusion", "ShaderNodeBevel",
+    "ShaderNodeWireframe", "ShaderNodeVertexColor", "ShaderNodeVolumeInfo",
+    "ShaderNodeParticleInfo", "ShaderNodeHairInfo", "ShaderNodePointInfo",
+    "ShaderNodeLightFalloff", "ShaderNodeTexWhiteNoise", "ShaderNodeTexGabor",
+    "ShaderNodeTexIES", "ShaderNodeSeparateColor", "ShaderNodeCombineColor",
+    "ShaderNodeFloatCurve", "ShaderNodeShaderToRGB", "ShaderNodeVectorDisplacement",
+    "ShaderNodeVectorTransform", "ShaderNodeOutputAOV", "ShaderNodeOutputLight",
+    "ShaderNodeRadialTiling", "ShaderNodeSqueeze", "ShaderNodeVolumeCoefficients",
 }
 
 # Node-level properties that may be set via set_shader_node_property.
