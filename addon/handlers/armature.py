@@ -21,14 +21,6 @@ ALLOWED_BONE_PROPERTIES = {
 CONSTRAINT_TARGET_PROPERTIES = {"target", "pole_target"}
 
 
-def _ensure_mode(obj, mode):
-    """Ensure the given object is in the specified mode."""
-    if bpy.context.view_layer.objects.active != obj:
-        bpy.context.view_layer.objects.active = obj
-    if obj.mode != mode:
-        bpy.ops.object.mode_set(mode=mode)
-
-
 def handle_create_armature(params: dict) -> dict:
     """Create a new armature object."""
     name = params.get("name", "Armature")
@@ -55,8 +47,8 @@ def handle_create_armature(params: dict) -> dict:
 
 def handle_add_bone(params: dict) -> dict:
     """Add a bone to an armature. Enters edit mode automatically."""
-    armature_name = params.get("armature_name")
-    bone_name = params.get("bone_name")
+    armature_name = params["armature_name"]
+    bone_name = params["bone_name"]
     head = params.get("head", [0, 0, 0])
     tail = params.get("tail", [0, 0, 1])
     parent_bone = params.get("parent_bone", "")
@@ -67,10 +59,6 @@ def handle_add_bone(params: dict) -> dict:
             raise ValueError(f"Armature '{armature_name}' not found")
         if armature_obj.type != 'ARMATURE':
             raise ValueError(f"Object '{armature_name}' is not an armature")
-
-        # Store previous mode and active object
-        prev_active = bpy.context.view_layer.objects.active
-        prev_mode = prev_active.mode if prev_active else 'OBJECT'  # noqa: F841
 
         # Ensure we're in object mode first, then switch to edit mode
         if bpy.context.view_layer.objects.active and bpy.context.view_layer.objects.active.mode != 'OBJECT':
@@ -121,8 +109,8 @@ def handle_add_bone(params: dict) -> dict:
 
 def handle_set_bone_property(params: dict) -> dict:
     """Set a property on a bone."""
-    armature_name = params.get("armature_name")
-    bone_name = params.get("bone_name")
+    armature_name = params["armature_name"]
+    bone_name = params["bone_name"]
     prop = params.get("property")
     value = params.get("value")
 
@@ -171,7 +159,7 @@ def handle_set_bone_property(params: dict) -> dict:
 
 def handle_add_constraint(params: dict) -> dict:
     """Add a constraint to an object or pose bone."""
-    object_name = params.get("object_name")
+    object_name = params["object_name"]
     bone_name = params.get("bone_name", "")
     constraint_type = params.get("constraint_type")
     properties = params.get("properties", {})
@@ -221,8 +209,8 @@ def handle_add_constraint(params: dict) -> dict:
 
 def handle_parent_mesh_to_armature(params: dict) -> dict:
     """Parent a mesh to an armature with automatic weights or other methods."""
-    mesh_name = params.get("mesh_name")
-    armature_name = params.get("armature_name")
+    mesh_name = params["mesh_name"]
+    armature_name = params["armature_name"]
     parent_type = params.get("type", "ARMATURE_AUTO")
 
     try:
@@ -262,8 +250,8 @@ def handle_parent_mesh_to_armature(params: dict) -> dict:
 
 def handle_set_pose(params: dict) -> dict:
     """Set bone pose transforms."""
-    armature_name = params.get("armature_name")
-    bone_name = params.get("bone_name")
+    armature_name = params["armature_name"]
+    bone_name = params["bone_name"]
     location = params.get("location")
     rotation = params.get("rotation")
     scale = params.get("scale")
