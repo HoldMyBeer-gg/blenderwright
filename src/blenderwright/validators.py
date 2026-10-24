@@ -365,3 +365,69 @@ def validate_socket_settings(settings: Any) -> dict[str, Any]:
             raise ValidationError(
                 f"Setting '{name}' must be a number, true/false, text or a list of numbers")
     return clean
+
+
+# Driver expressions: Blender's simple-expression subset, which it evaluates
+# itself without Python. Function and constant lists read from Blender 5.2.
+DRIVER_FUNCTIONS = frozenset({
+    "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sqrt", "abs", "fabs", "floor",
+    "ceil", "trunc", "round", "int", "min", "max", "radians", "degrees", "exp", "log", "pow",
+    "fmod", "lerp", "clamp", "smoothstep",
+})
+DRIVER_WORDS = frozenset({"frame", "pi", "True", "False", "and", "or", "not", "if", "else"})
+MAX_DRIVER_EXPRESSION = 256
+_DRIVER_TOKEN = re.compile(
+    r" +|(?P<num>(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)"
+    r"|(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
+    r"|(?P<op>==|!=|<=|>=|//|[-+*/%(),<>])"
+)
+VARIABLE_NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,31}$")
+
+
+def validate_driver_expression(expression: str, variables: set[str]) -> str:
+    """A driver expression in Blender's simple subset: numbers, operators, the
+    driver's own variables, frame and an allowlist of math functions.
+
+    No attribute access, indexing, strings or unknown names, so Python is
+    never needed to evaluate it.
+    """
+    if not isinstance(expression, str) or not expression.strip():
+        raise ValidationError("expression must be non-empty text")
+    if "**" in expression.replace(" ", ""):
+        raise ValidationError("expression uses **, which simple drivers lack; use pow(a, b)")
+    if len(expression) > MAX_DRIVER_EXPRESSION:
+        raise ValidationError(f"expression may be at most {MAX_DRIVER_EXPRESSION} characters")
+    pos = 0
+    while pos < len(expression):
+        match = _DRIVER_TOKEN.match(expression, pos)
+        if match is None or match.end() == pos:
+            raise ValidationError(
+                f"expression has {expression[pos]!r} at position {pos}; only numbers, "
+                f"+ - * / % //, comparisons, parentheses, variables and math functions "
+                f"are allowed")
+        name = match.group("name")
+        if name is not None and name not in variables and name not in DRIVER_FUNCTIONS \
+                and name not in DRIVER_WORDS:
+            raise ValidationError(
+                f"expression uses {name!r}, which is not a variable of this driver, "
+                f"frame, pi or an allowed function ({', '.join(sorted(DRIVER_FUNCTIONS))})")
+        pos = match.end()
+    return expression
+
+
+# RNA data paths: names joined by dots, with ["key"] lookups. Parsed by
+# Blender's path resolver, never evaluated.
+_PATH_SEGMENT = r"(?!__)[A-Za-z_][A-Za-z0-9_]*"
+_PATH_KEY = r'\["[A-Za-z0-9_ .\-]{1,63}"\]'
+DATA_PATH_PATTERN = re.compile(rf"^{_PATH_SEGMENT}(?:\.{_PATH_SEGMENT}|{_PATH_KEY})*$")
+MAX_DATA_PATH = 256
+
+
+def validate_data_path(path: str) -> str:
+    """An RNA property path such as location, data.energy or modifiers["Bend"].angle."""
+    if not isinstance(path, str) or not path or len(path) > MAX_DATA_PATH \
+            or not DATA_PATH_PATTERN.match(path):
+        raise ValidationError(
+            f"data_path {path!r} is not a property path; use names joined by dots, "
+            f'with ["name"] for named items, e.g. data.energy or modifiers["Bend"].angle')
+    return path

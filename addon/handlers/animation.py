@@ -1,8 +1,28 @@
 """Blender handlers for animation operations."""
 
+import re
+
 import bpy
 from bpy_extras import anim_utils
 from .. import dispatcher
+
+# Driver safety, mirroring blenderwright.validators: Blender's simple-expression
+# subset only, so no driver can ever need Python to evaluate
+DRIVER_FUNCTIONS = frozenset({
+    "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sqrt", "abs", "fabs", "floor",
+    "ceil", "trunc", "round", "int", "min", "max", "radians", "degrees", "exp", "log", "pow",
+    "fmod", "lerp", "clamp", "smoothstep",
+})
+DRIVER_WORDS = frozenset({"frame", "pi", "True", "False", "and", "or", "not", "if", "else"})
+_DRIVER_TOKEN = re.compile(
+    r" +|(?P<num>(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)"
+    r"|(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
+    r"|(?P<op>==|!=|<=|>=|//|[-+*/%(),<>])"
+)
+_PATH_SEGMENT = r"(?!__)[A-Za-z_][A-Za-z0-9_]*"
+DATA_PATH_PATTERN = re.compile(
+    rf'^{_PATH_SEGMENT}(?:\.{_PATH_SEGMENT}|\["[A-Za-z0-9_ .\-]{{1,63}}"\])*$')
+DRIVER_TYPES = {"SCRIPTED", "AVERAGE", "SUM", "MIN", "MAX"}
 
 
 def _get_object(name):
@@ -204,6 +224,167 @@ def handle_clear_animation(params):
     return {"object": obj.name, "cleared": True}
 
 
+def _check_expression(expression, names):
+    if not isinstance(expression, str) or not expression.strip() or len(expression) > 256 \
+            or "**" in expression.replace(" ", ""):
+        raise ValueError("Driver expression must be a short simple expression")
+    pos = 0
+    while pos < len(expression):
+        match = _DRIVER_TOKEN.match(expression, pos)
+        if match is None or match.end() == pos:
+            raise ValueError(f"Driver expression has {expression[pos]!r}, which simple "
+                             f"expressions do not allow")
+        name = match.group("name")
+        if name is not None and name not in names and name not in DRIVER_FUNCTIONS \
+                and name not in DRIVER_WORDS:
+            raise ValueError(f"Driver expression uses unknown name {name!r}")
+        pos = match.end()
+
+
+def _check_path(path):
+    if not isinstance(path, str) or len(path) > 256 or not DATA_PATH_PATTERN.match(path):
+        raise ValueError(f"Not a property path: {path!r}")
+    return path
+
+
+_PATH_PIECE = re.compile(r'(?:^|\.)([A-Za-z_][A-Za-z0-9_]*)|(\["[^"]*"\])')
+
+
+def _driver_owner(obj, path):
+    """The data block that owns the property, and the path relative to it.
+
+    driver_add refuses paths that cross into another data block, so
+    "data.energy" on a light object becomes "energy" on its Light data.
+    A data block is its own id_data; a nested struct is not.
+    """
+    pieces = [m.group(1) or m.group(2) for m in _PATH_PIECE.finditer(path)]
+    owner, start = obj, 0
+    for i in range(len(pieces) - 1):
+        prefix = _join_path(pieces[start:i + 1])
+        try:
+            value = owner.path_resolve(prefix, False)
+        except ValueError:
+            break
+        if getattr(value, "id_data", None) is value:
+            owner, start = value, i + 1
+    return owner, _join_path(pieces[start:])
+
+
+def _join_path(pieces):
+    out = ""
+    for piece in pieces:
+        out += piece if piece.startswith("[") or not out else "." + piece
+    return out
+
+
+def _variable_objects(variables):
+    """Look up every object a variable names before anything is created."""
+    found = {}
+    for var in variables:
+        for key in ("object", "object_2"):
+            name = var.get(key)
+            if name and name not in found:
+                obj = bpy.data.objects.get(name)
+                if obj is None:
+                    raise ValueError(f"Driver variable object '{name}' not found")
+                found[name] = obj
+        if var.get("type") == "SINGLE_PROP":
+            _check_path(var.get("data_path"))
+    return found
+
+
+def _fill_variable(driver, var, objects):
+    v = driver.variables.new()
+    v.name = var["name"]
+    v.type = var["type"]
+    target = v.targets[0]
+    if var["type"] == "TRANSFORMS":
+        target.id = objects[var["object"]]
+        target.transform_type = var.get("transform_type", "LOC_X")
+        target.transform_space = var.get("transform_space", "WORLD_SPACE")
+    elif var["type"] == "SINGLE_PROP":
+        target.id_type = "OBJECT"
+        target.id = objects[var["object"]]
+        target.data_path = var["data_path"]
+    else:
+        target.id = objects[var["object"]]
+        v.targets[1].id = objects[var["object_2"]]
+
+
+def handle_add_driver(params):
+    """Add a driver using only Blender's simple, Python-free expressions."""
+    obj = _get_object(params["object_name"])
+    path = _check_path(params["data_path"])
+    index = int(params.get("index", -1))
+    driver_type = params.get("driver_type", "SCRIPTED")
+    if driver_type not in DRIVER_TYPES:
+        raise ValueError(f"Unknown driver type {driver_type!r}")
+    variables = list(params.get("variables", []))
+    names = {v.get("name") for v in variables}
+    expression = params.get("expression", "")
+    if driver_type == "SCRIPTED":
+        _check_expression(expression, names)
+    objects = _variable_objects(variables)
+    try:
+        obj.path_resolve(path)
+    except ValueError:
+        raise ValueError(f"'{obj.name}' has no property '{path}'") from None
+
+    owner, owner_path = _driver_owner(obj, path)
+    added = owner.driver_add(owner_path, index)
+    curves = added if isinstance(added, list) else [added]
+    try:
+        for fcurve in curves:
+            driver = fcurve.driver
+            driver.type = driver_type
+            for var in variables:
+                _fill_variable(driver, var, objects)
+            if driver_type == "SCRIPTED":
+                driver.expression = expression
+                # Blender's own verdict: a non-simple expression would need Python
+                if not driver.is_simple_expression:
+                    raise ValueError(f"'{expression}' is not a simple expression; "
+                                     f"Blender would need Python to run it")
+    except Exception:
+        owner.driver_remove(owner_path, index)
+        raise
+    return {"object": obj.name, "owner": owner.name, "data_path": path, "index": index,
+            "driver_type": driver_type, "expression": expression,
+            "variables": [v["name"] for v in variables], "drivers_added": len(curves)}
+
+
+def handle_remove_driver(params):
+    obj = _get_object(params["object_name"])
+    path = _check_path(params["data_path"])
+    owner, owner_path = _driver_owner(obj, path)
+    removed = owner.driver_remove(owner_path, int(params.get("index", -1)))
+    return {"object": obj.name, "data_path": path, "removed": bool(removed)}
+
+
+def handle_list_drivers(params):
+    """Drivers on the object and on the data blocks it uses (its data, shape keys)."""
+    obj = _get_object(params["object_name"])
+    owners = [("", obj)]
+    data = getattr(obj, "data", None)
+    if data is not None and getattr(data, "id_data", None) is data:
+        owners.append(("data.", data))
+        keys = getattr(data, "shape_keys", None)
+        if keys is not None:
+            owners.append(("data.shape_keys.", keys))
+    drivers = []
+    for prefix, owner in owners:
+        adt = getattr(owner, "animation_data", None)
+        for fcurve in (adt.drivers if adt is not None else []):
+            d = fcurve.driver
+            drivers.append({
+                "data_path": prefix + fcurve.data_path, "index": fcurve.array_index,
+                "type": d.type, "expression": d.expression if d.type == "SCRIPTED" else "",
+                "valid": d.is_valid,
+                "variables": [{"name": v.name, "type": v.type} for v in d.variables],
+            })
+    return {"object": obj.name, "drivers": drivers}
+
+
 def register():
     """Register all animation handlers with the dispatcher."""
     dispatcher.register_handler("insert_keyframe", handle_insert_keyframe)
@@ -214,3 +395,6 @@ def register():
     dispatcher.register_handler("create_animation_path", handle_create_animation_path)
     dispatcher.register_handler("list_keyframes", handle_list_keyframes)
     dispatcher.register_handler("clear_animation", handle_clear_animation)
+    dispatcher.register_handler("add_driver", handle_add_driver)
+    dispatcher.register_handler("remove_driver", handle_remove_driver)
+    dispatcher.register_handler("list_drivers", handle_list_drivers)
