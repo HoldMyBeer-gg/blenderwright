@@ -168,9 +168,52 @@ def handle_delete_collection(params: dict) -> dict:
         raise RuntimeError(f"Failed to delete collection '{name}': {e}")
 
 
+def _activate(obj):
+    """obj as the only selected, active object, in object mode."""
+    if bpy.context.object is not None and bpy.context.object.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+
+def handle_create_collection_instance(params: dict) -> dict:
+    """Place a collection as an instance empty."""
+    name = params.get("collection_name")
+    collection = bpy.data.collections.get(name)
+    if collection is None:
+        raise ValueError(f"Collection '{name}' not found")
+    inst = bpy.data.objects.new(params.get("name") or collection.name, None)
+    inst.instance_type = "COLLECTION"
+    inst.instance_collection = collection
+    inst.location = params.get("location", [0, 0, 0])
+    inst.rotation_euler = params.get("rotation", [0, 0, 0])
+    inst.scale = params.get("scale", [1, 1, 1])
+    bpy.context.scene.collection.objects.link(inst)
+    return {"name": inst.name, "collection": collection.name}
+
+
+def handle_make_instances_real(params: dict) -> dict:
+    """Turn a collection instance into real objects."""
+    name = params.get("object_name")
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        raise ValueError(f"Object '{name}' not found")
+    if obj.instance_type != "COLLECTION" or obj.instance_collection is None:
+        raise ValueError(f"'{name}' is not a collection instance")
+    _activate(obj)
+    result = bpy.ops.object.duplicates_make_real(
+        use_base_parent=False, use_hierarchy=bool(params.get("keep_hierarchy", False)))
+    if result != {"FINISHED"}:
+        raise RuntimeError(f"Could not make '{name}' real: {result}")
+    return {"instance": name, "objects": [o.name for o in bpy.context.selected_objects]}
+
+
 def register():
     """Register collection handlers with the dispatcher."""
     dispatcher.register_handler("create_collection", handle_create_collection)
     dispatcher.register_handler("move_to_collection", handle_move_to_collection)
     dispatcher.register_handler("set_collection_visibility", handle_set_collection_visibility)
     dispatcher.register_handler("delete_collection", handle_delete_collection)
+    dispatcher.register_handler("create_collection_instance", handle_create_collection_instance)
+    dispatcher.register_handler("make_instances_real", handle_make_instances_real)

@@ -3,6 +3,7 @@
 import importlib.util
 import os
 import sys
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -91,3 +92,119 @@ class TestFormats:
             handler.handle_import_file({"filepath": f"/tmp/a{ext}"})
         with pytest.raises(ValueError):
             _export(handler, f"/tmp/a{ext}")
+
+
+class FakeLibrary:
+    """bpy.data.libraries.load: lists names, then fills dst lists in place on exit."""
+
+    CONTENTS = {"objects": ["Cone", "Lamp"], "collections": ["Props"],
+                "materials": ["Brass"], "node_groups": [], "worlds": ["Sky"],
+                "meshes": ["Cone"]}
+
+    def __init__(self):
+        self.calls = []
+
+    def load(self, path, link=False):
+        lib = self
+
+        class Ctx:
+            def __enter__(self):
+                self.src = SimpleNamespace(**{k: list(v) for k, v in lib.CONTENTS.items()})
+                self.dst = SimpleNamespace(**{k: [] for k in lib.CONTENTS})
+                lib.calls.append({"path": path, "link": link, "dst": self.dst})
+                return self.src, self.dst
+
+            def __exit__(self, *exc):
+                if exc[0] is None:
+                    for kind, names in vars(self.dst).items():
+                        names[:] = [SimpleNamespace(name=n + (".001" if not link else ""),
+                                                    library="kit" if link else None)
+                                    for n in names]
+                return False
+
+        return Ctx()
+
+
+@pytest.fixture
+def lib(handler, monkeypatch):
+    import bpy
+
+    fake = FakeLibrary()
+    monkeypatch.setattr(bpy.data, "libraries", fake)
+    scene_objects, scene_children = [], []
+    monkeypatch.setattr(bpy.context, "scene", SimpleNamespace(collection=SimpleNamespace(
+        objects=SimpleNamespace(link=scene_objects.append),
+        children=SimpleNamespace(link=scene_children.append))))
+    made = []
+
+    def new_object(name, data):
+        obj = SimpleNamespace(name=name, data=data, instance_type="NONE",
+                              instance_collection=None)
+        made.append(obj)
+        return obj
+
+    monkeypatch.setattr(bpy.data, "objects", SimpleNamespace(new=new_object))
+    monkeypatch.setattr(bpy.context.preferences.filepaths, "use_scripts_auto_execute", True)
+    fake.scene_objects, fake.scene_children, fake.made = scene_objects, scene_children, made
+    return fake
+
+
+class TestLinkAppend:
+    def test_list_reads_names_and_loads_nothing(self, handler, lib, tmp_path):
+        path = tmp_path / "kit.blend"
+        path.write_bytes(b"x")
+        result = handler.handle_list_blend_contents({"filepath": str(path)})
+        assert result["objects"] == ["Cone", "Lamp"] and result["worlds"] == ["Sky"]
+        assert all(not names for names in vars(lib.calls[0]["dst"]).values())
+
+    def test_scripts_are_disabled_first(self, handler, lib, tmp_path):
+        import bpy
+
+        path = tmp_path / "kit.blend"
+        path.write_bytes(b"x")
+        handler.handle_list_blend_contents({"filepath": str(path)})
+        assert bpy.context.preferences.filepaths.use_scripts_auto_execute is False
+
+    def test_append_objects_into_the_scene(self, handler, lib, tmp_path):
+        path = tmp_path / "kit.blend"
+        path.write_bytes(b"x")
+        result = handler.handle_link_or_append({"filepath": str(path), "data_type": "OBJECT",
+                                                "names": ["Cone"], "link": False})
+        assert result["items"] == {"Cone": "Cone.001"}
+        assert [o.name for o in lib.scene_objects] == ["Cone.001"]
+
+    def test_linked_collection_becomes_an_instance(self, handler, lib, tmp_path):
+        path = tmp_path / "kit.blend"
+        path.write_bytes(b"x")
+        result = handler.handle_link_or_append({"filepath": str(path),
+                                                "data_type": "COLLECTION",
+                                                "names": ["Props"], "link": True})
+        inst = lib.made[0]
+        assert inst.instance_type == "COLLECTION" and inst.instance_collection.name == "Props"
+        assert result["instances"] == [inst.name]
+        assert lib.scene_children == []
+
+    def test_appended_collection_joins_the_scene(self, handler, lib, tmp_path):
+        path = tmp_path / "kit.blend"
+        path.write_bytes(b"x")
+        handler.handle_link_or_append({"filepath": str(path), "data_type": "COLLECTION",
+                                       "names": ["Props"], "link": False})
+        assert [c.name for c in lib.scene_children] == ["Props.001"]
+
+    def test_missing_names_listed_before_anything_loads(self, handler, lib, tmp_path):
+        path = tmp_path / "kit.blend"
+        path.write_bytes(b"x")
+        with pytest.raises(ValueError, match="Rock"):
+            handler.handle_link_or_append({"filepath": str(path), "data_type": "OBJECT",
+                                           "names": ["Rock"], "link": False})
+        assert lib.scene_objects == []
+
+    @pytest.mark.parametrize("filepath, data_type", [
+        ("kit.py", "OBJECT"), ("kit.blend", "TEXT"), ("missing.blend", "OBJECT"),
+    ])
+    def test_handler_refuses_bad_input(self, handler, lib, tmp_path, filepath, data_type):
+        (tmp_path / "kit.py").write_text("x")
+        (tmp_path / "kit.blend").write_bytes(b"x")
+        with pytest.raises(ValueError):
+            handler.handle_link_or_append({"filepath": str(tmp_path / filepath),
+                                           "data_type": data_type, "names": ["Cone"]})

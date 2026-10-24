@@ -204,6 +204,72 @@ def handle_list_recent_files(params: dict) -> list:
         raise RuntimeError(f"Failed to list recent files: {e}")
 
 
+# Linkable data type -> bpy.data collection name
+LINK_TYPES = {
+    "OBJECT": "objects",
+    "COLLECTION": "collections",
+    "MATERIAL": "materials",
+    "NODE_GROUP": "node_groups",
+    "WORLD": "worlds",
+    "MESH": "meshes",
+}
+
+
+def _blend_path(filepath):
+    """An existing .blend file, with script auto-run off before it is read."""
+    if not filepath or os.path.splitext(filepath)[1].lower() != ".blend":
+        raise ValueError(f"Not a .blend file: {filepath!r}")
+    if not os.path.isfile(filepath):
+        raise ValueError(f"File not found: {filepath}")
+    # SECURITY: never run scripts embedded in another .blend
+    bpy.context.preferences.filepaths.use_scripts_auto_execute = False
+    return filepath
+
+
+def handle_list_blend_contents(params):
+    path = _blend_path(params.get("filepath"))
+    with bpy.data.libraries.load(path) as (src, _dst):
+        return {attr: sorted(getattr(src, attr)) for attr in LINK_TYPES.values()}
+
+
+def handle_link_or_append(params):
+    path = _blend_path(params.get("filepath"))
+    data_type = params.get("data_type")
+    attr = LINK_TYPES.get(data_type)
+    if attr is None:
+        raise ValueError(f"Cannot link or append {data_type!r}")
+    names = list(params.get("names", []))
+    link = bool(params.get("link", False))
+
+    with bpy.data.libraries.load(path, link=link) as (src, dst):
+        available = set(getattr(src, attr))
+        missing = [n for n in names if n not in available]
+        if missing:
+            raise ValueError(f"Not in {os.path.basename(path)}: {', '.join(missing)}. "
+                             f"Available: {', '.join(sorted(available)) or 'none'}")
+        setattr(dst, attr, list(names))  # Blender fills this list in place
+    loaded = getattr(dst, attr)
+
+    scene = bpy.context.scene
+    instances = []
+    for block in loaded:
+        if data_type == "OBJECT":
+            scene.collection.objects.link(block)
+        elif data_type == "COLLECTION":
+            if link:
+                # A linked collection is read-only; show it through an instance empty
+                inst = bpy.data.objects.new(block.name, None)
+                inst.instance_type = "COLLECTION"
+                inst.instance_collection = block
+                scene.collection.objects.link(inst)
+                instances.append(inst.name)
+            else:
+                scene.collection.children.link(block)
+    return {"filepath": path, "data_type": data_type, "link": link,
+            "items": {name: block.name for name, block in zip(names, loaded)},
+            "instances": instances}
+
+
 def register():
     """Register file operations handlers with the dispatcher."""
     dispatcher.register_handler("import_file", handle_import_file)
@@ -211,3 +277,5 @@ def register():
     dispatcher.register_handler("save_file", handle_save_file)
     dispatcher.register_handler("open_file", handle_open_file)
     dispatcher.register_handler("list_recent_files", handle_list_recent_files)
+    dispatcher.register_handler("list_blend_contents", handle_list_blend_contents)
+    dispatcher.register_handler("link_or_append", handle_link_or_append)
