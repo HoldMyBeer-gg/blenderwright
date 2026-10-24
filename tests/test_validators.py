@@ -509,3 +509,22 @@ class TestNumericRangeNonFinite:
         from blenderwright.validators import validate_numeric_range
         with pytest.raises(ValidationError):
             validate_numeric_range(float("nan"), name="x")
+
+
+class TestValidateInt:
+    def test_accepts_ints_and_whole_floats(self):
+        from blenderwright.validators import validate_int
+        assert validate_int(4, 0, 10, name="n") == 4
+        assert validate_int(4.0, 0, 10, name="n") == 4
+        assert isinstance(validate_int("4", 0, 10, name="n"), int)
+
+    @pytest.mark.parametrize("value", [2.5, "2.5", True, float("nan"), None, "four"])
+    def test_rejects_non_integers(self, value):
+        from blenderwright.validators import validate_int
+        with pytest.raises(ValidationError):
+            validate_int(value, 0, 10, name="n")
+
+    def test_range_is_enforced(self):
+        from blenderwright.validators import validate_int
+        with pytest.raises(ValidationError, match="n"):
+            validate_int(11, 0, 10, name="n")

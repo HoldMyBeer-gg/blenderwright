@@ -265,3 +265,101 @@ class TestHandleSetFilm:
         assert scene.cycles.film_transparent_glass is True
         assert scene.cycles.filter_width == 1.5
         assert result["transparent"] is True
+
+
+class TestRenderQualityHandlers:
+    def _cycles(self, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        c = SimpleNamespace(
+            use_denoising=False, denoiser="OPENIMAGEDENOISE", denoising_quality="HIGH",
+            denoising_prefilter="ACCURATE", denoising_input_passes="RGB_ALBEDO_NORMAL",
+            denoising_use_gpu=False, use_preview_denoising=False,
+            use_adaptive_sampling=True, adaptive_threshold=0.01, adaptive_min_samples=0,
+            time_limit=0.0, sample_clamp_direct=0.0, sample_clamp_indirect=10.0,
+            use_guiding=False, seed=0, use_animated_seed=False,
+            max_bounces=12, diffuse_bounces=4, glossy_bounces=4, transmission_bounces=12,
+            volume_bounces=0, transparent_max_bounces=8, caustics_reflective=True,
+            caustics_refractive=True, blur_glossy=1.0,
+        )
+        monkeypatch.setattr(bpy.context.scene, "cycles", c)
+        return c
+
+    def test_denoising(self, rendering_handler, monkeypatch):
+        c = self._cycles(monkeypatch)
+        result = rendering_handler.handle_set_denoising(
+            {"enabled": True, "quality": "FAST", "viewport": True})
+        assert (c.use_denoising, c.denoising_quality, c.use_preview_denoising) == (
+            True, "FAST", True)
+        assert result["quality"] == "FAST" and result["enabled"] is True
+
+    def test_denoiser_missing_on_this_machine_is_explained(self, rendering_handler,
+                                                           monkeypatch):
+        c = self._cycles(monkeypatch)
+
+        class _Strict:
+            def __setattr__(self, name, value):
+                if name == "denoiser" and value == "OPTIX":
+                    raise TypeError('enum "OPTIX" not found in (\'OPENIMAGEDENOISE\')')
+                object.__setattr__(self, name, value)
+
+        strict = _Strict()
+        strict.__dict__.update(vars(c))
+        import bpy
+        monkeypatch.setattr(bpy.context.scene, "cycles", strict)
+        with pytest.raises(ValueError, match="OPTIX.*not available"):
+            rendering_handler.handle_set_denoising({"denoiser": "OPTIX"})
+
+    def test_sampling(self, rendering_handler, monkeypatch):
+        c = self._cycles(monkeypatch)
+        result = rendering_handler.handle_set_cycles_sampling(
+            {"noise_threshold": 0.05, "min_samples": 32, "path_guiding": True, "seed": 3})
+        assert (c.adaptive_threshold, c.adaptive_min_samples, c.use_guiding, c.seed) == (
+            0.05, 32, True, 3)
+        assert result["noise_threshold"] == 0.05
+
+    def test_light_paths(self, rendering_handler, monkeypatch):
+        c = self._cycles(monkeypatch)
+        result = rendering_handler.handle_set_light_paths(
+            {"total": 6, "glossy": 2, "caustics_refractive": False, "filter_glossy": 0.5})
+        assert (c.max_bounces, c.glossy_bounces, c.caustics_refractive, c.blur_glossy) == (
+            6, 2, False, 0.5)
+        assert result["total"] == 6
+
+    def test_motion_blur(self, rendering_handler, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        render = SimpleNamespace(use_motion_blur=False, motion_blur_shutter=0.5,
+                                 motion_blur_position="CENTER")
+        eevee = SimpleNamespace(motion_blur_steps=1)
+        monkeypatch.setattr(bpy.context.scene, "render", render)
+        monkeypatch.setattr(bpy.context.scene, "eevee", eevee)
+        result = rendering_handler.handle_set_motion_blur(
+            {"enabled": True, "shutter": 0.25, "position": "END", "eevee_steps": 4})
+        assert (render.use_motion_blur, render.motion_blur_shutter,
+                render.motion_blur_position, eevee.motion_blur_steps) == (True, 0.25, "END", 4)
+        assert result["enabled"] is True
+
+    def test_render_passes_reach_the_right_owner(self, rendering_handler, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        vl = SimpleNamespace(
+            name="ViewLayer", use_pass_mist=False, use_pass_z=False,
+            cycles=SimpleNamespace(use_pass_shadow_catcher=False),
+            eevee=SimpleNamespace(use_pass_transparent=False),
+        )
+        monkeypatch.setattr(bpy.context, "view_layer", vl)
+        result = rendering_handler.handle_set_render_passes(
+            {"passes": ["mist", "z", "shadow_catcher", "transparent"], "enabled": True})
+        assert vl.use_pass_mist and vl.use_pass_z
+        assert vl.cycles.use_pass_shadow_catcher and vl.eevee.use_pass_transparent
+        assert result["view_layer"] == "ViewLayer"
+        assert set(result["changed"]) == {"mist", "z", "shadow_catcher", "transparent"}
+
+    def test_render_pass_outside_the_map_is_refused(self, rendering_handler):
+        """The socket can be reached without the tool's allowlist."""
+        with pytest.raises(ValueError, match="__class__"):
+            rendering_handler.handle_set_render_passes({"passes": ["__class__"]})
