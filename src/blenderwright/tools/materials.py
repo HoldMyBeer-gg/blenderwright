@@ -55,7 +55,7 @@ ALLOWED_SHADER_NODE_TYPES = {
     # Input
     "ShaderNodeTexCoord", "ShaderNodeObjectInfo", "ShaderNodeValue",
     "ShaderNodeRGB", "ShaderNodeFresnel", "ShaderNodeLayerWeight",
-    "ShaderNodeGeometry", "ShaderNodeAttribute", "ShaderNodeCameraData",
+    "ShaderNodeNewGeometry", "ShaderNodeAttribute", "ShaderNodeCameraData",
     "ShaderNodeLightPath", "ShaderNodeUVMap", "ShaderNodeTangent",
     # Texture
     "ShaderNodeTexImage", "ShaderNodeTexNoise", "ShaderNodeTexVoronoi",

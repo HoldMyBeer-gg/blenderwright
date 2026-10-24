@@ -3,6 +3,7 @@
 import importlib.util
 import os
 import sys
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -39,16 +40,28 @@ def _scene_with_input(socket_type):
     item.identifier = "Socket_1"
     item.socket_type = socket_type
 
-    stored = {}
     modifier = MagicMock()
     modifier.type = "NODES"
     modifier.node_group.interface.items_tree = [item]
-    modifier.__setitem__.side_effect = stored.__setitem__
+    modifier.properties.inputs = SimpleNamespace(Socket_1=SimpleNamespace(value=None))
+    # Blender 5.2 rejects the old dict-style access on the modifier
+    modifier.__setitem__.side_effect = TypeError("id properties not supported for this type")
+    modifier.__getitem__.side_effect = TypeError("id properties not supported for this type")
 
     obj = MagicMock()
     obj.modifiers.get.return_value = modifier
     bpy.data.objects.get.return_value = obj
-    return stored
+    return _StoredInputs(modifier.properties.inputs)
+
+
+class _StoredInputs:
+    """Read modifier input values by identifier, as the tests expect."""
+
+    def __init__(self, inputs):
+        self._inputs = inputs
+
+    def __getitem__(self, identifier):
+        return getattr(self._inputs, identifier).value
 
 
 def _set(handler, value):
@@ -95,3 +108,40 @@ class TestTextValues:
         stored = _scene_with_input("NodeSocketFloat")
         _set(handler, 2.5)
         assert stored["Socket_1"] == 2.5
+
+
+class TestBlender52InputAccess:
+    """Blender 5.2 moved modifier inputs to modifier.properties.inputs."""
+
+    def test_set_writes_through_properties(self, handler):
+        stored = _scene_with_input("NodeSocketInt")
+        _set(handler, 10)
+        assert stored["Socket_1"] == 10
+
+    def test_list_reads_current_value(self, handler):
+        stored = _scene_with_input("NodeSocketFloat")
+        _set(handler, 2.5)
+        inputs = handler.handle_list_geometry_node_inputs({
+            "object_name": "Cube", "modifier_name": "GeometryNodes",
+        })
+        assert inputs[0]["identifier"] == "Socket_1"
+        assert inputs[0]["value"] == stored["Socket_1"] == 2.5
+
+    def test_list_reports_none_for_inputs_without_a_value(self, handler):
+        """Geometry sockets have an entry under properties.inputs but no .value."""
+        _scene_with_input("NodeSocketGeometry")
+        import bpy
+        modifier = bpy.data.objects.get.return_value.modifiers.get.return_value
+        modifier.properties.inputs = SimpleNamespace(Socket_1=SimpleNamespace(name="Geometry"))
+        inputs = handler.handle_list_geometry_node_inputs({
+            "object_name": "Cube", "modifier_name": "GeometryNodes",
+        })
+        assert inputs[0]["value"] is None
+
+    def test_set_rejects_inputs_without_a_value(self, handler):
+        _scene_with_input("NodeSocketGeometry")
+        import bpy
+        modifier = bpy.data.objects.get.return_value.modifiers.get.return_value
+        modifier.properties.inputs = SimpleNamespace(Socket_1=SimpleNamespace(name="Geometry"))
+        with pytest.raises(ValueError):
+            _set(handler, 1)

@@ -327,3 +327,16 @@ def test_readme_domain_table_adds_up():
         f"{_tool_count()} tools"
     )
     assert int(block.group(1)) == _tool_count()
+
+
+def test_blender_minimum_is_5_2_lts():
+    """blenderwright targets Blender 5.2 LTS only; manifest and bl_info must agree."""
+    with open(os.path.join(ROOT, "addon", "blender_manifest.toml"), "rb") as f:
+        assert tomllib.load(f)["blender_version_min"] == "5.2.0"
+    tree = ast.parse(_read("addon", "__init__.py"))
+    bl_info = next(
+        ast.literal_eval(node.value) for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "bl_info" for t in node.targets)
+    )
+    assert bl_info["blender"] == (5, 2, 0)

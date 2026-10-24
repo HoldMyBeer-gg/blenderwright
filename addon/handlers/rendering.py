@@ -71,6 +71,8 @@ def handle_set_output_format(params):
     filepath = params.get("filepath", "")
 
     render = bpy.context.scene.render
+    # Image formats are refused while media_type is VIDEO
+    render.image_settings.media_type = "IMAGE"
     render.image_settings.file_format = fmt
 
     if filepath:
@@ -107,15 +109,18 @@ def handle_render_animation(params):
     render = bpy.context.scene.render
     # Store originals
     original_filepath = render.filepath
+    original_media_type = render.image_settings.media_type
     original_format = render.image_settings.file_format
 
-    render.filepath = filepath
-    render.image_settings.file_format = fmt
-    bpy.ops.render.render(animation=True)
-
-    # Restore originals
-    render.filepath = original_filepath
-    render.image_settings.file_format = original_format
+    try:
+        render.filepath = filepath
+        render.image_settings.media_type = "IMAGE"
+        render.image_settings.file_format = fmt
+        bpy.ops.render.render(animation=True)
+    finally:
+        render.filepath = original_filepath
+        render.image_settings.media_type = original_media_type
+        render.image_settings.file_format = original_format
 
     return {
         "filepath": filepath,

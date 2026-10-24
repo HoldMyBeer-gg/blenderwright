@@ -184,6 +184,7 @@ def handle_capture_viewport(params: dict) -> dict:
         orig_y = scene.render.resolution_y
         orig_percentage = scene.render.resolution_percentage
         orig_filepath = scene.render.filepath
+        orig_media_type = scene.render.image_settings.media_type
         orig_file_format = scene.render.image_settings.file_format
 
         # Set render resolution
@@ -191,12 +192,13 @@ def handle_capture_viewport(params: dict) -> dict:
         scene.render.resolution_y = height
         scene.render.resolution_percentage = 100
 
-        use_temp = not filepath
-        if use_temp:
+        temp_dir = None
+        if not filepath:
             temp_dir = tempfile.mkdtemp()
             filepath = os.path.join(temp_dir, "viewport_capture.png")
 
         scene.render.filepath = filepath
+        scene.render.image_settings.media_type = 'IMAGE'
         scene.render.image_settings.file_format = 'PNG'
 
         # Render
@@ -204,7 +206,7 @@ def handle_capture_viewport(params: dict) -> dict:
 
         result = {"width": width, "height": height}
 
-        if use_temp:
+        if temp_dir is not None:
             # Read file and encode as base64
             with open(filepath, "rb") as f:
                 image_data = f.read()
@@ -224,6 +226,7 @@ def handle_capture_viewport(params: dict) -> dict:
         scene.render.resolution_y = orig_y
         scene.render.resolution_percentage = orig_percentage
         scene.render.filepath = orig_filepath
+        scene.render.image_settings.media_type = orig_media_type
         scene.render.image_settings.file_format = orig_file_format
 
         return result

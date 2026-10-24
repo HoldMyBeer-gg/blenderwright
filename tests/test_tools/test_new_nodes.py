@@ -21,3 +21,12 @@ class TestNew51ShaderNodes:
             "ShaderNodeRaycast", ALLOWED_SHADER_NODE_TYPES, name="node_type"
         )
         assert result == "ShaderNodeRaycast"
+
+
+class TestGeometryNodeName:
+    def test_geometry_input_uses_blenders_identifier(self):
+        """The Geometry input node's type is ShaderNodeNewGeometry; ShaderNodeGeometry is invalid."""
+        from blenderwright.tools.materials import ALLOWED_SHADER_NODE_TYPES
+
+        assert "ShaderNodeNewGeometry" in ALLOWED_SHADER_NODE_TYPES
+        assert "ShaderNodeGeometry" not in ALLOWED_SHADER_NODE_TYPES

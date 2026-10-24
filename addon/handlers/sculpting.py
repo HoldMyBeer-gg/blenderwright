@@ -3,6 +3,26 @@
 import bpy
 from .. import dispatcher
 
+ESSENTIALS_SCULPT_BRUSHES = "brushes/essentials_brushes-mesh_sculpt.blend"
+
+# Tool brush types mapped to Essentials sculpt brush asset names
+BRUSH_ASSETS = {
+    "DRAW": "Draw",
+    "CLAY": "Clay",
+    "CLAY_STRIPS": "Clay Strips",
+    "INFLATE": "Inflate/Deflate",
+    "GRAB": "Grab",
+    "SMOOTH": "Smooth",
+    "FLATTEN": "Flatten/Contrast",
+    "FILL": "Fill/Deepen",
+    "SCRAPE": "Scrape/Fill",
+    "PINCH": "Pinch/Magnify",
+    "CREASE": "Crease Polish",
+    "BLOB": "Blob",
+    "MASK": "Mask",
+    "MULTIRES_DISPLACEMENT_SMEAR": "Smear Multires Displacement",
+}
+
 
 def handle_enter_sculpt_mode(params: dict) -> dict:
     """Enter sculpt mode for a mesh object."""
@@ -51,33 +71,21 @@ def handle_set_sculpt_brush(params: dict) -> dict:
     brush_type = params.get("brush_type")
 
     try:
-        # Map brush type to Blender's sculpt tool names
-        brush_map = {
-            "DRAW": "DRAW",
-            "CLAY": "CLAY",
-            "CLAY_STRIPS": "CLAY_STRIPS",
-            "INFLATE": "INFLATE",
-            "GRAB": "GRAB",
-            "SMOOTH": "SMOOTH",
-            "FLATTEN": "FLATTEN",
-            "FILL": "FILL",
-            "SCRAPE": "SCRAPE",
-            "PINCH": "PINCH",
-            "CREASE": "CREASE",
-            "BLOB": "BLOB",
-            "MASK": "MASK",
-            "MULTIRES_DISPLACEMENT_SMEAR": "MULTIRES_DISPLACEMENT_SMEAR",
-        }
-
-        tool_type = brush_map.get(brush_type)
-        if tool_type is None:
+        # Sculpt brushes are assets in the Essentials library
+        asset_name = BRUSH_ASSETS.get(brush_type)
+        if asset_name is None:
             raise ValueError(f"Unknown brush type: {brush_type}")
 
-        # Set the sculpt tool
-        bpy.ops.wm.tool_set_by_id(name=f"builtin_brush.{tool_type}")
+        result = bpy.ops.brush.asset_activate(
+            asset_library_type="ESSENTIALS",
+            relative_asset_identifier=f"{ESSENTIALS_SCULPT_BRUSHES}/Brush/{asset_name}",
+        )
+        if result != {"FINISHED"}:
+            raise RuntimeError(f"Brush asset '{asset_name}' did not activate: {result}")
 
         return {
             "brush_type": brush_type,
+            "brush": asset_name,
             "success": True,
         }
     except ValueError:

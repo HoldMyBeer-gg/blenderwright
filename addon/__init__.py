@@ -9,7 +9,7 @@ bl_info = {
     "name": "blenderwright",
     "author": "blenderwright",
     "version": (2, 3, 0),
-    "blender": (4, 2, 0),
+    "blender": (5, 2, 0),
     "location": "View3D > Sidebar > blenderwright",
     "description": "MCP Server integration for AI-assisted 3D workflows",
     "category": "Interface",

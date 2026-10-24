@@ -143,3 +143,20 @@ class TestEngineAliasResolution:
         with pytest.raises(ValueError) as exc:
             mod._resolve_engine("OCTANE")
         assert "CYCLES" in str(exc.value)
+
+
+class TestImageOutputAfterVideo:
+    """Since 5.0 an image file_format is refused while media_type is VIDEO."""
+
+    def test_set_output_format_switches_to_image_media(self, rendering_handler, video_output_scene):
+        result = rendering_handler.handle_set_output_format({"format": "PNG"})
+
+        assert video_output_scene.media_type == "IMAGE"
+        assert video_output_scene.file_format == "PNG"
+        assert result["format"] == "PNG"
+
+    def test_render_animation_restores_video_output(self, rendering_handler, video_output_scene):
+        rendering_handler.handle_render_animation({"filepath": "/tmp/frames/", "format": "PNG"})
+
+        assert video_output_scene.media_type == "VIDEO"
+        assert video_output_scene.file_format == "FFMPEG"
