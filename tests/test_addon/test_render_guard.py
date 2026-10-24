@@ -96,3 +96,28 @@ class TestLoadPostRecovery:
         assert not guard.is_rendering
         guard.on_render_complete(None)
         assert not guard.is_rendering
+
+
+class TestBlenderHandlerSignature:
+    """Blender 5.2 calls render handlers with (scene, depsgraph).
+
+    The one-argument callbacks raised TypeError on every render, so the
+    guard never set and the server never answered "busy".
+    """
+
+    def test_pre_accepts_scene_and_depsgraph(self):
+        guard = RenderGuard()
+        guard.on_render_pre(object(), object())
+        assert guard.is_rendering
+
+    def test_complete_accepts_scene_and_depsgraph(self):
+        guard = RenderGuard()
+        guard.on_render_pre(object(), object())
+        guard.on_render_complete(object(), object())
+        assert not guard.is_rendering
+
+    def test_cancel_accepts_scene_and_depsgraph(self):
+        guard = RenderGuard()
+        guard.on_render_pre(object(), object())
+        guard.on_render_cancel(object(), object())
+        assert not guard.is_rendering
