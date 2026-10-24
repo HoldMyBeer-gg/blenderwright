@@ -203,3 +203,145 @@ class TestNoLegacyGpencilAPI:
         assert 'obj.type == "GPENCIL"' not in content, (
             "Handler must not use obj.type == 'GPENCIL' check"
         )
+
+
+from types import SimpleNamespace  # noqa: E402
+
+
+class _Points(list):
+    pass
+
+
+class _Drawing:
+    def __init__(self):
+        self.strokes = []
+
+    def add_strokes(self, sizes):
+        for n in sizes:
+            self.strokes.append(SimpleNamespace(
+                points=_Points(SimpleNamespace(position=None, radius=None) for _ in range(n)),
+                cyclic=False, material_index=0))
+
+
+class _Frames(list):
+    def new(self, frame_number):
+        f = SimpleNamespace(frame_number=frame_number, drawing=_Drawing())
+        self.append(f)
+        return f
+
+
+class _Layers(list):
+    active = None
+
+    def new(self, name):
+        layer = SimpleNamespace(name=name, frames=_Frames())
+        self.append(layer)
+        self.active = layer
+        return layer
+
+    def get(self, name):
+        return next((layer for layer in self if layer.name == name), None)
+
+
+class _Mats(list):
+    def find(self, name):
+        return next((i for i, m in enumerate(self) if m.name == name), -1)
+
+
+@pytest.fixture
+def gp_env(monkeypatch):
+    import bpy
+
+    objects, mats = {}, {}
+
+    def new_gp(name):
+        return SimpleNamespace(name=name, layers=_Layers(), materials=_Mats())
+
+    def new_obj(name, data):
+        obj = SimpleNamespace(name=name, data=data, type="GREASEPENCIL", location=None)
+        objects[name] = obj
+        return obj
+
+    def new_mat(name):
+        mats[name] = SimpleNamespace(name=name, grease_pencil=None)
+        return mats[name]
+
+    def create_gp_data(mat):
+        mat.grease_pencil = SimpleNamespace(color=None, fill_color=None, show_fill=False,
+                                            show_stroke=True)
+
+    monkeypatch.setattr(bpy.data, "grease_pencils", SimpleNamespace(new=new_gp))
+    monkeypatch.setattr(bpy.data, "objects", SimpleNamespace(new=new_obj, get=objects.get))
+    monkeypatch.setattr(bpy.data, "materials", SimpleNamespace(
+        new=new_mat, get=mats.get, create_gpencil_data=create_gp_data))
+    monkeypatch.setattr(bpy.context, "scene", SimpleNamespace(collection=SimpleNamespace(
+        objects=SimpleNamespace(link=lambda o: None))))
+    return SimpleNamespace(objects=objects, mats=mats)
+
+
+class TestGreasePencilDrawing:
+    def test_create_has_a_layer_and_frame(self, gpencil_handler, gp_env):
+        result = gpencil_handler.handle_create_grease_pencil(
+            {"name": "Sketch", "location": [0, 0, 1], "layer_name": "Ink"})
+        layer = gp_env.objects["Sketch"].data.layers[0]
+        assert layer.name == "Ink" and layer.frames[0].frame_number == 1
+        assert result["layer"] == "Ink"
+
+    def test_material(self, gpencil_handler, gp_env):
+        gpencil_handler.handle_create_gp_material({"name": "Red", "color": [1, 0, 0, 1]})
+        assert gp_env.mats["Red"].grease_pencil.color == [1, 0, 0, 1]
+
+    def test_stroke_with_material_and_new_layer(self, gpencil_handler, gp_env):
+        gpencil_handler.handle_create_grease_pencil({"name": "Sketch", "location": [0, 0, 0],
+                                                     "layer_name": "Ink"})
+        gpencil_handler.handle_create_gp_material({"name": "Red", "color": [1, 0, 0, 1]})
+        result = gpencil_handler.handle_add_gp_stroke({
+            "object_name": "Sketch", "points": [[0, 0, 0], [1, 0, 0], [1, 0, 1]],
+            "layer": "Shading", "frame": 5, "radius": [0.01, 0.03, 0.01], "cyclic": True,
+            "material": "Red"})
+        data = gp_env.objects["Sketch"].data
+        layer = data.layers.get("Shading")
+        stroke = layer.frames[0].drawing.strokes[0]
+        assert layer.frames[0].frame_number == 5
+        assert [p.position for p in stroke.points] == [(0, 0, 0), (1, 0, 0), (1, 0, 1)]
+        assert [p.radius for p in stroke.points] == [0.01, 0.03, 0.01]
+        assert stroke.cyclic is True and data.materials[stroke.material_index].name == "Red"
+        assert result["strokes_on_frame"] == 1
+
+    def test_stroke_gets_default_ink_without_materials(self, gpencil_handler, gp_env):
+        gpencil_handler.handle_create_grease_pencil({"name": "Sketch", "location": [0, 0, 0],
+                                                     "layer_name": "Ink"})
+        gpencil_handler.handle_add_gp_stroke({"object_name": "Sketch",
+                                              "points": [[0, 0, 0], [1, 0, 0]], "layer": "",
+                                              "frame": 1, "radius": [0.02, 0.02],
+                                              "cyclic": False, "material": ""})
+        assert gp_env.objects["Sketch"].data.materials[0].grease_pencil is not None
+
+    def test_non_gp_material_refused(self, gpencil_handler, gp_env):
+        gpencil_handler.handle_create_grease_pencil({"name": "Sketch", "location": [0, 0, 0],
+                                                     "layer_name": "Ink"})
+        gp_env.mats["Paint"] = SimpleNamespace(name="Paint", grease_pencil=None)
+        with pytest.raises(ValueError, match="Paint"):
+            gpencil_handler.handle_add_gp_stroke({"object_name": "Sketch",
+                                                  "points": [[0, 0, 0], [1, 0, 0]],
+                                                  "radius": [0.02, 0.02], "material": "Paint"})
+
+    def test_not_a_grease_pencil(self, gpencil_handler, gp_env):
+        gp_env.objects["Cube"] = SimpleNamespace(name="Cube", type="MESH")
+        with pytest.raises(ValueError, match="Grease Pencil"):
+            gpencil_handler.handle_add_gp_stroke({"object_name": "Cube",
+                                                  "points": [[0, 0, 0], [1, 0, 0]],
+                                                  "radius": [0.02, 0.02]})
+
+
+class TestLineartHandler:
+    def test_unknown_source(self, gpencil_handler, gp_env):
+        with pytest.raises(ValueError):
+            gpencil_handler.handle_add_lineart({"source": "WORLD"})
+
+    def test_needs_a_camera(self, gpencil_handler, gp_env, monkeypatch):
+        import bpy
+
+        monkeypatch.setattr(bpy.context, "scene", SimpleNamespace(camera=None))
+        with pytest.raises(ValueError, match="camera"):
+            gpencil_handler.handle_add_lineart({"source": "SCENE"})
