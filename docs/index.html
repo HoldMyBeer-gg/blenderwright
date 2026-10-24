@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 213 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 213 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 214 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 214 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 213 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 214 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>213</b> tools</span>
+    <span><b>214</b> tools</span>
     <span><b>31</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -129,7 +129,7 @@ footer a { color: var(--accent); }
 <a href="#curves">Curves <span class="n">10</span></a>
 <a href="#deform">deform <span class="n">10</span></a>
 <a href="#file_ops">File I/O <span class="n">5</span></a>
-<a href="#geometry_nodes">Geometry Nodes <span class="n">5</span></a>
+<a href="#geometry_nodes">Geometry Nodes <span class="n">6</span></a>
 <a href="#gpencil">Grease Pencil <span class="n">5</span></a>
 <a href="#lighting">Lighting <span class="n">7</span></a>
 <a href="#materials">Materials &amp; Shaders <span class="n">25</span></a>
@@ -399,7 +399,15 @@ if filepath is provided, performs a &quot;save as&quot; to the given path."><h3>
 
 If filepath is empty, saves to the current file path (overwrite).
 If filepath is provided, performs a &quot;Save As&quot; to the given path.</p><table class="args"><tbody><tr><th>filepath</th><td>Optional absolute path to save as. Must have .blend extension. Empty string saves to current file.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the saved file path.</p></article></section>
-<section class="module" id="geometry_nodes" data-module="geometry nodes"><h2>Geometry Nodes <span class="n">5</span></h2><article class="tool" id="add_geometry_node" data-search="add_geometry_node add a node to a geometry nodes modifier&#x27;s node group."><h3><a href="#add_geometry_node">add_geometry_node</a></h3><pre class="sig"><code>add_geometry_node(modifier_name: str, node_type: str, location: list[float] | tuple[float, ...] = (0, 0))</code></pre><p>Add a node to a geometry nodes modifier&#x27;s node group.</p><table class="args"><tbody><tr><th>modifier_name</th><td>Name of the geometry nodes modifier (used to find the node group).</td></tr>
+<section class="module" id="geometry_nodes" data-module="geometry nodes"><h2>Geometry Nodes <span class="n">6</span></h2><article class="tool" id="add_essentials_modifier" data-search="add_essentials_modifier add one of blender&#x27;s ready-made node modifiers, with its inputs set.
+
+these are full node setups that would take dozens of add_geometry_node
+calls. change inputs later with set_geometry_node_input."><h3><a href="#add_essentials_modifier">add_essentials_modifier</a></h3><pre class="sig"><code>add_essentials_modifier(object_name: str, modifier: str, settings: dict[str, Any] | None = None)</code></pre><p>Add one of Blender&#x27;s ready-made node modifiers, with its inputs set.
+
+These are full node setups that would take dozens of add_geometry_node
+calls. Change inputs later with set_geometry_node_input.</p><table class="args"><tbody><tr><th>object_name</th><td>Object to add the modifier to.</td></tr>
+<tr><th>modifier</th><td>One of: array (Shape Line/Circle/Curve, Count, Distance, Offset, Rotation, Scale: a richer Array than the classic modifier), scatter_on_surface (scatter an Object or Collection over a mesh: Object, Density Method Density/Amount, Amount, Density, Minimum Distance, Seed, Realize Instances), instance_on_elements (Instance On Points/Edges/Faces, Object, Collection, Align Rotation, Scale), randomize_transforms (jitter instances: Offset, Rotation, Scale, Seed), curve_to_tube (turn a curve into a pipe with caps and UVs: Scale, Profile Resolution, Caps, Shade Smooth), geometry_input (bring in another Object or Collection: Input Type, Object, Collection, As Instance, Replace Original), smooth_by_angle (Angle in radians, Ignore Sharpness), capture_rest_geometry (store rest positions for later effects).</td></tr>
+<tr><th>settings</th><td>Input name to value, e.g. {&quot;Object&quot;: &quot;Rock&quot;, &quot;Amount&quot;: 200}. Object and Collection inputs take the name of an existing one; menus take the option name as shown in Blender.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the modifier name and every input with its value.</p></article><article class="tool" id="add_geometry_node" data-search="add_geometry_node add a node to a geometry nodes modifier&#x27;s node group."><h3><a href="#add_geometry_node">add_geometry_node</a></h3><pre class="sig"><code>add_geometry_node(modifier_name: str, node_type: str, location: list[float] | tuple[float, ...] = (0, 0))</code></pre><p>Add a node to a geometry nodes modifier&#x27;s node group.</p><table class="args"><tbody><tr><th>modifier_name</th><td>Name of the geometry nodes modifier (used to find the node group).</td></tr>
 <tr><th>node_type</th><td>Blender node type identifier, e.g. GeometryNodeMeshCube, GeometryNodeSetPosition, GeometryNodeTransform, ShaderNodeMath, GeometryNodeJoinGeometry, etc.</td></tr>
 <tr><th>location</th><td>XY position for the node in the node editor. Defaults to (0, 0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created node&#x27;s name and type.</p></article><article class="tool" id="connect_geometry_nodes" data-search="connect_geometry_nodes connect two nodes in a geometry nodes modifier&#x27;s node group."><h3><a href="#connect_geometry_nodes">connect_geometry_nodes</a></h3><pre class="sig"><code>connect_geometry_nodes(modifier_name: str, from_node: str, from_socket: int, to_node: str, to_socket: int)</code></pre><p>Connect two nodes in a geometry nodes modifier&#x27;s node group.</p><table class="args"><tbody><tr><th>modifier_name</th><td>Name of the geometry nodes modifier.</td></tr>
 <tr><th>from_node</th><td>Name of the source node.</td></tr>

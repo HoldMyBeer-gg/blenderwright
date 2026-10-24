@@ -1,9 +1,31 @@
 """Blender addon handlers for geometry nodes commands."""
 
 import math
+import os
 
 import bpy
 from .. import dispatcher
+
+# Tool name -> node group in Blender's bundled Essentials library
+ESSENTIALS_MODIFIERS = {
+    "array": "Array",
+    "scatter_on_surface": "Scatter on Surface",
+    "instance_on_elements": "Instance on Elements",
+    "randomize_transforms": "Randomize Transforms",
+    "curve_to_tube": "Curve to Tube",
+    "geometry_input": "Geometry Input",
+    "smooth_by_angle": "Smooth by Angle",
+    "capture_rest_geometry": "Capture Rest Geometry",
+}
+ESSENTIALS_GN_FILE = os.path.join("nodes", "geometry_nodes_essentials.blend")
+
+# Socket types whose value is a data-block looked up by name
+ID_SOCKETS = {
+    "NodeSocketObject": "objects",
+    "NodeSocketCollection": "collections",
+    "NodeSocketMaterial": "materials",
+}
+TEXT_SOCKETS = {"NodeSocketMenu", "NodeSocketString"} | set(ID_SOCKETS)
 
 
 def _from_text(value, socket_type: str):
@@ -292,6 +314,111 @@ def handle_list_geometry_node_inputs(params: dict) -> list:
         raise RuntimeError(f"Failed to list geometry node inputs: {e}")
 
 
+def _local_gn_group(name):
+    group = bpy.data.node_groups.get(name)
+    return group if group is not None and group.bl_idname == "GeometryNodeTree" else None
+
+
+def _essentials_gn_group(name):
+    """The named Geometry Nodes group from Blender's bundled Essentials library.
+
+    Every missing modifier group is appended in one go: appending them one at
+    a time brings shared dependencies again each time, as ".001" copies.
+    """
+    existing = _local_gn_group(name)
+    if existing is not None:
+        return existing
+    missing = [n for n in ESSENTIALS_MODIFIERS.values() if _local_gn_group(n) is None]
+    path = os.path.join(bpy.utils.system_resource("DATAFILES", path="assets"),
+                        ESSENTIALS_GN_FILE)
+    with bpy.data.libraries.load(path, link=False) as (_src, dst):
+        dst.node_groups = list(missing)  # Blender fills this list in place
+    # A name taken by a non-geometry group makes Blender rename the append
+    return dict(zip(missing, dst.node_groups))[name]
+
+
+def _modifier_input_items(group):
+    return [i for i in group.interface.items_tree
+            if i.item_type == "SOCKET" and i.in_out == "INPUT"]
+
+
+def _shape_fits(item, value):
+    """Whether a value has the right shape for a socket: picks between same-named inputs."""
+    if isinstance(value, str):
+        return item.socket_type in TEXT_SOCKETS
+    if isinstance(value, list):
+        return item.socket_type in ("NodeSocketVector", "NodeSocketColor",
+                                    "NodeSocketRotation")
+    return item.socket_type not in TEXT_SOCKETS and item.socket_type not in (
+        "NodeSocketVector", "NodeSocketColor", "NodeSocketRotation")
+
+
+def _set_modifier_inputs(modifier, settings):
+    items = _modifier_input_items(modifier.node_group)
+    for name, value in settings.items():
+        candidates = [i for i in items if i.name == name]
+        if not candidates:
+            valid = ", ".join(sorted({i.name for i in items}))
+            raise ValueError(f"'{modifier.node_group.name}' has no input '{name}'. "
+                             f"Inputs: {valid}")
+        item = next((i for i in candidates if _shape_fits(i, value)), candidates[0])
+        entry = getattr(modifier.properties.inputs, item.identifier, None)
+        if not hasattr(entry, "value"):
+            raise ValueError(f"Input '{name}' takes geometry from the modifier stack, "
+                             f"not a value")
+        if item.socket_type in ID_SOCKETS:
+            collection = getattr(bpy.data, ID_SOCKETS[item.socket_type])
+            found = collection.get(value) if isinstance(value, str) else None
+            if found is None:
+                raise ValueError(f"Input '{name}' needs an existing "
+                                 f"{ID_SOCKETS[item.socket_type][:-1]}; '{value}' not found")
+            value = found
+        try:
+            entry.value = value
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Cannot set '{name}' to {value!r}: {e}") from None
+
+
+def _modifier_input_values(modifier):
+    values = {}
+    for item in _modifier_input_items(modifier.node_group):
+        entry = getattr(modifier.properties.inputs, item.identifier, None)
+        if not hasattr(entry, "value"):
+            continue
+        value = entry.value
+        if hasattr(value, "name") and not isinstance(value, str):
+            value = value.name
+        elif hasattr(value, "__len__") and not isinstance(value, str):
+            value = list(value)
+        key = item.name if item.name not in values else f"{item.name} ({item.socket_type[10:]})"
+        values[key] = value
+    return values
+
+
+def handle_add_essentials_modifier(params):
+    """Add an Essentials node-group modifier and set its inputs by name."""
+    group_name = ESSENTIALS_MODIFIERS.get(params.get("modifier"))
+    if group_name is None:
+        raise ValueError(f"Unknown Essentials modifier: {params.get('modifier')!r}")
+    object_name = params.get("object_name")
+    obj = bpy.data.objects.get(object_name)
+    if obj is None:
+        raise ValueError(f"Object '{object_name}' not found")
+    if not hasattr(obj, "modifiers"):
+        raise ValueError(f"Object '{object_name}' cannot take modifiers")
+
+    group = _essentials_gn_group(group_name)
+    modifier = obj.modifiers.new(name=group.name, type="NODES")
+    modifier.node_group = group
+    try:
+        _set_modifier_inputs(modifier, params.get("settings", {}))
+    except Exception:
+        obj.modifiers.remove(modifier)
+        raise
+    return {"object": obj.name, "modifier": modifier.name,
+            "inputs": _modifier_input_values(modifier)}
+
+
 def register():
     """Register geometry nodes handlers with the dispatcher."""
     dispatcher.register_handler("create_geometry_nodes", handle_create_geometry_nodes)
@@ -299,3 +426,4 @@ def register():
     dispatcher.register_handler("connect_geometry_nodes", handle_connect_geometry_nodes)
     dispatcher.register_handler("set_geometry_node_input", handle_set_geometry_node_input)
     dispatcher.register_handler("list_geometry_node_inputs", handle_list_geometry_node_inputs)
+    dispatcher.register_handler("add_essentials_modifier", handle_add_essentials_modifier)

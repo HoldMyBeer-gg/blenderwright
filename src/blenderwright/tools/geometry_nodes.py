@@ -5,10 +5,23 @@ from typing import Any
 import re
 
 from blenderwright.server import mcp, get_connection
-from blenderwright.validators import validate_object_name, validate_new_name, validate_vector, ValidationError
+from blenderwright.validators import (
+    validate_enum,
+    validate_new_name,
+    validate_object_name,
+    validate_socket_settings,
+    validate_vector,
+    ValidationError,
+)
 
 
 _NODE_TYPE_PATTERN = re.compile(r"^(Geometry|Function|Shader)Node[A-Z][A-Za-z0-9]*$")
+
+# Node-group modifiers bundled in Blender 5.2's Essentials library
+ALLOWED_ESSENTIALS_MODIFIERS = {
+    "array", "scatter_on_surface", "instance_on_elements", "randomize_transforms",
+    "curve_to_tube", "geometry_input", "smooth_by_angle", "capture_rest_geometry",
+}
 
 
 @mcp.tool()
@@ -182,6 +195,54 @@ def list_geometry_node_inputs(
         "object_name": object_name,
         "modifier_name": modifier_name,
     })
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def add_essentials_modifier(
+    object_name: str,
+    modifier: str,
+    settings: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Add one of Blender's ready-made node modifiers, with its inputs set.
+
+    These are full node setups that would take dozens of add_geometry_node
+    calls. Change inputs later with set_geometry_node_input.
+
+    Args:
+        object_name: Object to add the modifier to.
+        modifier: One of:
+            array (Shape Line/Circle/Curve, Count, Distance, Offset, Rotation,
+                Scale: a richer Array than the classic modifier),
+            scatter_on_surface (scatter an Object or Collection over a mesh:
+                Object, Density Method Density/Amount, Amount, Density,
+                Minimum Distance, Seed, Realize Instances),
+            instance_on_elements (Instance On Points/Edges/Faces, Object,
+                Collection, Align Rotation, Scale),
+            randomize_transforms (jitter instances: Offset, Rotation, Scale,
+                Seed),
+            curve_to_tube (turn a curve into a pipe with caps and UVs: Scale,
+                Profile Resolution, Caps, Shade Smooth),
+            geometry_input (bring in another Object or Collection: Input
+                Type, Object, Collection, As Instance, Replace Original),
+            smooth_by_angle (Angle in radians, Ignore Sharpness),
+            capture_rest_geometry (store rest positions for later effects).
+        settings: Input name to value, e.g. {"Object": "Rock", "Amount": 200}.
+            Object and Collection inputs take the name of an existing one;
+            menus take the option name as shown in Blender.
+
+    Returns:
+        Dict with the modifier name and every input with its value.
+    """
+    params = {
+        "object_name": validate_object_name(object_name),
+        "modifier": validate_enum(modifier, ALLOWED_ESSENTIALS_MODIFIERS, name="modifier"),
+        "settings": validate_socket_settings(settings or {}),
+    }
+    conn = get_connection()
+    response = conn.send_command("add_essentials_modifier", params)
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")

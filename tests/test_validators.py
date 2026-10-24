@@ -528,3 +528,24 @@ class TestValidateInt:
         from blenderwright.validators import validate_int
         with pytest.raises(ValidationError, match="n"):
             validate_int(11, 0, 10, name="n")
+
+
+class TestValidateSocketSettings:
+    """Node input settings by display name: compositor effects, Essentials modifiers."""
+
+    def test_accepts_plain_values(self):
+        from blenderwright.validators import validate_socket_settings
+        settings = {"Type": "Fog Glow", "Strength": 0.6, "Clamp": True, "Count": 4,
+                    "Scale": [0.9, 0.7], "Tint": [1, 0.5, 0.2, 1]}
+        assert validate_socket_settings(settings) == settings
+
+    @pytest.mark.parametrize("settings", [
+        "Strength=1", {"": 1}, {"x" * 65: 1}, {"Bad\nName": 1}, {"Strength": float("nan")},
+        {"Strength": None}, {"Strength": {"nested": 1}}, {"Scale": [1]},
+        {"Scale": [1, 2, 3, 4, 5]}, {"Scale": [1, "a"]}, {"Scale": [True, 1]},
+        {"Type": "x" * 65}, {"Type": "a\x00b"},
+    ])
+    def test_rejects(self, settings):
+        from blenderwright.validators import validate_socket_settings
+        with pytest.raises(ValidationError):
+            validate_socket_settings(settings)

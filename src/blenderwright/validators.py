@@ -11,6 +11,10 @@ from typing import Any
 ALLOWED_IMPORT_EXTENSIONS = {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usda", ".usdc", ".usdz", ".stl", ".ply", ".abc", ".svg"}
 ALLOWED_EXPORT_EXTENSIONS = {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usda", ".usdc", ".usdz", ".stl", ".ply", ".abc"}
 
+# Node input settings: socket display names and short text values
+MAX_SETTING_TEXT = 64
+SETTING_NAME_PATTERN = re.compile(r"^[A-Za-z0-9 _\-.()/]+$")
+
 # Limits
 MAX_OBJECT_NAME_LENGTH = 63  # Blender's internal limit
 MAX_SUBDIVISION_LEVEL = 6
@@ -329,3 +333,35 @@ def validate_modifier_property_value(modifier_type: str, prop: str, value):
     value = validate_numeric_range(value, min_val=low, max_val=high,
                                    name=f"{modifier_type}.{prop}")
     return int(value) if float(value).is_integer() else value
+
+
+def validate_socket_settings(settings: Any) -> dict[str, Any]:
+    """Settings map input socket names to plain values; Blender checks the names."""
+    if not isinstance(settings, dict):
+        raise ValidationError("settings must be an object of input name to value")
+    clean: dict[str, Any] = {}
+    for name, value in settings.items():
+        if (not isinstance(name, str) or not name or len(name) > MAX_SETTING_TEXT
+                or not SETTING_NAME_PATTERN.match(name)):
+            raise ValidationError(f"Invalid setting name: {name!r}")
+        if isinstance(value, bool):
+            clean[name] = value
+        elif isinstance(value, (int, float)):
+            if not math.isfinite(value):
+                raise ValidationError(f"Setting '{name}' must be a finite number")
+            clean[name] = value
+        elif isinstance(value, str):
+            if len(value) > MAX_SETTING_TEXT or not value.isprintable():
+                raise ValidationError(f"Setting '{name}' text is too long or not printable")
+            clean[name] = value
+        elif isinstance(value, list):
+            if not 2 <= len(value) <= 4 or not all(
+                    isinstance(v, (int, float)) and not isinstance(v, bool)
+                    and math.isfinite(v) for v in value):
+                raise ValidationError(
+                    f"Setting '{name}' must be a list of 2 to 4 finite numbers")
+            clean[name] = list(value)
+        else:
+            raise ValidationError(
+                f"Setting '{name}' must be a number, true/false, text or a list of numbers")
+    return clean
