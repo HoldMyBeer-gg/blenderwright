@@ -181,8 +181,9 @@ def handle_add_compositor_effect(params):
         source = out_socket.links[0].from_socket
     else:
         source = _find(tree, "CompositorNodeRLayers").outputs[0]
+    # == not "is": Blender returns a new wrapper for the same socket on every access
     viewers = [n for n in tree.nodes if n.bl_idname == "CompositorNodeViewer"
-               and n.inputs[0].links and n.inputs[0].links[0].from_socket is source]
+               and n.inputs[0].links and n.inputs[0].links[0].from_socket == source]
 
     tree.links.new(source, _image_input(node))
     tree.links.new(node.outputs[0], out_socket)
