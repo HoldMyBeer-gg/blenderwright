@@ -11,26 +11,33 @@ from .. import dispatcher
 _EEVEE_ALIASES = ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT")
 
 
-def _resolve_engine(engine):
-    """Map an engine id to one this Blender accepts."""
-    available = bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items.keys()
-    if engine in available:
-        return engine
+def _set_engine(scene, engine):
+    """Set the render engine, mapping the old EEVEE name to the current one.
+
+    The engine enum is dynamic in Blender 5.2: introspection lists only
+    BLENDER_EEVEE, so the only reliable test is the assignment itself.
+    """
+    candidates = [engine]
     if engine in _EEVEE_ALIASES:
-        for alias in _EEVEE_ALIASES:
-            if alias in available:
-                return alias
+        candidates += [alias for alias in _EEVEE_ALIASES if alias != engine]
+    for candidate in candidates:
+        try:
+            scene.render.engine = candidate
+            return candidate
+        except TypeError as e:
+            refusal = e
+    offered = str(refusal).split("not found in ")[-1]
     raise ValueError(
         f"Render engine '{engine}' is not available in this Blender build. "
-        f"Available: {', '.join(sorted(available))}"
+        f"Available: {offered}"
     )
 
 
 def handle_set_render_engine(params):
     """Set the render engine."""
-    engine = _resolve_engine(params["engine"])
-    bpy.context.scene.render.engine = engine
-    return {"engine": bpy.context.scene.render.engine}
+    scene = bpy.context.scene
+    _set_engine(scene, params["engine"])
+    return {"engine": scene.render.engine}
 
 
 def handle_set_render_resolution(params):
