@@ -8,6 +8,7 @@ import hmac
 import json
 import socket
 import struct
+import sys
 import threading
 
 from . import auth
@@ -25,6 +26,19 @@ def _reject_non_finite(constant: str):
     here rather than in each handler.
     """
     raise ValueError(f"Non-finite JSON constant '{constant}' is not accepted")
+
+
+def _claim_port(sock: socket.socket) -> None:
+    """Make the listening port ours alone.
+
+    On Windows SO_REUSEADDR lets another process bind the same port and
+    receive connections meant for Blender; SO_EXCLUSIVEADDRUSE refuses that.
+    On POSIX SO_REUSEADDR only permits rebinding after a quick restart.
+    """
+    if sys.platform == "win32":
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+    else:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 
 class BlenderServer:
@@ -54,7 +68,7 @@ class BlenderServer:
         auth.write_token(self._token)
 
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        _claim_port(self._server_socket)
         self._server_socket.bind((self._host, self._port))
         self._server_socket.listen(1)
         self._server_socket.settimeout(1.0)  # Allow periodic shutdown checks
