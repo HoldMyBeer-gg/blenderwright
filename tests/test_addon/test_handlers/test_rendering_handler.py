@@ -332,3 +332,64 @@ class TestRenderQualityHandlers:
         """The socket can be reached without the tool's allowlist."""
         with pytest.raises(ValueError, match="__class__"):
             rendering_handler.handle_set_render_passes({"passes": ["__class__"]})
+
+
+class TestRenderSettings2:
+    def test_ray_visibility(self, rendering_handler, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        obj = SimpleNamespace(name="Floor", visible_camera=True, visible_diffuse=True,
+                              visible_glossy=True, visible_transmission=True,
+                              visible_volume_scatter=True, visible_shadow=True,
+                              is_holdout=False, is_shadow_catcher=False)
+        monkeypatch.setattr(bpy.data, "objects", SimpleNamespace(get={"Floor": obj}.get))
+        result = rendering_handler.handle_set_object_ray_visibility(
+            {"object_name": "Floor", "glossy": False, "shadow_catcher": True})
+        assert obj.visible_glossy is False and obj.is_shadow_catcher is True
+        assert result["glossy"] is False and result["camera"] is True
+
+    def test_ray_visibility_missing_object(self, rendering_handler, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        monkeypatch.setattr(bpy.data, "objects", SimpleNamespace(get={}.get))
+        with pytest.raises(ValueError, match="Ghost"):
+            rendering_handler.handle_set_object_ray_visibility(
+                {"object_name": "Ghost", "camera": False})
+
+    def test_eevee_quality_converts_enum_sizes(self, rendering_handler, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        eevee = SimpleNamespace(use_raytracing=False, ray_tracing_method="PROBE",
+                                use_fast_gi=True, fast_gi_method="GLOBAL_ILLUMINATION",
+                                shadow_pool_size="512", shadow_ray_count=1,
+                                shadow_step_count=6, volumetric_samples=64,
+                                volumetric_tile_size="8", use_volumetric_shadows=False,
+                                clamp_surface_direct=0.0, clamp_surface_indirect=10.0)
+        monkeypatch.setattr(bpy.context.scene, "eevee", eevee)
+        result = rendering_handler.handle_set_eevee_quality(
+            {"raytracing": True, "shadow_pool_size": 1536, "volumetric_tile_size": 4,
+             "shadow_rays": 2})
+        assert (eevee.use_raytracing, eevee.shadow_pool_size, eevee.volumetric_tile_size,
+                eevee.shadow_ray_count) == (True, "1536", "4", 2)
+        assert result["shadow_pool_size"] == 1536
+
+    def test_render_performance(self, rendering_handler, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        render = SimpleNamespace(use_simplify=False, simplify_subdivision_render=6,
+                                 use_persistent_data=False, anisotropic_filter="FILTER_2")
+        cycles = SimpleNamespace(texture_limit_render="OFF", texture_resolution_render=1.0,
+                                 use_auto_tile=True, tile_size=2048)
+        monkeypatch.setattr(bpy.context.scene, "render", render)
+        monkeypatch.setattr(bpy.context.scene, "cycles", cycles)
+        result = rendering_handler.handle_set_render_performance(
+            {"simplify": True, "max_subdivision": 2, "texture_limit": "1024",
+             "anisotropic_filter": 8})
+        assert (render.use_simplify, render.simplify_subdivision_render,
+                cycles.texture_limit_render, render.anisotropic_filter) == (
+            True, 2, "1024", "FILTER_8")
+        assert result["anisotropic_filter"] == 8

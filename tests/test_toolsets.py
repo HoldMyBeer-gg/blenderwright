@@ -265,8 +265,9 @@ class TestModelCanFindEveryGroup:
         grouped = tools_by_toolset(mcp)
         assert "render_settings" in TOOLSETS and "render_settings" not in CORE
         assert {"set_color_management", "set_film", "set_denoising", "set_cycles_sampling",
-                "set_light_paths", "set_motion_blur",
-                "set_render_passes"} == set(grouped["render_settings"])
+                "set_light_paths", "set_motion_blur", "set_render_passes",
+                "set_object_ray_visibility", "set_eevee_quality",
+                "set_render_performance"} == set(grouped["render_settings"])
 
     def test_core_rendering_keeps_only_the_basics(self):
         grouped = tools_by_toolset(mcp)
