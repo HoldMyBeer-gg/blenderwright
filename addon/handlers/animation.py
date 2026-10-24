@@ -385,6 +385,64 @@ def handle_list_drivers(params):
     return {"object": obj.name, "drivers": drivers}
 
 
+KEYFRAME_TARGETS = {"OBJECT", "WORLD", "SCENE"}
+
+
+def _keyframe_root(params):
+    target = params.get("target", "OBJECT")
+    if target not in KEYFRAME_TARGETS:
+        raise ValueError(f"Unknown keyframe target {target!r}")
+    if target == "OBJECT":
+        return _get_object(params.get("object_name"))
+    scene = bpy.context.scene
+    if target == "SCENE":
+        return scene
+    if scene.world is None:
+        raise ValueError("The scene has no world to keyframe")
+    return scene.world
+
+
+def _set_by_path(owner, path, value, index):
+    """Assign through an RNA path: resolve the container, set the last piece."""
+    pieces = [m.group(1) or m.group(2) for m in _PATH_PIECE.finditer(path)]
+    container_path, last = _join_path(pieces[:-1]), pieces[-1]
+    container = owner.path_resolve(container_path, False) if container_path else owner
+    if last.startswith("["):
+        container[last[2:-2]] = value
+    elif index >= 0:
+        getattr(container, last)[index] = value
+    else:
+        setattr(container, last, value)
+
+
+def _plain(value):
+    return list(value) if hasattr(value, "__len__") and not isinstance(value, str) else value
+
+
+def handle_keyframe_property(params):
+    """Keyframe any animatable property, on whichever data block owns it."""
+    root = _keyframe_root(params)
+    path = _check_path(params.get("data_path"))
+    frame = int(params["frame"])
+    index = int(params.get("index", -1))
+    try:
+        root.path_resolve(path, False)
+    except ValueError:
+        raise ValueError(f"'{root.name}' has no property '{path}'") from None
+    owner, owner_path = _driver_owner(root, path)
+    if "value" in params:
+        _set_by_path(owner, owner_path, params["value"], index)
+    try:
+        keyed = owner.keyframe_insert(owner_path, index=index, frame=frame)
+    except TypeError:
+        keyed = False
+    if not keyed:
+        raise ValueError(f"'{path}' cannot be animated; Blender does not allow keyframes "
+                         f"on it")
+    return {"owner": owner.name, "data_path": owner_path, "frame": frame, "index": index,
+            "value": _plain(owner.path_resolve(owner_path, False))}
+
+
 def register():
     """Register all animation handlers with the dispatcher."""
     dispatcher.register_handler("insert_keyframe", handle_insert_keyframe)
@@ -398,3 +456,4 @@ def register():
     dispatcher.register_handler("add_driver", handle_add_driver)
     dispatcher.register_handler("remove_driver", handle_remove_driver)
     dispatcher.register_handler("list_drivers", handle_list_drivers)
+    dispatcher.register_handler("keyframe_property", handle_keyframe_property)

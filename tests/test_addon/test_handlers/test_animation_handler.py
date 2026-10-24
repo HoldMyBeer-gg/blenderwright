@@ -245,3 +245,108 @@ class TestDriverOwnerAcrossDataBlocks:
             "driver_type": "SCRIPTED", "expression": "frame * 10", "variables": []})
         assert made == [("LightData", "energy", -1)]
         assert result["owner"] == "LightData"
+
+
+class TestKeyframeProperty:
+    def _scene(self, monkeypatch):
+        import bpy
+
+        keyed = []
+
+        class Socket:
+            def __init__(self):
+                self.default_value = [0.8, 0.8, 0.8, 1.0]
+
+        sockets = {"Base Color": Socket()}
+
+        class Inputs:
+            def __getitem__(self, k):
+                return sockets[k]
+
+        node = SimpleNamespace(inputs=Inputs())
+        tree = SimpleNamespace(name="Shader Nodetree")
+        tree.id_data = tree
+        tree.nodes = {"Principled BSDF": node}
+
+        def tree_resolve(path, coerce=True):
+            table = {'nodes["Principled BSDF"].inputs["Base Color"]': sockets["Base Color"],
+                     'nodes["Principled BSDF"].inputs["Base Color"].default_value':
+                         sockets["Base Color"].default_value}
+            if path not in table:
+                raise ValueError(path)
+            return table[path]
+
+        tree.path_resolve = tree_resolve
+        tree.keyframe_insert = lambda path, index=-1, frame=0: keyed.append(
+            ("tree", path, index, frame)) or True
+        material = SimpleNamespace(name="Paint", node_tree=tree)
+        material.id_data = material
+        material.path_resolve = lambda path, coerce=True: {"node_tree": tree}[path]
+
+        def cube_resolve(path, coerce=True):
+            table = {"active_material": material, "active_material.node_tree": tree,
+                     'active_material.node_tree.nodes["Principled BSDF"].inputs["Base Color"]'
+                     '.default_value': sockets["Base Color"].default_value}
+            if path not in table:
+                raise ValueError(path)
+            return table[path]
+
+        cube = SimpleNamespace(name="Cube", path_resolve=cube_resolve)
+        cube.id_data = cube
+        bpy.data.objects.get = MagicMock(side_effect={"Cube": cube}.get)
+        world = SimpleNamespace(name="World", strength=1.0)
+        world.id_data = world
+        world.path_resolve = lambda path, coerce=True: getattr(world, path)
+        world.keyframe_insert = lambda path, index=-1, frame=0: keyed.append(
+            ("world", path, index, frame)) or True
+        monkeypatch.setattr(bpy.context, "scene", SimpleNamespace(world=world))
+        return SimpleNamespace(keyed=keyed, sockets=sockets, world=world)
+
+    def test_material_colour_is_keyed_on_its_node_tree(self, handler, monkeypatch):
+        env = self._scene(monkeypatch)
+        result = handler.handle_keyframe_property({
+            "target": "OBJECT", "object_name": "Cube", "frame": 24, "index": -1,
+            "value": [1.0, 0.0, 0.0, 1.0],
+            "data_path": 'active_material.node_tree.nodes["Principled BSDF"].inputs'
+                         '["Base Color"].default_value'})
+        assert env.sockets["Base Color"].default_value == [1.0, 0.0, 0.0, 1.0]
+        assert env.keyed == [("tree", 'nodes["Principled BSDF"].inputs["Base Color"]'
+                                      '.default_value', -1, 24)]
+        assert result["owner"] == "Shader Nodetree"
+
+    def test_world_target(self, handler, monkeypatch):
+        env = self._scene(monkeypatch)
+        handler.handle_keyframe_property({"target": "WORLD", "data_path": "strength",
+                                          "frame": 1, "index": -1, "value": 0.2})
+        assert env.world.strength == 0.2
+        assert env.keyed == [("world", "strength", -1, 1)]
+
+    def test_unknown_path_is_explained(self, handler, monkeypatch):
+        self._scene(monkeypatch)
+        with pytest.raises(ValueError, match="no property"):
+            handler.handle_keyframe_property({"target": "OBJECT", "object_name": "Cube",
+                                              "data_path": "colour", "frame": 1})
+
+    def test_bad_target_and_path_refused(self, handler, monkeypatch):
+        self._scene(monkeypatch)
+        with pytest.raises(ValueError):
+            handler.handle_keyframe_property({"target": "CAMERA", "data_path": "lens",
+                                              "frame": 1})
+        with pytest.raises(ValueError):
+            handler.handle_keyframe_property({"target": "WORLD", "data_path": "__class__",
+                                              "frame": 1})
+
+
+def test_non_animatable_property_is_explained(handler, monkeypatch):
+    import bpy
+
+    def refuse(path, index=-1, frame=0):
+        raise TypeError('bpy_struct.keyframe_insert() property "name" not animatable')
+
+    cube = SimpleNamespace(name="Cube", keyframe_insert=refuse,
+                           path_resolve=lambda path, coerce=True: "Cube")
+    cube.id_data = cube
+    bpy.data.objects.get = MagicMock(side_effect={"Cube": cube}.get)
+    with pytest.raises(ValueError, match="cannot be animated"):
+        handler.handle_keyframe_property({"target": "OBJECT", "object_name": "Cube",
+                                          "data_path": "name", "frame": 1})
