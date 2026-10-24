@@ -317,3 +317,76 @@ class TestCaptureViewportAfterVideo:
         assert seen == {"media_type": "IMAGE", "file_format": "PNG"}
         assert video_output_scene.media_type == "VIDEO"
         assert video_output_scene.file_format == "FFMPEG"
+
+
+class TestCaptureViewportCleanup:
+    """A failed capture must not leave the scene's render settings or temp files behind."""
+
+    def _scene(self, video_output_scene):
+        import bpy
+
+        render = bpy.context.scene.render
+        render.resolution_x = 1920
+        render.resolution_y = 1080
+        render.resolution_percentage = 50
+        render.filepath = "/renders/shot_"
+        return render
+
+    def test_failed_render_restores_settings(self, camera_handler, video_output_scene, tmp_path):
+        import bpy
+
+        render = self._scene(video_output_scene)
+        bpy.ops.render.render.side_effect = RuntimeError("render cancelled")
+        try:
+            with pytest.raises(RuntimeError):
+                camera_handler.handle_capture_viewport(
+                    {"filepath": str(tmp_path / "shot.png"), "width": 64, "height": 64}
+                )
+        finally:
+            bpy.ops.render.render.side_effect = None
+
+        assert (render.resolution_x, render.resolution_y) == (1920, 1080)
+        assert render.resolution_percentage == 50
+        assert render.filepath == "/renders/shot_"
+        assert video_output_scene.media_type == "VIDEO"
+        assert video_output_scene.file_format == "FFMPEG"
+
+    def test_failed_render_removes_temp_dir(self, camera_handler, video_output_scene, tmp_path,
+                                            monkeypatch):
+        import bpy
+
+        self._scene(video_output_scene)
+        temp_dir = tmp_path / "capture"
+        temp_dir.mkdir()
+        monkeypatch.setattr(camera_handler.tempfile, "mkdtemp", lambda: str(temp_dir))
+        bpy.ops.render.render.side_effect = RuntimeError("render cancelled")
+        try:
+            with pytest.raises(RuntimeError):
+                camera_handler.handle_capture_viewport({"width": 64, "height": 64})
+        finally:
+            bpy.ops.render.render.side_effect = None
+
+        assert not temp_dir.exists()
+
+    def test_temp_dir_removed_even_with_leftover_files(self, camera_handler, video_output_scene,
+                                                       tmp_path, monkeypatch):
+        """Cleanup removes the whole folder, not just the one PNG it expects."""
+        import bpy
+
+        self._scene(video_output_scene)
+        temp_dir = tmp_path / "capture"
+        temp_dir.mkdir()
+        monkeypatch.setattr(camera_handler.tempfile, "mkdtemp", lambda: str(temp_dir))
+
+        def render(**kwargs):
+            (temp_dir / "viewport_capture.png").write_bytes(b"png")
+            (temp_dir / "viewport_capture.png.tmp").write_bytes(b"partial")
+
+        bpy.ops.render.render.side_effect = render
+        try:
+            result = camera_handler.handle_capture_viewport({"width": 64, "height": 64})
+        finally:
+            bpy.ops.render.render.side_effect = None
+
+        assert result["format"] == "png"
+        assert not temp_dir.exists()
