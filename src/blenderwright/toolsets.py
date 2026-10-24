@@ -1,6 +1,6 @@
 """Load a subset of the tools, or let the model load them on demand.
 
-All 191 tool schemas cost about 48k tokens on every request. A Claude-class
+All the tool schemas together cost about 48k tokens on every request. A Claude-class
 client absorbs that, and seeing the whole menu is part of why the output is
 good: a model only reaches for tools it can see. A 32k local model has nothing
 left for the conversation and starts dropping messages mid-task.
@@ -46,8 +46,10 @@ TOOLSETS: dict[str, str] = {
     "lighting": "Point, sun, spot and area lights, HDRI world, light rigs, shadows",
     "camera": "Create and aim cameras, depth of field, set from view, capture viewport",
     "animation": "Keyframes, interpolation, frame range, follow-path animation",
-    "rendering": "Engine, resolution, samples, colour management, denoising, passes, "
-                 "motion blur, render stills and animations",
+    "rendering": "Engine, resolution, samples, output format, render stills and animations",
+    "render_settings": "Finished look: colour management (AgX, exposure, looks), "
+                       "transparent background, denoising, Cycles sampling and bounces, "
+                       "motion blur, render passes",
     "compositor": "Post-processing: glare, bloom, vignette, film grain, lens distortion, "
                   "colour grading",
     "curves": "Bezier, NURBS and path curves, 3D text, convert to mesh",
@@ -220,6 +222,25 @@ def mode_of(server: Any) -> str:
     return getattr(server, _MODE_ATTR, "all")
 
 
+def _enable_toolset_doc() -> str:
+    menu = "\n".join(f"        {name}: {summary}" for name, summary in sorted(TOOLSETS.items()))
+    return f"""Load an optional tool group so its tools can be called.
+
+    The server starts with a core set. When a task needs something below
+    that is not loaded yet, call this with the group's name, then call the
+    tools it lists.
+
+    Groups:
+{menu}
+
+    Args:
+        name: Toolset name from the list above.
+
+    Returns:
+        Dict with the toolset enabled and the tool names now available.
+    """
+
+
 def _install_meta_tools(server: Any) -> None:
     registry = _registry(server)
     if all(name in registry for name in META_TOOLS):
@@ -248,19 +269,6 @@ def _install_meta_tools(server: Any) -> None:
         }
 
     async def enable_toolset_tool(name: str, ctx: Context) -> dict[str, Any]:
-        """Load an optional tool group so its tools can be called.
-
-        The server starts with a core set. When a task needs materials,
-        physics, sculpting, animation, curves or another group, call this
-        with the group's name, then call the tools it lists. See
-        list_toolsets for names and summaries.
-
-        Args:
-            name: Toolset name, e.g. "materials", "physics", "animation".
-
-        Returns:
-            Dict with the toolset enabled and the tool names now available.
-        """
         added = enable_toolset(server, name)
         try:
             await ctx.session.send_tool_list_changed()
@@ -274,6 +282,9 @@ def _install_meta_tools(server: Any) -> None:
             "tools": tools_by_toolset(server).get(name, []),
         }
 
+    # The menu goes in the description itself: a model only enables a group
+    # it knows exists, and may not call list_toolsets first
+    enable_toolset_tool.__doc__ = _enable_toolset_doc()
     server.add_tool(list_toolsets, name="list_toolsets")
     server.add_tool(enable_toolset_tool, name="enable_toolset")
 

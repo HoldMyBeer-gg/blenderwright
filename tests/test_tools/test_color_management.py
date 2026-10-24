@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from blenderwright.tools.rendering import (
+from blenderwright.tools.render_settings import (
     ALLOWED_DISPLAY_DEVICES,
     ALLOWED_LOOKS,
     ALLOWED_VIEW_TRANSFORMS,
@@ -22,7 +22,7 @@ from blenderwright.validators import ValidationError
 def mock_conn():
     mock = MagicMock()
     mock.send_command.return_value = {"status": "ok", "result": {"view_transform": "AgX"}}
-    with patch("blenderwright.tools.rendering.get_connection", return_value=mock):
+    with patch("blenderwright.tools.render_settings.get_connection", return_value=mock):
         yield mock
 
 

@@ -53,6 +53,7 @@ from blenderwright.tools import (  # noqa: E402, F401
     print3d,
     sequencer,
     compositor,
+    render_settings,
 )
 
 # Import resources and prompts
