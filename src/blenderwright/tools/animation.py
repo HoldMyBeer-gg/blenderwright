@@ -393,3 +393,68 @@ def list_drivers(object_name: str) -> dict[str, Any]:
     """
     return _send_animation_command("list_drivers",
                                    {"object_name": validate_object_name(object_name)})
+
+
+ALLOWED_KEYFRAME_TARGETS = {"OBJECT", "WORLD", "SCENE"}
+MAX_FRAME = 1_048_574
+MAX_KEY_VALUE = 1_000_000.0
+
+
+def _key_value(value: Any) -> Any:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return float(validate_numeric_range(value, min_val=-MAX_KEY_VALUE,
+                                            max_val=MAX_KEY_VALUE, name="value"))
+    if isinstance(value, list) and 1 <= len(value) <= 4:
+        return [float(validate_numeric_range(v, min_val=-MAX_KEY_VALUE, max_val=MAX_KEY_VALUE,
+                                             name="value")) for v in value]
+    raise ValidationError("value must be a number, true/false, or a list of 1 to 4 numbers")
+
+
+@mcp.tool()
+def keyframe_property(
+    data_path: str,
+    frame: int,
+    value: Any = None,
+    object_name: str = "",
+    target: str = "OBJECT",
+    index: int = -1,
+) -> dict[str, Any]:
+    """Keyframe any animatable property: material colours, light power, world
+    strength, modifier settings, camera lens and more.
+
+    Optionally sets the value first, so "turn red at frame 24" is one call.
+    For location, rotation and scale, insert_keyframe is simpler.
+
+    Args:
+        data_path: Property path from the target, e.g.
+            'active_material.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value',
+            "data.energy" (light power), "data.lens" (camera),
+            'modifiers["Bend"].angle',
+            'node_tree.nodes["Background"].inputs["Strength"].default_value'
+            (with target WORLD).
+        frame: Frame to key.
+        value: Value to set before keying: a number, true/false, or a list for
+            colours and vectors. Omit to key the current value.
+        object_name: The object the path starts from (target OBJECT).
+        target: OBJECT, WORLD (the scene's world) or SCENE.
+        index: One component of a vector or colour (0, 1, 2, 3), or -1 for all.
+
+    Returns:
+        Dict with the data block keyed, its path, the frame and the value.
+    """
+    target = validate_enum(target, ALLOWED_KEYFRAME_TARGETS, name="target")
+    params: dict[str, Any] = {"target": target}
+    if target == "OBJECT":
+        if not object_name:
+            raise ValidationError("object_name is required when target is OBJECT")
+        params["object_name"] = validate_object_name(object_name)
+    params.update({
+        "data_path": validate_data_path(data_path),
+        "frame": validate_int(frame, -MAX_FRAME, MAX_FRAME, name="frame"),
+        "index": validate_int(index, -1, 3, name="index"),
+    })
+    if value is not None:
+        params["value"] = _key_value(value)
+    return _send_animation_command("keyframe_property", params)
