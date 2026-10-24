@@ -36,6 +36,7 @@ chat = [
     "ollama>=0.4",
 ]
 dev = [
+    "fake-bpy-module-5-2>=20260730",
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "pytest-cov>=4.0",
@@ -50,8 +51,13 @@ dev = [
 # The extra above stays for CI, which installs with pip.
 [dependency-groups]
 dev = [
+    "fake-bpy-module-5-2>=20260730",
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "pytest-cov>=4.0",
     "ruff>=0.15,<0.16",
 ]
+
+# bpy exists only inside Blender; the dev stubs give the editor its types
+[tool.pyright]
+reportMissingModuleSource = false
