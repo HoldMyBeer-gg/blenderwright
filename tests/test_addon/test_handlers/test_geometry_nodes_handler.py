@@ -145,3 +145,131 @@ class TestBlender52InputAccess:
         modifier.properties.inputs = SimpleNamespace(Socket_1=SimpleNamespace(name="Geometry"))
         with pytest.raises(ValueError):
             _set(handler, 1)
+
+
+class TestAddEssentialsModifier:
+    """Blender 5.2's Essentials node-group modifiers, inputs set by display name."""
+
+    def _setup(self, monkeypatch, handler):
+        import bpy
+
+        def item(name, socket_type, identifier):
+            return SimpleNamespace(item_type="SOCKET", in_out="INPUT", name=name,
+                                   socket_type=f"NodeSocket{socket_type}",
+                                   identifier=identifier)
+
+        group = SimpleNamespace(name="Scatter on Surface", bl_idname="GeometryNodeTree",
+                                interface=SimpleNamespace(items_tree=[
+                                    item("Mesh", "Geometry", "Socket_0"),
+                                    item("Amount", "Int", "Socket_1"),
+                                    item("Density Method", "Menu", "Socket_2"),
+                                    item("Object", "Object", "Socket_3"),
+                                    item("Scale", "Vector", "Socket_4"),
+                                    item("Scale", "Float", "Socket_5"),
+                                ]))
+
+        class MenuEntry:
+            def __init__(self):
+                self._v = "Density"
+            value = property(lambda s: s._v)
+
+            @value.setter
+            def value(self, v):
+                if v not in ("Density", "Amount"):
+                    raise TypeError(f'enum "{v}" not found in (\'Density\', \'Amount\')')
+                self._v = v
+
+        inputs = SimpleNamespace(
+            Socket_0=SimpleNamespace(name="Mesh"),
+            Socket_1=SimpleNamespace(value=1000), Socket_2=MenuEntry(),
+            Socket_3=SimpleNamespace(value=None), Socket_4=SimpleNamespace(value=[1, 1, 1]),
+            Socket_5=SimpleNamespace(value=1.0))
+
+        class Modifiers(list):
+            def new(self, name, type):
+                m = SimpleNamespace(name=name, type=type, node_group=None,
+                                    properties=SimpleNamespace(inputs=inputs))
+                self.append(m)
+                return m
+
+        ground = SimpleNamespace(name="Ground", modifiers=Modifiers())
+        rock = SimpleNamespace(name="Rock")
+        objects = {"Ground": ground, "Rock": rock}
+        monkeypatch.setattr(bpy.data, "objects", SimpleNamespace(get=objects.get))
+        monkeypatch.setattr(handler, "_essentials_gn_group", lambda name: group)
+        return ground, inputs, rock
+
+    def _add(self, handler, settings):
+        return handler.handle_add_essentials_modifier(
+            {"object_name": "Ground", "modifier": "scatter_on_surface", "settings": settings})
+
+    def test_adds_a_nodes_modifier_with_the_group(self, handler, monkeypatch):
+        ground, _, _ = self._setup(monkeypatch, handler)
+        result = self._add(handler, {})
+        assert ground.modifiers[0].type == "NODES"
+        assert ground.modifiers[0].node_group.name == "Scatter on Surface"
+        assert result["modifier"] == "Scatter on Surface"
+
+    def test_sets_numbers_menus_objects_and_picks_same_named_by_shape(self, handler,
+                                                                       monkeypatch):
+        _, inputs, rock = self._setup(monkeypatch, handler)
+        result = self._add(handler, {"Amount": 50, "Density Method": "Amount",
+                                     "Object": "Rock", "Scale": [2, 2, 2]})
+        assert inputs.Socket_1.value == 50 and inputs.Socket_2.value == "Amount"
+        assert inputs.Socket_3.value is rock
+        assert inputs.Socket_4.value == [2, 2, 2] and inputs.Socket_5.value == 1.0
+        assert result["inputs"]["Object"] == "Rock"
+
+    @pytest.mark.parametrize("settings, message", [
+        ({"Object": "Boulder"}, "Boulder"),
+        ({"Density Method": "Sideways"}, "Amount"),
+        ({"Speed": 3}, "Amount"),
+        ({"Mesh": 1}, "Mesh"),
+    ])
+    def test_bad_settings_explain_and_leave_no_modifier(self, handler, monkeypatch,
+                                                        settings, message):
+        ground, _, _ = self._setup(monkeypatch, handler)
+        with pytest.raises(ValueError, match=message):
+            self._add(handler, settings)
+        assert ground.modifiers == []
+
+    def test_unknown_modifier_refused_at_the_handler(self, handler, monkeypatch):
+        self._setup(monkeypatch, handler)
+        with pytest.raises(ValueError):
+            handler.handle_add_essentials_modifier(
+                {"object_name": "Ground", "modifier": "__class__", "settings": {}})
+
+
+class TestEssentialsLoadOnce:
+    """Appending groups one at a time duplicates their shared dependencies
+    ("Randomize Transforms.001"), so the first use appends all of them together."""
+
+    def test_one_append_brings_every_modifier_group(self, handler, monkeypatch):
+        import bpy
+
+        store = {}
+        loads = []
+
+        class Load:
+            def __init__(self, path, link):
+                self.dst = SimpleNamespace(node_groups=[])
+
+            def __enter__(self):
+                return SimpleNamespace(), self.dst
+
+            def __exit__(self, *exc):
+                loads.append(list(self.dst.node_groups))
+                # Blender swaps the names for data-blocks inside the caller's own list
+                self.dst.node_groups[:] = [store.setdefault(n, SimpleNamespace(
+                    name=n, bl_idname="GeometryNodeTree")) for n in self.dst.node_groups]
+
+        monkeypatch.setattr(bpy.data, "node_groups", SimpleNamespace(get=store.get))
+        monkeypatch.setattr(bpy.data, "libraries", SimpleNamespace(load=Load))
+        monkeypatch.setattr(bpy.utils, "system_resource", lambda *a, **k: "/blender/assets")
+
+        array = handler._essentials_gn_group("Array")
+        tube = handler._essentials_gn_group("Curve to Tube")
+
+        assert len(loads) == 1
+        assert set(loads[0]) == set(handler.ESSENTIALS_MODIFIERS.values())
+        assert (array.name, tube.name) == ("Array", "Curve to Tube")
