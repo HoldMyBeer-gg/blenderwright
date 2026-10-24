@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 221 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 221 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 225 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 225 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 221 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 225 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>221</b> tools</span>
+    <span><b>225</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -125,11 +125,11 @@ footer a { color: var(--accent); }
 <a href="#booltool">Bool Tool <span class="n">4</span></a>
 <a href="#camera">Camera <span class="n">6</span></a>
 <a href="#code_exec">Code Execution <span class="n">1</span></a>
-<a href="#collections">Collections <span class="n">4</span></a>
+<a href="#collections">Collections <span class="n">6</span></a>
 <a href="#compositor">compositor <span class="n">5</span></a>
 <a href="#curves">Curves <span class="n">10</span></a>
 <a href="#deform">deform <span class="n">10</span></a>
-<a href="#file_ops">File I/O <span class="n">5</span></a>
+<a href="#file_ops">File I/O <span class="n">7</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">6</span></a>
 <a href="#gpencil">Grease Pencil <span class="n">5</span></a>
 <a href="#lighting">Lighting <span class="n">7</span></a>
@@ -307,9 +307,22 @@ The code runs in a restricted namespace that blocks obvious mistakes
 against accidents, not a security boundary: the code runs in-process
 with full bpy. Every snippet is echoed to Blender&#x27;s system console and
 listed in the panel so the user can see what ran.</p><table class="args"><tbody><tr><th>code</th><td>Python code to execute. bpy is available but must be imported.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with &#x27;output&#x27; (captured stdout) and &#x27;success&#x27; boolean.</p></article></section>
-<section class="module" id="collections" data-module="collections"><h2>Collections <span class="n">4</span></h2><article class="tool" id="create_collection" data-search="create_collection create a new collection, optionally nested under a parent collection."><h3><a href="#create_collection">create_collection</a></h3><pre class="sig"><code>create_collection(name: str, parent: str = &#x27;&#x27;)</code></pre><p>Create a new collection, optionally nested under a parent collection.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new collection.</td></tr>
-<tr><th>parent</th><td>Optional name of parent collection to nest under. Empty string uses the scene&#x27;s root collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created collection&#x27;s name and parent.</p></article><article class="tool" id="delete_collection" data-search="delete_collection delete a collection."><h3><a href="#delete_collection">delete_collection</a></h3><pre class="sig"><code>delete_collection(collection_name: str, delete_objects: bool = False)</code></pre><p>Delete a collection.</p><table class="args"><tbody><tr><th>collection_name</th><td>Name of the collection to delete.</td></tr>
-<tr><th>delete_objects</th><td>If True, also delete all objects in the collection. If False, objects are unlinked but kept in the scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="move_to_collection" data-search="move_to_collection move objects to a collection, unlinking them from their current collections."><h3><a href="#move_to_collection">move_to_collection</a></h3><pre class="sig"><code>move_to_collection(object_names: list[str], collection_name: str)</code></pre><p>Move objects to a collection, unlinking them from their current collections.</p><table class="args"><tbody><tr><th>object_names</th><td>List of object names to move.</td></tr>
+<section class="module" id="collections" data-module="collections"><h2>Collections <span class="n">6</span></h2><article class="tool" id="create_collection" data-search="create_collection create a new collection, optionally nested under a parent collection."><h3><a href="#create_collection">create_collection</a></h3><pre class="sig"><code>create_collection(name: str, parent: str = &#x27;&#x27;)</code></pre><p>Create a new collection, optionally nested under a parent collection.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new collection.</td></tr>
+<tr><th>parent</th><td>Optional name of parent collection to nest under. Empty string uses the scene&#x27;s root collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created collection&#x27;s name and parent.</p></article><article class="tool" id="create_collection_instance" data-search="create_collection_instance place a collection as a lightweight instance (an empty that shows it).
+
+instances share the collection&#x27;s data, so a hundred trees cost little
+more than one, and editing the collection updates every copy. works with
+local and linked collections."><h3><a href="#create_collection_instance">create_collection_instance</a></h3><pre class="sig"><code>create_collection_instance(collection_name: str, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), rotation: list[float] | tuple[float, ...] = (0, 0, 0), scale: list[float] | tuple[float, ...] = (1, 1, 1))</code></pre><p>Place a collection as a lightweight instance (an empty that shows it).
+
+Instances share the collection&#x27;s data, so a hundred trees cost little
+more than one, and editing the collection updates every copy. Works with
+local and linked collections.</p><table class="args"><tbody><tr><th>collection_name</th><td>Collection to instance.</td></tr>
+<tr><th>name</th><td>Name for the instance object; empty uses the collection name.</td></tr>
+<tr><th>location</th><td>World position [x, y, z].</td></tr>
+<tr><th>rotation</th><td>Euler rotation [x, y, z] in radians.</td></tr>
+<tr><th>scale</th><td>Scale [x, y, z]; components must not be zero.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the instance object&#x27;s name and its collection.</p></article><article class="tool" id="delete_collection" data-search="delete_collection delete a collection."><h3><a href="#delete_collection">delete_collection</a></h3><pre class="sig"><code>delete_collection(collection_name: str, delete_objects: bool = False)</code></pre><p>Delete a collection.</p><table class="args"><tbody><tr><th>collection_name</th><td>Name of the collection to delete.</td></tr>
+<tr><th>delete_objects</th><td>If True, also delete all objects in the collection. If False, objects are unlinked but kept in the scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="make_instances_real" data-search="make_instances_real turn a collection instance into real, separately editable objects."><h3><a href="#make_instances_real">make_instances_real</a></h3><pre class="sig"><code>make_instances_real(object_name: str, keep_hierarchy: bool = False)</code></pre><p>Turn a collection instance into real, separately editable objects.</p><table class="args"><tbody><tr><th>object_name</th><td>The instance object (from create_collection_instance or a linked collection).</td></tr>
+<tr><th>keep_hierarchy</th><td>Keep the instanced objects&#x27; parent links.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the names of the new objects.</p></article><article class="tool" id="move_to_collection" data-search="move_to_collection move objects to a collection, unlinking them from their current collections."><h3><a href="#move_to_collection">move_to_collection</a></h3><pre class="sig"><code>move_to_collection(object_names: list[str], collection_name: str)</code></pre><p>Move objects to a collection, unlinking them from their current collections.</p><table class="args"><tbody><tr><th>object_names</th><td>List of object names to move.</td></tr>
 <tr><th>collection_name</th><td>Name of the destination collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the moved objects and destination collection.</p></article><article class="tool" id="set_collection_visibility" data-search="set_collection_visibility set collection visibility in viewport and/or render."><h3><a href="#set_collection_visibility">set_collection_visibility</a></h3><pre class="sig"><code>set_collection_visibility(collection_name: str, visible: bool, viewport: bool = True, render: bool = True)</code></pre><p>Set collection visibility in viewport and/or render.</p><table class="args"><tbody><tr><th>collection_name</th><td>Name of the collection.</td></tr>
 <tr><th>visible</th><td>Whether the collection should be visible.</td></tr>
 <tr><th>viewport</th><td>Apply visibility change to viewport. Defaults to True.</td></tr>
@@ -397,7 +410,7 @@ weight the cheeks, then move them out to puff them.</p><table class="args"><tbod
 <tr><th>gain</th><td>LEVELS gain, 0.0 to 10.0.</td></tr>
 <tr><th>max_groups</th><td>LIMIT_TOTAL groups per vertex, 1 to 32.</td></tr>
 <tr><th>steps</th><td>QUANTIZE levels, 1 to 1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the group&#x27;s vertex count and weight range afterwards.</p></article></section>
-<section class="module" id="file_ops" data-module="file i/o"><h2>File I/O <span class="n">5</span></h2><article class="tool" id="export_file" data-search="export_file export scene or selected objects to a 3d file.
+<section class="module" id="file_ops" data-module="file i/o"><h2>File I/O <span class="n">7</span></h2><article class="tool" id="export_file" data-search="export_file export scene or selected objects to a 3d file.
 
 supports fbx, obj, gltf/glb, usd, stl, ply, and alembic (abc) formats."><h3><a href="#export_file">export_file</a></h3><pre class="sig"><code>export_file(filepath: str, type: str = &#x27;&#x27;, selected_only: bool = False)</code></pre><p>Export scene or selected objects to a 3D file.
 
@@ -410,7 +423,26 @@ auto-detects format from file extension if type is empty."><h3><a href="#import_
 
 Supports FBX, OBJ, GLTF/GLB, USD, STL, PLY, Alembic (ABC), and SVG formats.
 Auto-detects format from file extension if type is empty.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to the file to import. Must exist.</td></tr>
-<tr><th>type</th><td>Optional format override. One of: FBX, OBJ, GLTF, USD, STL, PLY, ABC, SVG. Auto-detected from extension if empty.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with imported file path and format.</p></article><article class="tool" id="list_recent_files" data-search="list_recent_files list recently opened files from blender preferences."><h3><a href="#list_recent_files">list_recent_files</a></h3><pre class="sig"><code>list_recent_files()</code></pre><p>List recently opened files from Blender preferences.</p><p class="ret"><span>Returns</span> List of file path strings.</p></article><article class="tool" id="open_file" data-search="open_file open a .blend file."><h3><a href="#open_file">open_file</a></h3><pre class="sig"><code>open_file(filepath: str)</code></pre><p>Open a .blend file.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to the .blend file. Must exist.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the opened file path.</p></article><article class="tool" id="save_file" data-search="save_file save the current blender file.
+<tr><th>type</th><td>Optional format override. One of: FBX, OBJ, GLTF, USD, STL, PLY, ABC, SVG. Auto-detected from extension if empty.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with imported file path and format.</p></article><article class="tool" id="link_or_append" data-search="link_or_append bring objects, collections, materials and more in from another .blend file.
+
+append copies the data into this file so it can be edited. link keeps a
+live reference: edits to the source file show up here, but the data is
+read-only. a linked collection is placed as an instance; appended objects
+and collections go into the scene. scripts in the file are never run."><h3><a href="#link_or_append">link_or_append</a></h3><pre class="sig"><code>link_or_append(filepath: str, data_type: str, names: list[str], link: bool = False)</code></pre><p>Bring objects, collections, materials and more in from another .blend file.
+
+Append copies the data into this file so it can be edited. Link keeps a
+live reference: edits to the source file show up here, but the data is
+read-only. A linked collection is placed as an instance; appended objects
+and collections go into the scene. Scripts in the file are never run.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to an existing .blend file.</td></tr>
+<tr><th>data_type</th><td>OBJECT, COLLECTION, MATERIAL, NODE_GROUP, WORLD or MESH.</td></tr>
+<tr><th>names</th><td>Names to bring in (see list_blend_contents), at most 100.</td></tr>
+<tr><th>link</th><td>True to link instead of append.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with each requested name and the name it has here (appends may gain a .001 suffix), plus any instance created for a linked collection.</p></article><article class="tool" id="list_blend_contents" data-search="list_blend_contents list what another .blend file contains without opening it.
+
+use before link_or_append to find the names to bring in. scripts in the
+file are never run."><h3><a href="#list_blend_contents">list_blend_contents</a></h3><pre class="sig"><code>list_blend_contents(filepath: str)</code></pre><p>List what another .blend file contains without opening it.
+
+Use before link_or_append to find the names to bring in. Scripts in the
+file are never run.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to an existing .blend file.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict of data type (objects, collections, materials, node_groups, worlds, meshes) to the names in the file.</p></article><article class="tool" id="list_recent_files" data-search="list_recent_files list recently opened files from blender preferences."><h3><a href="#list_recent_files">list_recent_files</a></h3><pre class="sig"><code>list_recent_files()</code></pre><p>List recently opened files from Blender preferences.</p><p class="ret"><span>Returns</span> List of file path strings.</p></article><article class="tool" id="open_file" data-search="open_file open a .blend file."><h3><a href="#open_file">open_file</a></h3><pre class="sig"><code>open_file(filepath: str)</code></pre><p>Open a .blend file.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to the .blend file. Must exist.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the opened file path.</p></article><article class="tool" id="save_file" data-search="save_file save the current blender file.
 
 if filepath is empty, saves to the current file path (overwrite).
 if filepath is provided, performs a &quot;save as&quot; to the given path."><h3><a href="#save_file">save_file</a></h3><pre class="sig"><code>save_file(filepath: str = &#x27;&#x27;)</code></pre><p>Save the current Blender file.

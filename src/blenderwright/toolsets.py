@@ -69,8 +69,10 @@ TOOLSETS: dict[str, str] = {
     "deform": "Vertex groups and weights (normalize, smooth, limit), shape keys and "
               "blend shapes, animating them",
     "gpencil": "Annotation layers and strokes",
-    "collections": "Collections: create, move objects, visibility, delete",
-    "file_ops": "Import and export FBX, OBJ, glTF, USD, STL; save and open .blend",
+    "collections": "Collections: create, move objects, visibility, delete; collection "
+                   "instances and making them real",
+    "file_ops": "Import and export FBX, OBJ, glTF, USD, STL; save and open .blend; "
+                "list, link and append from other .blend files",
     "viewport": "Viewport shading, overlays, focus on object",
     "screenshot": "Capture the viewport as an image for visual checks",
     "code_exec": "Run sandboxed Python inside Blender",

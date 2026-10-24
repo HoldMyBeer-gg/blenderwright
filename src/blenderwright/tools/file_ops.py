@@ -5,7 +5,9 @@ from typing import Any
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_file_path,
+    validate_object_name,
     validate_enum,
+    ValidationError,
     ALLOWED_IMPORT_EXTENSIONS,
     ALLOWED_EXPORT_EXTENSIONS,
 )
@@ -20,6 +22,10 @@ ALLOWED_EXPORT_TYPES = {
 
 # .blend file extension for save/open
 BLEND_EXTENSIONS = {".blend"}
+
+# Data-block kinds that can be linked or appended from another .blend
+ALLOWED_LINK_TYPES = {"OBJECT", "COLLECTION", "MATERIAL", "NODE_GROUP", "WORLD", "MESH"}
+MAX_LINK_NAMES = 100
 
 
 @mcp.tool()
@@ -150,3 +156,71 @@ def list_recent_files() -> list[str]:
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
+
+
+def _send_file_command(command: str, params: dict[str, Any]) -> Any:
+    conn = get_connection()
+    response = conn.send_command(command, params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def list_blend_contents(filepath: str) -> dict[str, Any]:
+    """List what another .blend file contains without opening it.
+
+    Use before link_or_append to find the names to bring in. Scripts in the
+    file are never run.
+
+    Args:
+        filepath: Absolute path to an existing .blend file.
+
+    Returns:
+        Dict of data type (objects, collections, materials, node_groups,
+        worlds, meshes) to the names in the file.
+    """
+    return _send_file_command("list_blend_contents", {
+        "filepath": validate_file_path(filepath, BLEND_EXTENSIONS, must_exist=True),
+    })
+
+
+@mcp.tool()
+def link_or_append(
+    filepath: str,
+    data_type: str,
+    names: list[str],
+    link: bool = False,
+) -> dict[str, Any]:
+    """Bring objects, collections, materials and more in from another .blend file.
+
+    Append copies the data into this file so it can be edited. Link keeps a
+    live reference: edits to the source file show up here, but the data is
+    read-only. A linked collection is placed as an instance; appended objects
+    and collections go into the scene. Scripts in the file are never run.
+
+    Args:
+        filepath: Absolute path to an existing .blend file.
+        data_type: OBJECT, COLLECTION, MATERIAL, NODE_GROUP, WORLD or MESH.
+        names: Names to bring in (see list_blend_contents), at most 100.
+        link: True to link instead of append.
+
+    Returns:
+        Dict with each requested name and the name it has here (appends may
+        gain a .001 suffix), plus any instance created for a linked collection.
+    """
+    if not isinstance(names, list) or not names:
+        raise ValidationError("names must be a non-empty list of data-block names")
+    if len(names) > MAX_LINK_NAMES:
+        raise ValidationError(f"At most {MAX_LINK_NAMES} names per call")
+    clean: list[str] = []
+    for block_name in names:
+        block_name = validate_object_name(block_name)
+        if block_name not in clean:
+            clean.append(block_name)
+    return _send_file_command("link_or_append", {
+        "filepath": validate_file_path(filepath, BLEND_EXTENSIONS, must_exist=True),
+        "data_type": validate_enum(data_type, ALLOWED_LINK_TYPES, name="data_type"),
+        "names": clean,
+        "link": bool(link),
+    })
