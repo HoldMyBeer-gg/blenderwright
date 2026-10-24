@@ -15,12 +15,15 @@ import pytest
 
 @pytest.fixture
 def server_module(monkeypatch):
+    # server.py imports its siblings relatively, so it loads as addon.server;
+    # monkeypatch puts every sys.modules entry back afterwards
     for name in ("addon", "addon.dispatcher", "addon.thread_safety", "addon.render_guard",
                  "addon.auth"):
         monkeypatch.setitem(sys.modules, name, MagicMock())
     path = os.path.join(os.path.dirname(__file__), "..", "addon", "server.py")
-    spec = importlib.util.spec_from_file_location("addon_server_port_test", path)
+    spec = importlib.util.spec_from_file_location("addon.server", path)
     mod = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, "addon.server", mod)
     spec.loader.exec_module(mod)
     return mod
 
