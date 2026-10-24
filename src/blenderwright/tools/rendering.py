@@ -28,6 +28,22 @@ ALLOWED_OUTPUT_FORMATS = {"PNG", "JPEG", "OPEN_EXR", "TIFF", "BMP"}
 # Allowed image extensions for render output
 ALLOWED_RENDER_EXTENSIONS = {".png", ".jpg", ".jpeg", ".exr", ".tiff", ".tif", ".bmp"}
 
+# Color management values in Blender 5.2 (dynamic enums, read from a live session)
+ALLOWED_VIEW_TRANSFORMS = {
+    "Standard", "ACES 1.3", "ACES 2.0", "Khronos PBR Neutral", "AgX",
+    "Filmic", "Filmic Log", "False Color", "Raw",
+}
+ALLOWED_DISPLAY_DEVICES = {
+    "sRGB", "Display P3", "Rec.1886", "Rec.2020", "Rec.2100-PQ", "Rec.2100-HLG",
+}
+# Short look names; Blender prefixes some per view transform ("AgX - Punchy")
+ALLOWED_LOOKS = {
+    "None", "Punchy", "Greyscale", "Very High Contrast", "High Contrast",
+    "Medium High Contrast", "Medium Contrast", "Base Contrast",
+    "Medium Low Contrast", "Low Contrast", "Very Low Contrast",
+    "Reference Gamut Compression",
+}
+
 
 @mcp.tool()
 def set_render_engine(engine: str) -> dict[str, Any]:
@@ -211,6 +227,101 @@ def set_eevee_light_path(
 
     conn = get_connection()
     response = conn.send_command("set_eevee_light_path", params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def set_color_management(
+    view_transform: str = "",
+    look: str = "",
+    exposure: float | None = None,
+    gamma: float | None = None,
+    display_device: str = "",
+    white_balance_temperature: float | None = None,
+) -> dict[str, Any]:
+    """Set how the scene's light becomes final pixel colours.
+
+    AgX (the default) handles bright highlights gracefully; Standard is for
+    flat graphics and UI shots; Khronos PBR Neutral keeps product colours
+    true. A look adds contrast on top. Leave anything unset to keep it.
+
+    Args:
+        view_transform: One of: AgX, Standard, Filmic, Filmic Log,
+            Khronos PBR Neutral, ACES 1.3, ACES 2.0, False Color, Raw.
+        look: Contrast look, short name. AgX and False Color offer Punchy,
+            Greyscale, Base Contrast and Very Low to Very High Contrast; most
+            others offer Very Low to Very High Contrast; ACES offers
+            Reference Gamut Compression. "None" clears it. Applies to the
+            view transform being set, or the current one.
+        exposure: Brightness in stops. Range -10.0 to 10.0; 0 is unchanged.
+        gamma: Extra gamma. Range 0.0 to 5.0; 1.0 is unchanged.
+        display_device: One of: sRGB, Display P3, Rec.1886, Rec.2020,
+            Rec.2100-PQ, Rec.2100-HLG.
+        white_balance_temperature: Kelvin, 1800 to 100000. Lower warms the
+            image, higher cools it. Setting it turns white balance on.
+
+    Returns:
+        Dict with the full colour management state after the change.
+    """
+    params: dict[str, Any] = {}
+    if view_transform:
+        params["view_transform"] = validate_enum(
+            view_transform, ALLOWED_VIEW_TRANSFORMS, name="view_transform")
+    if look:
+        params["look"] = validate_enum(look, ALLOWED_LOOKS, name="look")
+    if exposure is not None:
+        params["exposure"] = validate_numeric_range(
+            exposure, min_val=-10.0, max_val=10.0, name="exposure")
+    if gamma is not None:
+        params["gamma"] = validate_numeric_range(gamma, min_val=0.0, max_val=5.0, name="gamma")
+    if display_device:
+        params["display_device"] = validate_enum(
+            display_device, ALLOWED_DISPLAY_DEVICES, name="display_device")
+    if white_balance_temperature is not None:
+        params["white_balance_temperature"] = float(validate_numeric_range(
+            white_balance_temperature, min_val=1800.0, max_val=100000.0,
+            name="white_balance_temperature"))
+
+    conn = get_connection()
+    response = conn.send_command("set_color_management", params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def set_film(
+    transparent: bool | None = None,
+    transparent_glass: bool | None = None,
+    filter_width: float | None = None,
+) -> dict[str, Any]:
+    """Set film options: transparent background and pixel filter.
+
+    Args:
+        transparent: Render the world background as transparent, for
+            compositing or product cut-outs. Needs PNG or EXR output to keep
+            the alpha.
+        transparent_glass: Cycles only. Let the background show through glass
+            and other transmissive surfaces when transparent is on.
+        filter_width: Cycles pixel filter width in pixels, 0.01 to 10.0.
+            1.5 is Blender's default; lower is sharper, higher is softer.
+
+    Returns:
+        Dict with the film settings after the change.
+    """
+    params: dict[str, Any] = {}
+    if transparent is not None:
+        params["transparent"] = bool(transparent)
+    if transparent_glass is not None:
+        params["transparent_glass"] = bool(transparent_glass)
+    if filter_width is not None:
+        params["filter_width"] = validate_numeric_range(
+            filter_width, min_val=0.01, max_val=10.0, name="filter_width")
+
+    conn = get_connection()
+    response = conn.send_command("set_film", params)
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")

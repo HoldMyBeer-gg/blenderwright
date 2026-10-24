@@ -160,3 +160,108 @@ class TestImageOutputAfterVideo:
 
         assert video_output_scene.media_type == "VIDEO"
         assert video_output_scene.file_format == "FFMPEG"
+
+
+class _ViewSettings:
+    """Blender 5.2 view settings: looks depend on the view transform."""
+
+    LOOKS = {
+        "AgX": {"None", "AgX - Punchy", "AgX - High Contrast"},
+        "Standard": {"None", "High Contrast", "Low Contrast"},
+        "ACES 2.0": {"None", "ACES 2.0 - Reference Gamut Compression"},
+    }
+
+    def __init__(self):
+        self._view_transform = "AgX"
+        self._look = "None"
+        self.exposure = 0.0
+        self.gamma = 1.0
+        self.use_white_balance = False
+        self.white_balance_temperature = 6500.0
+
+    @property
+    def view_transform(self):
+        return self._view_transform
+
+    @view_transform.setter
+    def view_transform(self, value):
+        if value not in self.LOOKS:
+            raise TypeError(f"enum \"{value}\" not found")
+        self._view_transform = value
+        self._look = "None"  # Blender resets the look when the transform changes
+
+    @property
+    def look(self):
+        return self._look
+
+    @look.setter
+    def look(self, value):
+        if value not in self.LOOKS[self._view_transform]:
+            raise TypeError(f"enum \"{value}\" not found in {sorted(self.LOOKS[self._view_transform])}")
+        self._look = value
+
+
+@pytest.fixture
+def view_settings():
+    import bpy
+
+    vs = _ViewSettings()
+    bpy.context.scene.view_settings = vs
+    bpy.context.scene.display_settings.display_device = "sRGB"
+    return vs
+
+
+class TestHandleSetColorManagement:
+    def test_short_look_is_prefixed_for_agx(self, rendering_handler, view_settings):
+        result = rendering_handler.handle_set_color_management(
+            {"view_transform": "AgX", "look": "Punchy"})
+        assert view_settings.look == "AgX - Punchy"
+        assert result["look"] == "AgX - Punchy"
+
+    def test_short_look_is_used_as_is_for_standard(self, rendering_handler, view_settings):
+        rendering_handler.handle_set_color_management(
+            {"view_transform": "Standard", "look": "High Contrast"})
+        assert view_settings.look == "High Contrast"
+
+    def test_look_applies_to_the_current_transform(self, rendering_handler, view_settings):
+        rendering_handler.handle_set_color_management({"look": "High Contrast"})
+        assert view_settings.look == "AgX - High Contrast"
+
+    def test_look_none_clears_the_look(self, rendering_handler, view_settings):
+        view_settings.look = "AgX - Punchy"
+        rendering_handler.handle_set_color_management({"look": "None"})
+        assert view_settings.look == "None"
+
+    def test_look_wrong_for_transform_names_the_valid_ones(self, rendering_handler,
+                                                           view_settings):
+        with pytest.raises(ValueError, match="Punchy"):
+            rendering_handler.handle_set_color_management(
+                {"view_transform": "Standard", "look": "Punchy"})
+
+    def test_white_balance_switches_it_on(self, rendering_handler, view_settings):
+        rendering_handler.handle_set_color_management({"white_balance_temperature": 5000.0})
+        assert view_settings.use_white_balance is True
+        assert view_settings.white_balance_temperature == 5000.0
+
+    def test_result_reports_full_state(self, rendering_handler, view_settings):
+        result = rendering_handler.handle_set_color_management({"exposure": 1.0})
+        assert result == {
+            "view_transform": "AgX", "look": "None", "exposure": 1.0, "gamma": 1.0,
+            "display_device": "sRGB", "use_white_balance": False,
+            "white_balance_temperature": 6500.0,
+        }
+
+
+class TestHandleSetFilm:
+    def test_sets_render_and_cycles_film(self, rendering_handler):
+        import bpy
+
+        scene = bpy.context.scene
+        scene.render.film_transparent = False
+        result = rendering_handler.handle_set_film(
+            {"transparent": True, "transparent_glass": True, "filter_width": 1.5})
+
+        assert scene.render.film_transparent is True
+        assert scene.cycles.film_transparent_glass is True
+        assert scene.cycles.filter_width == 1.5
+        assert result["transparent"] is True
