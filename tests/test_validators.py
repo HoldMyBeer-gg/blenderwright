@@ -549,3 +549,12 @@ class TestValidateSocketSettings:
         from blenderwright.validators import validate_socket_settings
         with pytest.raises(ValidationError):
             validate_socket_settings(settings)
+
+
+class TestColorNonFinite:
+    @pytest.mark.parametrize("color", [[float("nan"), 0, 0], [0, float("inf"), 0, 1],
+                                       [True, 0, 0]])
+    def test_rejected(self, color):
+        from blenderwright.validators import validate_color
+        with pytest.raises(ValidationError):
+            validate_color(color)

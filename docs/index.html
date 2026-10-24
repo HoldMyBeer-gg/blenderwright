@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 243 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 243 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 247 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 247 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 243 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 247 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>243</b> tools</span>
+    <span><b>247</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -131,7 +131,7 @@ footer a { color: var(--accent); }
 <a href="#deform">deform <span class="n">10</span></a>
 <a href="#file_ops">File I/O <span class="n">7</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">6</span></a>
-<a href="#gpencil">Grease Pencil <span class="n">5</span></a>
+<a href="#gpencil">Grease Pencil <span class="n">9</span></a>
 <a href="#lighting">Lighting <span class="n">9</span></a>
 <a href="#materials">Materials &amp; Shaders <span class="n">25</span></a>
 <a href="#mesh_editing">Mesh Editing <span class="n">19</span></a>
@@ -550,7 +550,7 @@ calls. Change inputs later with set_geometry_node_input.</p><table class="args">
 <tr><th>modifier_name</th><td>Name of the geometry nodes modifier.</td></tr>
 <tr><th>input_name</th><td>Name of the input socket to set (as shown in the modifier panel).</td></tr>
 <tr><th>value</th><td>The value to set. Type depends on the input (float, int, vector, etc.).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the input name and new value.</p></article></section>
-<section class="module" id="gpencil" data-module="grease pencil"><h2>Grease Pencil <span class="n">5</span></h2><article class="tool" id="add_annotation_layer" data-search="add_annotation_layer add a layer to an annotation.
+<section class="module" id="gpencil" data-module="grease pencil"><h2>Grease Pencil <span class="n">9</span></h2><article class="tool" id="add_annotation_layer" data-search="add_annotation_layer add a layer to an annotation.
 
 layers organize annotation strokes. each layer can have its own blend mode,
 opacity, and color."><h3><a href="#add_annotation_layer">add_annotation_layer</a></h3><pre class="sig"><code>add_annotation_layer(annotation_name: str, layer_name: str)</code></pre><p>Add a layer to an annotation.
@@ -566,13 +566,46 @@ Creates a new stroke with the given points on the specified layer.
 Note: AnnotationStroke does not support per-point strength/opacity.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
 <tr><th>layer_name</th><td>Name of the layer to add the stroke to.</td></tr>
 <tr><th>points</th><td>List of XYZ coordinates, e.g. [[0,0,0], [1,1,0], [2,0,0]]. Maximum 10000 points.</td></tr>
-<tr><th>pressure</th><td>Pen pressure for all points. Range: 0.0-1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with point count.</p></article><article class="tool" id="create_annotation" data-search="create_annotation create a new annotation data block.
+<tr><th>pressure</th><td>Pen pressure for all points. Range: 0.0-1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with point count.</p></article><article class="tool" id="add_gp_stroke" data-search="add_gp_stroke draw one stroke in a grease pencil object.
+
+points are in the object&#x27;s local space. cyclic closes the outline."><h3><a href="#add_gp_stroke">add_gp_stroke</a></h3><pre class="sig"><code>add_gp_stroke(object_name: str, points: list[list[float]], layer: str = &#x27;&#x27;, frame: int = 1, radius: float | list[float] = 0.02, cyclic: bool = False, material: str = &#x27;&#x27;)</code></pre><p>Draw one stroke in a Grease Pencil object.
+
+Points are in the object&#x27;s local space. cyclic closes the outline.</p><table class="args"><tbody><tr><th>object_name</th><td>Grease Pencil object (from create_grease_pencil).</td></tr>
+<tr><th>points</th><td>2 to 10000 points, each [x, y, z].</td></tr>
+<tr><th>layer</th><td>Layer to draw on; empty uses the active layer, a new name creates it.</td></tr>
+<tr><th>frame</th><td>Keyframe to draw into (drawings per frame make 2D animation).</td></tr>
+<tr><th>radius</th><td>Stroke radius in metres, one value or one per point (0.0001 to 10). Varying it tapers the line.</td></tr>
+<tr><th>cyclic</th><td>Close the stroke back to its first point.</td></tr>
+<tr><th>material</th><td>Grease Pencil material (create_gp_material); empty uses the object&#x27;s first material.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the layer, frame and stroke count on that frame.</p></article><article class="tool" id="add_lineart" data-search="add_lineart add line art: inked outlines generated from 3d geometry, as seen by the
+active camera. gives renders a comic, technical or toon look."><h3><a href="#add_lineart">add_lineart</a></h3><pre class="sig"><code>add_lineart(source: str = &#x27;SCENE&#x27;, source_name: str = &#x27;&#x27;, name: str = &#x27;LineArt&#x27;, thickness: float = 0.01, color: list[float] | tuple[float, ...] = (0, 0, 0, 1), crease_angle: float = 2.443, use_intersection: bool = True)</code></pre><p>Add Line Art: inked outlines generated from 3D geometry, as seen by the
+active camera. Gives renders a comic, technical or toon look.</p><table class="args"><tbody><tr><th>source</th><td>SCENE (everything), COLLECTION or OBJECT.</td></tr>
+<tr><th>source_name</th><td>The collection or object when source is not SCENE.</td></tr>
+<tr><th>name</th><td>Name for the Line Art object.</td></tr>
+<tr><th>thickness</th><td>Line radius in metres, 0.0001 to 1.0.</td></tr>
+<tr><th>color</th><td>Line RGBA, components 0.0 to 1.0.</td></tr>
+<tr><th>crease_angle</th><td>Edges sharper than this get lines, radians 0 to 3.1416 (2.443 is 140 degrees; lower draws more lines).</td></tr>
+<tr><th>use_intersection</th><td>Draw lines where objects intersect.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the Line Art object and its source.</p></article><article class="tool" id="create_annotation" data-search="create_annotation create a new annotation data block.
 
 annotations are viewport overlays used for drawing marks, notes, and guides.
 unlike grease pencil objects, annotations are not positioned in 3d space."><h3><a href="#create_annotation">create_annotation</a></h3><pre class="sig"><code>create_annotation(name: str = &#x27;&#x27;)</code></pre><p>Create a new annotation data block.
 
 Annotations are viewport overlays used for drawing marks, notes, and guides.
-Unlike Grease Pencil objects, annotations are not positioned in 3D space.</p><table class="args"><tbody><tr><th>name</th><td>Optional name for the annotation. Auto-generated if empty.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created annotation&#x27;s name.</p></article><article class="tool" id="remove_annotation_layer" data-search="remove_annotation_layer remove a layer from an annotation."><h3><a href="#remove_annotation_layer">remove_annotation_layer</a></h3><pre class="sig"><code>remove_annotation_layer(annotation_name: str, layer_name: str)</code></pre><p>Remove a layer from an annotation.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
+Unlike Grease Pencil objects, annotations are not positioned in 3D space.</p><table class="args"><tbody><tr><th>name</th><td>Optional name for the annotation. Auto-generated if empty.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created annotation&#x27;s name.</p></article><article class="tool" id="create_gp_material" data-search="create_gp_material create a grease pencil material: the stroke colour.
+
+fills are not offered: in blender 5.2, strokes built from a script do not
+render their fill."><h3><a href="#create_gp_material">create_gp_material</a></h3><pre class="sig"><code>create_gp_material(name: str, color: list[float] | tuple[float, ...] = (0, 0, 0, 1))</code></pre><p>Create a Grease Pencil material: the stroke colour.
+
+Fills are not offered: in Blender 5.2, strokes built from a script do not
+render their fill.</p><table class="args"><tbody><tr><th>name</th><td>Material name.</td></tr>
+<tr><th>color</th><td>Stroke RGBA, components 0.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the material and its colour.</p></article><article class="tool" id="create_grease_pencil" data-search="create_grease_pencil create a grease pencil object to draw 2d strokes in 3d space.
+
+draw into it with add_gp_stroke; colour strokes with create_gp_material.
+for notes on the viewport use the annotation tools instead."><h3><a href="#create_grease_pencil">create_grease_pencil</a></h3><pre class="sig"><code>create_grease_pencil(name: str = &#x27;Drawing&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), layer_name: str = &#x27;Lines&#x27;)</code></pre><p>Create a Grease Pencil object to draw 2D strokes in 3D space.
+
+Draw into it with add_gp_stroke; colour strokes with create_gp_material.
+For notes on the viewport use the annotation tools instead.</p><table class="args"><tbody><tr><th>name</th><td>Object name.</td></tr>
+<tr><th>location</th><td>Position [x, y, z].</td></tr>
+<tr><th>layer_name</th><td>Name of its first layer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object, layer and frame created.</p></article><article class="tool" id="remove_annotation_layer" data-search="remove_annotation_layer remove a layer from an annotation."><h3><a href="#remove_annotation_layer">remove_annotation_layer</a></h3><pre class="sig"><code>remove_annotation_layer(annotation_name: str, layer_name: str)</code></pre><p>Remove a layer from an annotation.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
 <tr><th>layer_name</th><td>Name of the layer to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_annotation_stroke_property" data-search="set_annotation_stroke_property set a property on an annotation stroke."><h3><a href="#set_annotation_stroke_property">set_annotation_stroke_property</a></h3><pre class="sig"><code>set_annotation_stroke_property(annotation_name: str, layer_name: str, stroke_index: int, property: str, value: Any)</code></pre><p>Set a property on an annotation stroke.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
 <tr><th>layer_name</th><td>Name of the layer containing the stroke.</td></tr>
 <tr><th>stroke_index</th><td>Index of the stroke in the layer (0-based).</td></tr>

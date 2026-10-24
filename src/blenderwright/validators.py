@@ -230,7 +230,7 @@ def validate_color(color: list | tuple) -> tuple:
     if len(color) not in (3, 4):
         raise ValidationError("Color must have 3 (RGB) or 4 (RGBA) components")
     for i, c in enumerate(color):
-        if not isinstance(c, (int, float)) or c < 0.0 or c > 1.0:
+        if isinstance(c, bool) or not isinstance(c, (int, float)) or not 0.0 <= c <= 1.0:
             raise ValidationError(f"Color component {i} must be a float between 0.0 and 1.0")
     return tuple(color)
 

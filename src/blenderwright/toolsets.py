@@ -75,7 +75,8 @@ TOOLSETS: dict[str, str] = {
                 "chains with pole targets",
     "deform": "Vertex groups and weights (normalize, smooth, limit), shape keys and "
               "blend shapes, animating them",
-    "gpencil": "Annotation layers and strokes",
+    "gpencil": "Grease Pencil drawings (strokes with colour and taper, layers, frames), "
+               "Line Art outlines, annotation layers and strokes",
     "collections": "Collections: create, move objects, visibility, delete; collection "
                    "instances and making them real",
     "file_ops": "Import and export FBX, OBJ, glTF, USD, STL; save and open .blend; "
