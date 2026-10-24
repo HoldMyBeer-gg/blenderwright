@@ -251,3 +251,44 @@ class TestAuthToken:
 
         assert written[0] == first and len(written) == 2 and written[0] != written[1]
         assert len(cleared) == 2
+
+
+class TestPortIsExclusive:
+    """Windows SO_REUSEADDR lets a second process bind the same port and take
+    connections meant for Blender. Windows needs SO_EXCLUSIVEADDRUSE instead;
+    on POSIX, SO_REUSEADDR only allows a quick restart, never sharing."""
+
+    def _options(self, server_module, monkeypatch, platform):
+        monkeypatch.setattr(server_module.sys, "platform", platform)
+        monkeypatch.setattr(server_module.socket, "SO_EXCLUSIVEADDRUSE", -5, raising=False)
+        sock = MagicMock()
+        server_module._claim_port(sock)
+        return [c.args[1] for c in sock.setsockopt.call_args_list]
+
+    def test_windows_claims_the_port_exclusively(self, server_module, monkeypatch):
+        options = self._options(server_module, monkeypatch, "win32")
+        assert options == [-5]
+        assert server_module.socket.SO_REUSEADDR not in options
+
+    @pytest.mark.parametrize("platform", ["darwin", "linux"])
+    def test_posix_keeps_reuseaddr_for_quick_restarts(self, server_module, monkeypatch,
+                                                     platform):
+        assert self._options(server_module, monkeypatch, platform) == [
+            server_module.socket.SO_REUSEADDR]
+
+
+def test_a_second_socket_cannot_take_a_claimed_port(server_module):
+    """Real sockets, on whatever platform the suite runs (CI includes Windows)."""
+    first = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_module._claim_port(first)
+    first.bind(("127.0.0.1", 0))
+    first.listen(1)
+    port = first.getsockname()[1]
+    intruder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    intruder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        with pytest.raises(OSError):
+            intruder.bind(("127.0.0.1", port))
+    finally:
+        intruder.close()
+        first.close()
