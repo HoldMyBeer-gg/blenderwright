@@ -141,6 +141,9 @@ class TestPackUVIslands:
         mock_conn.send_command.assert_called_once_with("pack_uv_islands", {
             "object_name": "Cube",
             "margin": 0.001,
+            "rotate": True,
+            "rotate_method": "ANY",
+            "scale": True,
         })
 
     def test_pack_custom_margin(self, mock_conn):
@@ -150,6 +153,9 @@ class TestPackUVIslands:
         mock_conn.send_command.assert_called_once_with("pack_uv_islands", {
             "object_name": "Cube",
             "margin": 0.05,
+            "rotate": True,
+            "rotate_method": "ANY",
+            "scale": True,
         })
 
     def test_margin_out_of_range(self, mock_conn):
@@ -177,3 +183,18 @@ class TestBlenderErrorHandling:
         mock_conn.send_command.return_value = {"status": "error", "result": "Not a mesh object"}
         with pytest.raises(RuntimeError, match="Blender error"):
             smart_uv_project("Cube")
+
+
+class TestPackOptions:
+    def test_keep_scale_and_axis_aligned(self, mock_conn):
+        from blenderwright.tools.uv import pack_uv_islands
+
+        pack_uv_islands("Cube", rotate=True, rotate_method="AXIS_ALIGNED", scale=False)
+        params = mock_conn.send_command.call_args[0][1]
+        assert (params["rotate_method"], params["scale"]) == ("AXIS_ALIGNED", False)
+
+    def test_bad_rotate_method(self, mock_conn):
+        from blenderwright.tools.uv import pack_uv_islands
+
+        with pytest.raises(ValidationError):
+            pack_uv_islands("Cube", rotate_method="DIAGONAL")
