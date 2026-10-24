@@ -1,10 +1,13 @@
 """MCP tools for Blender armature and rigging operations."""
 
+import re
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     coerce_scalar,
+    validate_int,
+    validate_numeric_range,
     validate_object_name,
     validate_new_name,
     validate_enum,
@@ -34,7 +37,17 @@ ALLOWED_CONSTRAINT_TYPES = {
     "CHILD_OF",
     "PIVOT",
     "ARMATURE",
+    "LIMIT_DISTANCE",
+    "SPLINE_IK",
+    "ACTION",
+    "FOLLOW_PATH",
+    "SHRINKWRAP",
+    "GEOMETRY_ATTRIBUTE",
 }
+CONSTRAINT_PROPERTY_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+MAX_PROPERTY_TEXT = 64
+ALLOWED_BONE_COLLECTION_ACTIONS = {"CREATE", "DELETE", "ASSIGN", "UNASSIGN", "SHOW", "HIDE"}
+MAX_BONES = 1000
 
 # Allowed bone properties
 ALLOWED_BONE_PROPERTIES = {
@@ -163,6 +176,25 @@ def set_bone_property(
     return response.get("result")
 
 
+def _constraint_properties(properties: Any) -> dict[str, Any]:
+    """Setting names and plain values only; the add-on checks them against RNA."""
+    if not isinstance(properties, dict):
+        raise ValidationError("properties must be an object of setting name to value")
+    clean: dict[str, Any] = {}
+    for key, value in properties.items():
+        if not isinstance(key, str) or not CONSTRAINT_PROPERTY_PATTERN.match(key):
+            raise ValidationError(f"Invalid constraint setting name: {key!r}")
+        if isinstance(value, bool) or (isinstance(value, str) and len(value) <= MAX_PROPERTY_TEXT
+                                       and value.isprintable()):
+            clean[key] = value
+        elif isinstance(value, (int, float)):
+            clean[key] = validate_numeric_range(value, name=key)
+        else:
+            raise ValidationError(f"Constraint setting '{key}' must be a number, true/false "
+                                  f"or short text")
+    return clean
+
+
 @mcp.tool()
 def add_constraint(
     object_name: str,
@@ -179,9 +211,12 @@ def add_constraint(
                         COPY_SCALE, COPY_TRANSFORMS, TRACK_TO, DAMPED_TRACK,
                         LOCKED_TRACK, LIMIT_ROTATION, LIMIT_LOCATION, LIMIT_SCALE,
                         STRETCH_TO, FLOOR, CLAMP_TO, TRANSFORM, MAINTAIN_VOLUME,
-                        CHILD_OF, PIVOT, ARMATURE.
-        properties: Optional dict of constraint properties to set (e.g., target, subtarget,
-                   chain_count, influence, etc.).
+                        CHILD_OF, PIVOT, ARMATURE, LIMIT_DISTANCE, SPLINE_IK,
+                        ACTION, FOLLOW_PATH, SHRINKWRAP, GEOMETRY_ATTRIBUTE.
+        properties: Optional dict of the constraint's own settings, e.g. target (an
+                   object name), subtarget (a bone name), influence, chain_count,
+                   owner_space. Only settings Blender declares on that constraint
+                   type are accepted. For a full IK setup use setup_ik_chain.
 
     Returns:
         Dict with the created constraint's name and type.
@@ -198,7 +233,7 @@ def add_constraint(
         "object_name": object_name,
         "bone_name": bone_name,
         "constraint_type": constraint_type,
-        "properties": properties or {},
+        "properties": _constraint_properties(properties or {}),
     })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
@@ -280,3 +315,104 @@ def set_pose(
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
+
+
+def _send_armature_command(command: str, params: dict[str, Any]) -> Any:
+    conn = get_connection()
+    response = conn.send_command(command, params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def manage_bone_collection(
+    armature_name: str,
+    action: str,
+    collection_name: str,
+    bones: list[str] | None = None,
+    parent: str = "",
+) -> dict[str, Any]:
+    """Organise an armature's bones into collections and show or hide them.
+
+    Typical rig layout: "Deform" (hidden), "Controls" (visible),
+    "Mechanism" (hidden).
+
+    Args:
+        armature_name: Armature object.
+        action: CREATE (optionally with bones and a parent collection), DELETE,
+            ASSIGN or UNASSIGN bones, SHOW or HIDE the collection.
+        collection_name: Bone collection to act on.
+        bones: Bone names for CREATE, ASSIGN and UNASSIGN, at most 1000.
+        parent: CREATE only: nest under this existing collection.
+
+    Returns:
+        Dict with the armature's collections, their bones and visibility.
+    """
+    clean_bones: list[str] = []
+    if bones is not None:
+        if not isinstance(bones, list) or len(bones) > MAX_BONES:
+            raise ValidationError(f"bones must be a list of at most {MAX_BONES} bone names")
+        for bone in bones:
+            bone = validate_object_name(bone)
+            if bone not in clean_bones:
+                clean_bones.append(bone)
+    return _send_armature_command("manage_bone_collection", {
+        "armature_name": validate_object_name(armature_name),
+        "action": validate_enum(action, ALLOWED_BONE_COLLECTION_ACTIONS, name="action"),
+        "collection_name": validate_object_name(collection_name),
+        "bones": clean_bones,
+        "parent": validate_object_name(parent) if parent else "",
+    })
+
+
+@mcp.tool()
+def setup_ik_chain(
+    armature_name: str,
+    bone_name: str,
+    target_object: str,
+    target_bone: str = "",
+    chain_count: int = 2,
+    pole_object: str = "",
+    pole_bone: str = "",
+    pole_angle: float = 0.0,
+    use_stretch: bool = False,
+    iterations: int = 500,
+) -> dict[str, Any]:
+    """Give a limb inverse kinematics: move the target and the chain follows.
+
+    Put the IK on the last bone of the limb (forearm, shin). A pole target
+    (an empty or bone in front of the knee or behind the elbow) keeps the
+    joint bending the right way.
+
+    Args:
+        armature_name: Armature object.
+        bone_name: Last bone of the chain (the IK sits on it).
+        target_object: Object the chain reaches for (often the armature itself
+            when target_bone names a control bone).
+        target_bone: Bone in target_object to reach for, if any.
+        chain_count: Bones in the chain counting up from bone_name, 0 to 255
+            (0 means the whole chain to the root).
+        pole_object: Object that sets the joint's bend direction, if any.
+        pole_bone: Bone in pole_object, if any.
+        pole_angle: Rotate the pole's effect, radians, -3.142 to 3.142;
+            -1.571 (-90 degrees) is a common fix for a twisted limb.
+        use_stretch: Let bones stretch to reach a target out of range.
+        iterations: Solver iterations, 1 to 10000.
+
+    Returns:
+        Dict with the constraint and chain details.
+    """
+    return _send_armature_command("setup_ik_chain", {
+        "armature_name": validate_object_name(armature_name),
+        "bone_name": validate_object_name(bone_name),
+        "target_object": validate_object_name(target_object),
+        "target_bone": validate_object_name(target_bone) if target_bone else "",
+        "chain_count": validate_int(chain_count, 0, 255, name="chain_count"),
+        "pole_object": validate_object_name(pole_object) if pole_object else "",
+        "pole_bone": validate_object_name(pole_bone) if pole_bone else "",
+        "pole_angle": validate_numeric_range(pole_angle, min_val=-3.1416, max_val=3.1416,
+                                             name="pole_angle"),
+        "use_stretch": bool(use_stretch),
+        "iterations": validate_int(iterations, 1, 10000, name="iterations"),
+    })

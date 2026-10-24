@@ -19,6 +19,9 @@ ALLOWED_BONE_PROPERTIES = {
 
 # Constraint properties that reference objects by name
 CONSTRAINT_TARGET_PROPERTIES = {"target", "pole_target"}
+# RNA property types a caller may set directly
+SETTABLE_RNA_TYPES = {"BOOLEAN", "INT", "FLOAT", "ENUM", "STRING"}
+BONE_COLLECTION_ACTIONS = {"CREATE", "DELETE", "ASSIGN", "UNASSIGN", "SHOW", "HIDE"}
 
 
 def handle_create_armature(params: dict) -> dict:
@@ -157,6 +160,27 @@ def handle_set_bone_property(params: dict) -> dict:
         raise RuntimeError(f"Failed to set bone property: {e}")
 
 
+def _apply_constraint_settings(constraint, constraint_type, properties):
+    """Only settings this constraint type declares in RNA, as plain writable
+    values; target objects are looked up by name."""
+    for prop_name, prop_value in properties.items():
+        if prop_name in CONSTRAINT_TARGET_PROPERTIES:
+            target_obj = bpy.data.objects.get(prop_value)
+            if target_obj is None:
+                raise ValueError(f"Target object '{prop_value}' not found")
+            setattr(constraint, prop_name, target_obj)
+            continue
+        rna = constraint.bl_rna.properties.get(prop_name)
+        if rna is None or rna.is_readonly or rna.type not in SETTABLE_RNA_TYPES:
+            settable = sorted(
+                name for name, p in constraint.bl_rna.properties.items()
+                if not p.is_readonly and p.type in SETTABLE_RNA_TYPES)
+            raise ValueError(f"'{prop_name}' is not a setting of a "
+                             f"{constraint_type} constraint. Settings: "
+                             f"{', '.join(settable + sorted(CONSTRAINT_TARGET_PROPERTIES))}")
+        setattr(constraint, prop_name, prop_value)
+
+
 def handle_add_constraint(params: dict) -> dict:
     """Add a constraint to an object or pose bone."""
     object_name = params["object_name"]
@@ -178,21 +202,16 @@ def handle_add_constraint(params: dict) -> dict:
             if pose_bone is None:
                 raise ValueError(f"Pose bone '{bone_name}' not found")
 
-            constraint = pose_bone.constraints.new(type=constraint_type)
+            owner_constraints = pose_bone.constraints
         else:
-            # Object constraint
-            constraint = obj.constraints.new(type=constraint_type)
+            owner_constraints = obj.constraints
+        constraint = owner_constraints.new(type=constraint_type)
 
-        # Set constraint properties
-        for prop_name, prop_value in properties.items():
-            if prop_name in CONSTRAINT_TARGET_PROPERTIES:
-                # Resolve object references by name
-                target_obj = bpy.data.objects.get(prop_value)
-                if target_obj is None:
-                    raise ValueError(f"Target object '{prop_value}' not found")
-                setattr(constraint, prop_name, target_obj)
-            else:
-                setattr(constraint, prop_name, prop_value)
+        try:
+            _apply_constraint_settings(constraint, constraint_type, properties)
+        except Exception:
+            owner_constraints.remove(constraint)
+            raise
 
         return {
             "constraint_name": constraint.name,
@@ -307,6 +326,91 @@ def handle_set_pose(params: dict) -> dict:
         raise RuntimeError(f"Failed to set pose: {e}")
 
 
+def _get_armature(name):
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        raise ValueError(f"Armature '{name}' not found")
+    if obj.type != "ARMATURE":
+        raise ValueError(f"Object '{name}' is not an armature")
+    return obj
+
+
+def _bone_collection_summary(arm):
+    return [{"name": c.name, "visible": c.is_visible, "bones": [b.name for b in c.bones],
+             "parent": c.parent.name if c.parent is not None else None}
+            for c in arm.data.collections_all.values()]
+
+
+def handle_manage_bone_collection(params: dict) -> dict:
+    """Create, delete, fill, empty, show or hide a bone collection."""
+    arm = _get_armature(params["armature_name"])
+    action = params.get("action")
+    if action not in BONE_COLLECTION_ACTIONS:
+        raise ValueError(f"Unknown bone collection action {action!r}")
+    name = params["collection_name"]
+    bones = []
+    for bone_name in params.get("bones", []):
+        bone = arm.data.bones.get(bone_name)
+        if bone is None:
+            raise ValueError(f"Bone '{bone_name}' not found in '{arm.name}'")
+        bones.append(bone)
+
+    collections = arm.data.collections
+    if action == "CREATE":
+        parent = None
+        if params.get("parent"):
+            parent = arm.data.collections_all.get(params["parent"])
+            if parent is None:
+                raise ValueError(f"Parent bone collection '{params['parent']}' not found")
+        collection = collections.new(name, parent=parent)
+    else:
+        collection = arm.data.collections_all.get(name)
+        if collection is None:
+            raise ValueError(f"Bone collection '{name}' not found in '{arm.name}'")
+    if action in ("CREATE", "ASSIGN"):
+        for bone in bones:
+            collection.assign(bone)
+    elif action == "UNASSIGN":
+        for bone in bones:
+            collection.unassign(bone)
+    elif action in ("SHOW", "HIDE"):
+        collection.is_visible = action == "SHOW"
+    elif action == "DELETE":
+        collections.remove(collection)
+    return {"armature": arm.name, "action": action,
+            "collections": _bone_collection_summary(arm)}
+
+
+def handle_setup_ik_chain(params: dict) -> dict:
+    """Add a fully configured IK constraint to the last bone of a chain."""
+    arm = _get_armature(params["armature_name"])
+    pose_bone = arm.pose.bones.get(params["bone_name"])
+    if pose_bone is None:
+        raise ValueError(f"Pose bone '{params['bone_name']}' not found")
+    target = bpy.data.objects.get(params["target_object"])
+    if target is None:
+        raise ValueError(f"Target object '{params['target_object']}' not found")
+    pole = None
+    if params.get("pole_object"):
+        pole = bpy.data.objects.get(params["pole_object"])
+        if pole is None:
+            raise ValueError(f"Pole object '{params['pole_object']}' not found")
+
+    ik = pose_bone.constraints.new(type="IK")
+    ik.target = target
+    ik.subtarget = params.get("target_bone", "")
+    if pole is not None:
+        ik.pole_target = pole
+        ik.pole_subtarget = params.get("pole_bone", "")
+        ik.pole_angle = float(params.get("pole_angle", 0.0))
+    ik.chain_count = int(params.get("chain_count", 2))
+    ik.use_stretch = bool(params.get("use_stretch", False))
+    ik.iterations = int(params.get("iterations", 500))
+    return {"armature": arm.name, "bone": pose_bone.name, "constraint": ik.name,
+            "target": target.name, "pole": pole.name if pole else None,
+            "chain_count": ik.chain_count}
+
+
 def register():
     """Register armature handlers with the dispatcher."""
     dispatcher.register_handler("create_armature", handle_create_armature)
@@ -315,3 +419,5 @@ def register():
     dispatcher.register_handler("add_constraint", handle_add_constraint)
     dispatcher.register_handler("parent_mesh_to_armature", handle_parent_mesh_to_armature)
     dispatcher.register_handler("set_pose", handle_set_pose)
+    dispatcher.register_handler("manage_bone_collection", handle_manage_bone_collection)
+    dispatcher.register_handler("setup_ik_chain", handle_setup_ik_chain)
