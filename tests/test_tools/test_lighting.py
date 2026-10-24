@@ -187,7 +187,7 @@ class TestSetWorldBackground:
     def test_both_color_and_hdri_raises(self, mock_conn, tmp_path):
         hdri = tmp_path / "env.hdr"
         hdri.write_bytes(b"fake")
-        with pytest.raises(ValidationError, match="Cannot set both"):
+        with pytest.raises(ValidationError, match="only one"):
             set_world_background(color=[1, 1, 1], hdri_path=str(hdri))
 
     def test_invalid_color_raises(self, mock_conn):
@@ -351,3 +351,58 @@ class TestSetShadowSettings:
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
             set_shadow_settings("Light")
+
+
+class TestWorldHdriOptions:
+    def test_builtin_hdri(self, mock_conn):
+        set_world_background(builtin_hdri="sunset", strength=1.2)
+        args = mock_conn.send_command.call_args[0][1]
+        assert args == {"builtin_hdri": "sunset", "strength": 1.2}
+
+    def test_rotation(self, mock_conn):
+        set_world_background(builtin_hdri="forest", rotation=1.57)
+        assert mock_conn.send_command.call_args[0][1]["rotation"] == 1.57
+
+    def test_unknown_builtin(self, mock_conn):
+        with pytest.raises(ValidationError):
+            set_world_background(builtin_hdri="mars")
+
+    def test_rotation_needs_an_hdri(self, mock_conn):
+        with pytest.raises(ValidationError, match="rotation"):
+            set_world_background(color=[1, 1, 1], rotation=1.0)
+
+    def test_only_one_source(self, mock_conn):
+        with pytest.raises(ValidationError, match="only one"):
+            set_world_background(color=[1, 1, 1], builtin_hdri="city")
+
+
+class TestSetWorldSky:
+    def test_defaults(self, mock_conn):
+        from blenderwright.tools.lighting import set_world_sky
+
+        set_world_sky()
+        cmd, args = mock_conn.send_command.call_args[0]
+        assert cmd == "set_world_sky"
+        assert args == {"sky_type": "MULTIPLE_SCATTERING", "sun_elevation": 0.2618,
+                        "sun_rotation": 0.0, "sun_intensity": 1.0, "sun_disc": True,
+                        "altitude": 100.0, "air_density": 1.0, "aerosol_density": 1.0,
+                        "ozone_density": 1.0, "strength": 1.0}
+
+    def test_golden_hour(self, mock_conn):
+        from blenderwright.tools.lighting import set_world_sky
+
+        set_world_sky(sun_elevation=0.05, sun_rotation=2.0, aerosol_density=3.0)
+        args = mock_conn.send_command.call_args[0][1]
+        assert (args["sun_elevation"], args["sun_rotation"], args["aerosol_density"]) == (
+            0.05, 2.0, 3.0)
+
+    @pytest.mark.parametrize("kwargs", [
+        {"sky_type": "CLOUDY"}, {"sun_elevation": 2.0}, {"sun_elevation": -2.0},
+        {"sun_intensity": -1}, {"altitude": -5}, {"air_density": 11},
+        {"strength": float("nan")},
+    ])
+    def test_rejects(self, mock_conn, kwargs):
+        from blenderwright.tools.lighting import set_world_sky
+
+        with pytest.raises(ValidationError):
+            set_world_sky(**kwargs)

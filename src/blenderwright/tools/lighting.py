@@ -40,6 +40,12 @@ ALLOWED_RIG_TYPES = {"THREE_POINT", "STUDIO", "RIM", "OUTDOOR"}
 # HDRI extensions
 ALLOWED_HDRI_EXTENSIONS = {".hdr", ".exr", ".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 
+# HDRIs bundled with Blender 5.2 (datafiles/studiolights/world)
+ALLOWED_BUILTIN_HDRIS = {
+    "city", "courtyard", "forest", "interior", "night", "studio", "sunrise", "sunset",
+}
+ALLOWED_SKY_TYPES = {"MULTIPLE_SCATTERING", "SINGLE_SCATTERING", "PREETHAM", "HOSEK_WILKIE"}
+
 
 def _send_light_command(command: str, params: dict[str, Any] | None = None) -> Any:
     """Send a lighting command and handle errors."""
@@ -133,32 +139,104 @@ def set_light_property(object_name: str, property: str, value: Any) -> dict[str,
 def set_world_background(
     color: list | None = None,
     hdri_path: str | None = None,
+    builtin_hdri: str | None = None,
     strength: float = 1.0,
+    rotation: float = 0.0,
 ) -> dict[str, Any]:
-    """Set the world background to a solid color or HDRI environment map.
+    """Set the world background to a solid colour or an HDRI environment.
+
+    An HDRI lights the whole scene and gives metal and glass something to
+    reflect; without one, metals look dull. Give exactly one of color,
+    hdri_path or builtin_hdri.
 
     Args:
-        color: RGB color as [r, g, b] for solid background. Mutually exclusive with hdri_path.
-        hdri_path: Absolute path to an HDRI image file. Mutually exclusive with color.
-        strength: Background strength/intensity, default 1.0.
+        color: RGB colour [r, g, b] for a plain background.
+        hdri_path: Absolute path to an HDRI image (.hdr, .exr, ...).
+        builtin_hdri: One of the HDRIs that ship with Blender: city,
+            courtyard, forest, interior, night, studio, sunrise, sunset.
+        strength: Background strength, 0 to 1000, default 1.0.
+        rotation: HDRI turn around the vertical axis in radians, to move
+            where the light comes from. -6.283 to 6.283.
 
     Returns:
         Confirmation dict.
     """
-    if color is None and hdri_path is None:
-        raise ValidationError("Must provide either 'color' or 'hdri_path'")
-    if color is not None and hdri_path is not None:
-        raise ValidationError("Cannot set both 'color' and 'hdri_path' at the same time")
+    sources = [x is not None for x in (color, hdri_path, builtin_hdri)]
+    if not any(sources):
+        raise ValidationError("Must provide either 'color', 'hdri_path' or 'builtin_hdri'")
+    if sum(sources) > 1:
+        raise ValidationError("Give only one of 'color', 'hdri_path' and 'builtin_hdri'")
 
     strength = validate_numeric_range(strength, min_val=0.0, max_val=1000.0, name="strength")
 
     params: dict[str, Any] = {"strength": strength}
     if color is not None:
         params["color"] = list(validate_color(color))[:3]
+        if rotation:
+            raise ValidationError("rotation only applies to an HDRI background")
     if hdri_path is not None:
         params["hdri_path"] = validate_file_path(hdri_path, allowed_extensions=ALLOWED_HDRI_EXTENSIONS, must_exist=True)
+    if builtin_hdri is not None:
+        params["builtin_hdri"] = validate_enum(builtin_hdri, ALLOWED_BUILTIN_HDRIS,
+                                               name="builtin_hdri")
+    if rotation:
+        params["rotation"] = validate_numeric_range(rotation, min_val=-math.tau,
+                                                    max_val=math.tau, name="rotation")
 
     return _send_light_command("set_world_background", params)
+
+
+@mcp.tool()
+def set_world_sky(
+    sky_type: str = "MULTIPLE_SCATTERING",
+    sun_elevation: float = 0.2618,
+    sun_rotation: float = 0.0,
+    sun_intensity: float = 1.0,
+    sun_disc: bool = True,
+    altitude: float = 100.0,
+    air_density: float = 1.0,
+    aerosol_density: float = 1.0,
+    ozone_density: float = 1.0,
+    strength: float = 1.0,
+) -> dict[str, Any]:
+    """Light the scene with a physically based procedural sky and sun.
+
+    Realistic daylight for any time of day with no image file. Low sun
+    elevation gives golden hour; negative gives dusk. Pair with AgX colour
+    management (set_color_management) for natural results.
+
+    Args:
+        sky_type: MULTIPLE_SCATTERING (most realistic, new in 5.0),
+            SINGLE_SCATTERING, PREETHAM or HOSEK_WILKIE.
+        sun_elevation: Sun height above the horizon in radians, -1.571 to
+            1.571. 0.26 (15 degrees) is mid-morning; 0.05 golden hour.
+        sun_rotation: Sun direction around the vertical axis in radians.
+        sun_intensity: Sun brightness multiplier, 0 to 1000.
+        sun_disc: Show the sun itself in the sky.
+        altitude: Viewer height in metres, 0 to 100000.
+        air_density: Air molecules, 0 to 10. Higher is bluer.
+        aerosol_density: Dust and haze, 0 to 10. Higher is hazier and warmer.
+        ozone_density: Ozone, 0 to 10. Affects the blue at dusk.
+        strength: Overall sky brightness, 0 to 1000.
+
+    Returns:
+        Dict with the sky settings applied.
+    """
+    def ranged(value, lo, hi, name):
+        return validate_numeric_range(value, min_val=lo, max_val=hi, name=name)
+
+    return _send_light_command("set_world_sky", {
+        "sky_type": validate_enum(sky_type, ALLOWED_SKY_TYPES, name="sky_type"),
+        "sun_elevation": ranged(sun_elevation, -math.pi / 2, math.pi / 2, "sun_elevation"),
+        "sun_rotation": ranged(sun_rotation, -math.tau, math.tau, "sun_rotation"),
+        "sun_intensity": ranged(sun_intensity, 0.0, 1000.0, "sun_intensity"),
+        "sun_disc": bool(sun_disc),
+        "altitude": ranged(altitude, 0.0, 100000.0, "altitude"),
+        "air_density": ranged(air_density, 0.0, 10.0, "air_density"),
+        "aerosol_density": ranged(aerosol_density, 0.0, 10.0, "aerosol_density"),
+        "ozone_density": ranged(ozone_density, 0.0, 10.0, "ozone_density"),
+        "strength": ranged(strength, 0.0, 1000.0, "strength"),
+    })
 
 
 @mcp.tool()
