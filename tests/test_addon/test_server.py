@@ -23,6 +23,13 @@ def _load_server_module():
     sys.modules["addon.thread_safety"] = mock_thread_safety
     sys.modules["addon.render_guard"] = mock_render_guard_module
 
+    auth_path = os.path.join(os.path.dirname(__file__), "..", "..", "addon", "auth.py")
+    auth_spec = importlib.util.spec_from_file_location("addon.auth", auth_path)
+    auth_mod = importlib.util.module_from_spec(auth_spec)
+    auth_spec.loader.exec_module(auth_mod)
+    sys.modules["addon.auth"] = auth_mod
+    sys.modules["addon"].auth = auth_mod
+
     server_path = os.path.join(
         os.path.dirname(__file__),
         "..", "..", "addon", "server.py",
@@ -129,9 +136,10 @@ class TestMainThreadBusy:
         )
 
         server = server_module.BlenderServer()
+        server._token = "t"
         server._running = True
         mock_client = MagicMock(spec=socket.socket)
-        request = json.dumps({"command": "get_scene_info"}).encode("utf-8")
+        request = json.dumps({"command": "get_scene_info", "token": "t"}).encode("utf-8")
         server._recv_message = MagicMock(side_effect=[request, request, None])
         server._send_message = MagicMock()
 
@@ -180,3 +188,66 @@ class TestNonFiniteJSON:
             parse_constant=server_module._reject_non_finite,
         )
         assert parsed == {"v": 1.5, "w": -2}
+
+
+class TestAuthToken:
+    """Every command must carry the token the addon wrote at startup."""
+
+    def _session(self, server_module, *messages):
+        import json
+
+        server = server_module.BlenderServer()
+        server._token = "right-token"
+        server._running = True
+        raw = [json.dumps(m).encode("utf-8") for m in messages] + [None]
+        server._recv_message = MagicMock(side_effect=raw)
+        server._send_message = MagicMock()
+        dispatch = MagicMock(return_value={"status": "ok", "result": {}})
+        server_module.thread_safety.execute_on_main_thread = dispatch
+        server._handle_client(MagicMock(spec=socket.socket))
+        sent = [json.loads(c[0][1].decode("utf-8")) for c in server._send_message.call_args_list]
+        return server, dispatch, sent
+
+    @pytest.mark.parametrize("message", [
+        {"command": "delete_object", "params": {"object_name": "Cube"}},
+        {"command": "delete_object", "token": "wrong-token"},
+        {"command": "delete_object", "token": None},
+        ["not", "a", "dict"],
+    ])
+    def test_bad_token_is_refused_loudly_and_disconnected(self, server_module, message):
+        server, dispatch, sent = self._session(
+            server_module, message, {"command": "get_scene_info", "token": "right-token"}
+        )
+
+        dispatch.assert_not_called()
+        assert len(sent) == 1  # the follow-up on the same socket is never read
+        assert sent[0]["status"] == "error"
+        assert sent[0]["code"] == "unauthorized"
+        assert "token" in sent[0]["result"].lower()
+        assert server.rejected_connections == 1
+
+    def test_right_token_runs_the_command(self, server_module):
+        server, dispatch, sent = self._session(
+            server_module, {"command": "get_scene_info", "token": "right-token"}
+        )
+
+        dispatch.assert_called_once()
+        assert sent[0]["status"] == "ok"
+        assert server.rejected_connections == 0
+
+    def test_start_writes_a_fresh_token_and_stop_clears_it(self, server_module, monkeypatch):
+        written, cleared = [], []
+        monkeypatch.setattr(server_module.auth, "write_token", written.append)
+        monkeypatch.setattr(server_module.auth, "clear_token", lambda: cleared.append(True))
+        monkeypatch.setattr(server_module.socket, "socket", MagicMock())
+        monkeypatch.setattr(server_module.threading, "Thread", MagicMock())
+
+        server = server_module.BlenderServer()
+        server.start()
+        first = server._token
+        server.stop()
+        server.start()
+        server.stop()
+
+        assert written[0] == first and len(written) == 2 and written[0] != written[1]
+        assert len(cleared) == 2

@@ -3,6 +3,29 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
+TEST_TOKEN = "a" * 64
+
+
+@pytest.fixture(scope="session")
+def _session_token_file(tmp_path_factory):
+    return tmp_path_factory.mktemp("auth") / "token"
+
+
+@pytest.fixture(autouse=True)
+def _isolated_token(_session_token_file, monkeypatch):
+    """Point both ends at a throwaway token file, never the user's real one."""
+    _session_token_file.write_text(TEST_TOKEN)
+    monkeypatch.setenv("BLENDERWRIGHT_TOKEN_FILE", str(_session_token_file))
+
+
+@pytest.fixture
+def token_file(tmp_path, monkeypatch):
+    """A token file of the test's own, for tests that change or delete it."""
+    path = tmp_path / "token"
+    path.write_text(TEST_TOKEN)
+    monkeypatch.setenv("BLENDERWRIGHT_TOKEN_FILE", str(path))
+    return path
+
 
 @pytest.fixture
 def mock_connection():

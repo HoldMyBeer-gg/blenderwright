@@ -78,3 +78,14 @@ class TestRawPythonSwitch:
 
     def test_panel_states_off_when_unticked(self, ui_source):
         assert "execute_blender_code is off" in ui_source
+
+
+class TestRejectedConnections:
+    """A refused token shows in the panel, not only in the console."""
+
+    def test_panel_reads_the_rejection_count(self, ui_source):
+        assert "srv.rejected_connections" in ui_source
+
+    def test_panel_warns_with_an_error_icon(self, ui_source):
+        start = ui_source.index("srv.rejected_connections")
+        assert 'icon="ERROR"' in ui_source[start:start + 400]
