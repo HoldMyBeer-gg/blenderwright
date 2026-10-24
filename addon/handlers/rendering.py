@@ -161,6 +161,72 @@ def handle_set_eevee_light_path(params: dict) -> dict:
     return applied
 
 
+def _set_look(view_settings, look):
+    """Set a look by its short name, as this view transform spells it.
+
+    AgX and False Color prefix their looks ("AgX - Punchy"); the others use
+    the bare name. Setting a look the transform lacks raises TypeError.
+    """
+    for candidate in (f"{view_settings.view_transform} - {look}", look):
+        try:
+            view_settings.look = candidate
+            return
+        except TypeError:
+            continue
+    raise ValueError(
+        f"Look '{look}' is not available for view transform "
+        f"'{view_settings.view_transform}'"
+    )
+
+
+def handle_set_color_management(params):
+    """Set view transform, look, exposure, gamma, display and white balance."""
+    scene = bpy.context.scene
+    vs = scene.view_settings
+
+    # The transform first: changing it resets the look
+    if "view_transform" in params:
+        vs.view_transform = params["view_transform"]
+    if "look" in params:
+        _set_look(vs, params["look"])
+    if "exposure" in params:
+        vs.exposure = params["exposure"]
+    if "gamma" in params:
+        vs.gamma = params["gamma"]
+    if "display_device" in params:
+        scene.display_settings.display_device = params["display_device"]
+    if "white_balance_temperature" in params:
+        vs.use_white_balance = True
+        vs.white_balance_temperature = params["white_balance_temperature"]
+
+    return {
+        "view_transform": vs.view_transform,
+        "look": vs.look,
+        "exposure": vs.exposure,
+        "gamma": vs.gamma,
+        "display_device": scene.display_settings.display_device,
+        "use_white_balance": vs.use_white_balance,
+        "white_balance_temperature": vs.white_balance_temperature,
+    }
+
+
+def handle_set_film(params):
+    """Set transparent film and the Cycles pixel filter."""
+    scene = bpy.context.scene
+    if "transparent" in params:
+        scene.render.film_transparent = params["transparent"]
+    if "transparent_glass" in params:
+        scene.cycles.film_transparent_glass = params["transparent_glass"]
+    if "filter_width" in params:
+        scene.cycles.filter_width = params["filter_width"]
+
+    return {
+        "transparent": scene.render.film_transparent,
+        "transparent_glass": scene.cycles.film_transparent_glass,
+        "filter_width": scene.cycles.filter_width,
+    }
+
+
 def register():
     """Register all rendering handlers with the dispatcher."""
     dispatcher.register_handler("set_render_engine", handle_set_render_engine)
@@ -170,3 +236,5 @@ def register():
     dispatcher.register_handler("render_image", handle_render_image)
     dispatcher.register_handler("render_animation", handle_render_animation)
     dispatcher.register_handler("set_eevee_light_path", handle_set_eevee_light_path)
+    dispatcher.register_handler("set_color_management", handle_set_color_management)
+    dispatcher.register_handler("set_film", handle_set_film)

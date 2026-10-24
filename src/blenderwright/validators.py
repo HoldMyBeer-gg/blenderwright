@@ -187,6 +187,8 @@ def validate_numeric_range(value: float | int | str, min_val: float | int | None
             raise ValidationError(f"{name} must be a number, got '{value}'") from None
     if not isinstance(value, (int, float)):
         raise ValidationError(f"{name} must be a number")
+    if not math.isfinite(value):
+        raise ValidationError(f"{name} must be a finite number, got {value}")
     if min_val is not None and value < min_val:
         raise ValidationError(f"{name} must be >= {min_val}, got {value}")
     if max_val is not None and value > max_val:

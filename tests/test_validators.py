@@ -494,3 +494,18 @@ class TestModifierPropertyCaps:
         """Only bound what we know; do not invent limits."""
         from blenderwright.validators import validate_modifier_property_value
         assert validate_modifier_property_value("WEIRD", "levels", 99) == 99
+
+
+class TestNumericRangeNonFinite:
+    """NaN compares false with everything, so a range check alone lets it through."""
+
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf"), "nan", "inf"])
+    def test_non_finite_is_rejected(self, value):
+        from blenderwright.validators import validate_numeric_range
+        with pytest.raises(ValidationError, match="finite"):
+            validate_numeric_range(value, min_val=-10, max_val=10, name="exposure")
+
+    def test_non_finite_rejected_without_bounds(self):
+        from blenderwright.validators import validate_numeric_range
+        with pytest.raises(ValidationError):
+            validate_numeric_range(float("nan"), name="x")

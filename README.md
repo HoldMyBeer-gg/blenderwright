@@ -26,7 +26,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ## Key Features
 
-- **[191 tools](https://blenderwright.holdmybeer.gg/)** across 28 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **[193 tools](https://blenderwright.holdmybeer.gg/)** across 28 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **13 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -239,7 +239,7 @@ blenderwright includes 13 MCP prompts that guide the LLM toward professional-qua
 ## Tool Domains
 
 <details>
-<summary><strong>All 191 tools across 28 modules</strong></summary>
+<summary><strong>All 193 tools across 28 modules</strong></summary>
 
 Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://blenderwright.holdmybeer.gg/)**
 
@@ -257,7 +257,7 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 | Lighting | 7 | Point/sun/spot/area lights, HDRIs, light rigs, shadows |
 | Camera | 6 | Create, aim, DOF, viewport capture, active camera |
 | Animation | 8 | Keyframes, interpolation, frame range, follow path |
-| Rendering | 7 | Engine, resolution, samples, output format, render, EEVEE light path intensity |
+| Rendering | 9 | Engine, resolution, samples, output format, render, EEVEE light path intensity, color management (AgX, looks, exposure), film transparency |
 | Curves | 10 | Bezier/NURBS/path, 3D text, convert, reverse, handle types, cyclic, subdivide |
 | Sweep | 2 | Sweep a profile along a 3D path for tubes, hoses, cables and rails, with flip-free framing; check a path for bends too tight for the profile |
 | 3D Printing | 1 | Reversed normals, self-intersection, thin walls, shells and overhangs via Blender's 3D Print Toolbox |
@@ -386,7 +386,7 @@ blenderwright/
 │   ├── server.py           # FastMCP entry point
 │   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
-│   ├── tools/              # 28 tool modules (191 tools)
+│   ├── tools/              # 28 tool modules (193 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 13 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)
