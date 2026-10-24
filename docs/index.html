@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 217 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 217 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 218 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 218 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 217 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 218 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,8 +110,8 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>217</b> tools</span>
-    <span><b>31</b> modules</span>
+    <span><b>218</b> tools</span>
+    <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
   </div>
@@ -121,6 +121,7 @@ footer a { color: var(--accent); }
 <div class="layout">
   <nav aria-label="Tool categories"><a href="#animation">Animation <span class="n">8</span></a>
 <a href="#armature">Armature &amp; Rigging <span class="n">6</span></a>
+<a href="#baking">baking <span class="n">1</span></a>
 <a href="#booltool">Bool Tool <span class="n">4</span></a>
 <a href="#camera">Camera <span class="n">6</span></a>
 <a href="#code_exec">Code Execution <span class="n">1</span></a>
@@ -179,6 +180,23 @@ footer a { color: var(--accent); }
 <tr><th>location</th><td>Optional XYZ location offset for the bone.</td></tr>
 <tr><th>rotation</th><td>Optional XYZ Euler rotation in radians.</td></tr>
 <tr><th>scale</th><td>Optional XYZ scale.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the bone&#x27;s new pose values.</p></article></section>
+<section class="module" id="baking" data-module="baking"><h2>baking <span class="n">1</span></h2><article class="tool" id="bake_texture" data-search="bake_texture bake a texture map from an object&#x27;s materials (or a high-poly source) into an image.
+
+the object needs uvs (smart_uv_project) and a material. cycles is used
+for the bake and the render engine is put back afterwards."><h3><a href="#bake_texture">bake_texture</a></h3><pre class="sig"><code>bake_texture(object_name: str, bake_type: str, filepath: str, resolution: int = 1024, source_object: str = &#x27;&#x27;, cage_extrusion: float = 0.0, max_ray_distance: float = 0.0, margin: int = 16, samples: int = 64, diffuse_color_only: bool = True, normal_space: str = &#x27;TANGENT&#x27;)</code></pre><p>Bake a texture map from an object&#x27;s materials (or a high-poly source) into an image.
+
+The object needs UVs (smart_uv_project) and a material. Cycles is used
+for the bake and the render engine is put back afterwards.</p><table class="args"><tbody><tr><th>object_name</th><td>Object whose UVs receive the bake (the low-poly one).</td></tr>
+<tr><th>bake_type</th><td>DIFFUSE (base colour, see diffuse_color_only), NORMAL, AO, ROUGHNESS, EMIT, COMBINED (fully lit), GLOSSY, TRANSMISSION, SHADOW, ENVIRONMENT, POSITION or UV.</td></tr>
+<tr><th>filepath</th><td>Image to write: .png, .exr, .tif or .jpg, in an existing directory. Use .exr or .png for normal maps.</td></tr>
+<tr><th>resolution</th><td>Square image size in pixels, 64 to 8192.</td></tr>
+<tr><th>source_object</th><td>High-poly object to bake from onto object_name (selected to active). Leave empty to bake the object onto itself.</td></tr>
+<tr><th>cage_extrusion</th><td>How far rays start outside the low-poly surface when baking from a source, 0.0 to 10.0. Raise it if the bake has holes.</td></tr>
+<tr><th>max_ray_distance</th><td>Furthest a ray may travel to hit the source, 0 for no limit, up to 10.0.</td></tr>
+<tr><th>margin</th><td>Pixels to bleed past UV island edges, 0 to 64, so mipmaps don&#x27;t show seams.</td></tr>
+<tr><th>samples</th><td>Cycles samples for the bake, 1 to 4096. AO and COMBINED need more; DIFFUSE and NORMAL are clean at 1 to 16.</td></tr>
+<tr><th>diffuse_color_only</th><td>For DIFFUSE, bake the flat base colour (albedo) rather than lit colour. Game engines want this.</td></tr>
+<tr><th>normal_space</th><td>For NORMAL: TANGENT (game engines, normal map nodes) or OBJECT.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the file written, its size and the image name in Blender.</p></article></section>
 <section class="module" id="booltool" data-module="bool tool"><h2>Bool Tool <span class="n">4</span></h2><article class="tool" id="booltool_auto_difference" data-search="booltool_auto_difference auto boolean difference: subtract the target object from the main object.
 
 the target object is used as a cutter and removed after the operation.
