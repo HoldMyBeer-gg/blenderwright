@@ -2,6 +2,7 @@
 
 import base64
 import os
+import shutil
 import tempfile
 
 import bpy
@@ -187,47 +188,41 @@ def handle_capture_viewport(params: dict) -> dict:
         orig_media_type = scene.render.image_settings.media_type
         orig_file_format = scene.render.image_settings.file_format
 
-        # Set render resolution
-        scene.render.resolution_x = width
-        scene.render.resolution_y = height
-        scene.render.resolution_percentage = 100
-
         temp_dir = None
-        if not filepath:
-            temp_dir = tempfile.mkdtemp()
-            filepath = os.path.join(temp_dir, "viewport_capture.png")
+        try:
+            scene.render.resolution_x = width
+            scene.render.resolution_y = height
+            scene.render.resolution_percentage = 100
 
-        scene.render.filepath = filepath
-        scene.render.image_settings.media_type = 'IMAGE'
-        scene.render.image_settings.file_format = 'PNG'
+            if not filepath:
+                temp_dir = tempfile.mkdtemp()
+                filepath = os.path.join(temp_dir, "viewport_capture.png")
 
-        # Render
-        bpy.ops.render.render(write_still=True)
+            scene.render.filepath = filepath
+            scene.render.image_settings.media_type = 'IMAGE'
+            scene.render.image_settings.file_format = 'PNG'
 
-        result = {"width": width, "height": height}
+            bpy.ops.render.render(write_still=True)
 
-        if temp_dir is not None:
-            # Read file and encode as base64
-            with open(filepath, "rb") as f:
-                image_data = f.read()
-            result["base64"] = base64.b64encode(image_data).decode("ascii")
-            result["format"] = "png"
-            # Clean up temp file
-            try:
-                os.remove(filepath)
-                os.rmdir(temp_dir)
-            except OSError:
-                pass
-        else:
-            result["filepath"] = filepath
+            result = {"width": width, "height": height}
 
-        # Restore original settings
-        scene.render.resolution_x = orig_x
-        scene.render.resolution_y = orig_y
-        scene.render.resolution_percentage = orig_percentage
-        scene.render.filepath = orig_filepath
-        scene.render.image_settings.media_type = orig_media_type
-        scene.render.image_settings.file_format = orig_file_format
+            if temp_dir is not None:
+                with open(filepath, "rb") as f:
+                    image_data = f.read()
+                result["base64"] = base64.b64encode(image_data).decode("ascii")
+                result["format"] = "png"
+            else:
+                result["filepath"] = filepath
+        finally:
+            scene.render.resolution_x = orig_x
+            scene.render.resolution_y = orig_y
+            scene.render.resolution_percentage = orig_percentage
+            scene.render.filepath = orig_filepath
+            scene.render.image_settings.media_type = orig_media_type
+            scene.render.image_settings.file_format = orig_file_format
+            # The capture has already succeeded or failed; a stuck temp file must not change that
+            if temp_dir is not None:
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
         return result
     except Exception as e:
