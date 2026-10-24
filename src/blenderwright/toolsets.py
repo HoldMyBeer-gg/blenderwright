@@ -42,6 +42,8 @@ TOOLSETS: dict[str, str] = {
                  "count; report what is selected",
     "mesh_quality": "Find and repair mesh defects; decimate",
     "booltool": "Destructive boolean union, difference, intersect and slice",
+    "baking": "Bake textures: albedo, normal maps from high-poly to low-poly, AO, "
+              "roughness, emission, lighting",
     "materials": "Colours, metal, glass, emission; procedural wood, marble, fire and "
                  "more; raster textures; the shader node graph; colour ramps",
     "lighting": "Point, sun, spot and area lights, HDRI world, light rigs, shadows",

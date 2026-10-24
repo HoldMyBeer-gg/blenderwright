@@ -26,7 +26,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ## Key Features
 
-- **[217 tools](https://blenderwright.holdmybeer.gg/)** across 31 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **[218 tools](https://blenderwright.holdmybeer.gg/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **13 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -239,7 +239,7 @@ blenderwright includes 13 MCP prompts that guide the LLM toward professional-qua
 ## Tool Domains
 
 <details>
-<summary><strong>All 217 tools across 31 modules</strong></summary>
+<summary><strong>All 218 tools across 32 modules</strong></summary>
 
 Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://blenderwright.holdmybeer.gg/)**
 
@@ -259,6 +259,7 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 | Animation | 8 | Keyframes, interpolation, frame range, follow path |
 | Rendering | 7 | Engine, resolution, samples, output format, render, EEVEE light path intensity |
 | Render settings | 7 | Color management (AgX, looks, exposure), film transparency, denoising, Cycles sampling and light paths, motion blur, render passes |
+| Baking | 1 | Bake albedo, normal (high-poly to low-poly with cage), AO, roughness, emission or lit maps to PNG/EXR/TIFF with Cycles |
 | Compositor | 5 | Post-processing chain: glare and bloom, lens distortion, colour balance, blur, Essentials vignette, film grain, chromatic aberration, split toning, sharpening |
 | Deform | 10 | Vertex groups and weights (assign, normalize, smooth, clean, limit, mirror), shape keys (add, sculpt by offset with weighted falloff, blend, animate) |
 | Curves | 10 | Bezier/NURBS/path, 3D text, convert, reverse, handle types, cyclic, subdivide |
@@ -389,7 +390,7 @@ blenderwright/
 │   ├── server.py           # FastMCP entry point
 │   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
-│   ├── tools/              # 31 tool modules (217 tools)
+│   ├── tools/              # 32 tool modules (218 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 13 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)

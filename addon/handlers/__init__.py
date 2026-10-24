@@ -32,6 +32,7 @@ from . import (
     sequencer,
     compositor,
     deform,
+    baking,
 )
 
 _modules = [
@@ -66,6 +67,7 @@ _modules = [
     sequencer,
     compositor,
     deform,
+    baking,
 ]
 
 
