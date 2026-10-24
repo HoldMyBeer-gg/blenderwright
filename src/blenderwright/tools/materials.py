@@ -187,12 +187,18 @@ def create_material(name: str) -> dict[str, Any]:
 def assign_material(object_name: str, material_name: str) -> dict[str, Any]:
     """Assign a material to an object.
 
+    An object with no material, or a single one (like the default cube's
+    "Material"), takes the new material on every face. An object that
+    already has several materials keeps them and gains an extra slot that
+    no face uses yet.
+
     Args:
         object_name: Name of the target object.
         material_name: Name of the material to assign.
 
     Returns:
-        Confirmation dict.
+        Dict with the slot used and the action: "assigned", "replaced" (with
+        the replaced material's name), "added_slot" or "already_assigned".
     """
     object_name = validate_object_name(object_name)
     material_name = validate_object_name(material_name)

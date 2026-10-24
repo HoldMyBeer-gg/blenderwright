@@ -64,10 +64,21 @@ def handle_assign_material(params: dict) -> dict:
                 obj.active_material_index = i
                 return {"object": obj.name, "material": mat.name, "action": "assigned", "slot": i}
 
+        # Replace a lone material: every face uses it, so appending would
+        # leave the object looking unchanged (the default cube's "Material")
+        if len(obj.data.materials) == 1:
+            previous = obj.data.materials[0].name
+            obj.data.materials[0] = mat
+            obj.active_material_index = 0
+            return {"object": obj.name, "material": mat.name, "action": "replaced",
+                    "replaced": previous, "slot": 0}
+
+        # Several materials already: keep them all and add a slot
+        action = "added_slot" if obj.data.materials else "assigned"
         obj.data.materials.append(mat)
         slot = len(obj.data.materials) - 1
         obj.active_material_index = slot
-        return {"object": obj.name, "material": mat.name, "action": "assigned", "slot": slot}
+        return {"object": obj.name, "material": mat.name, "action": action, "slot": slot}
     except Exception as e:
         raise RuntimeError(f"Failed to assign material: {e}")
 
