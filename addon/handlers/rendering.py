@@ -227,6 +227,126 @@ def handle_set_film(params):
     }
 
 
+# Tool parameter -> Cycles property, per tool
+DENOISING_PROPERTIES = {
+    "enabled": "use_denoising",
+    "denoiser": "denoiser",
+    "quality": "denoising_quality",
+    "prefilter": "denoising_prefilter",
+    "input_passes": "denoising_input_passes",
+    "use_gpu": "denoising_use_gpu",
+    "viewport": "use_preview_denoising",
+}
+SAMPLING_PROPERTIES = {
+    "adaptive": "use_adaptive_sampling",
+    "noise_threshold": "adaptive_threshold",
+    "min_samples": "adaptive_min_samples",
+    "time_limit": "time_limit",
+    "clamp_direct": "sample_clamp_direct",
+    "clamp_indirect": "sample_clamp_indirect",
+    "path_guiding": "use_guiding",
+    "seed": "seed",
+    "animated_seed": "use_animated_seed",
+}
+LIGHT_PATH_PROPERTIES = {
+    "total": "max_bounces",
+    "diffuse": "diffuse_bounces",
+    "glossy": "glossy_bounces",
+    "transmission": "transmission_bounces",
+    "volume": "volume_bounces",
+    "transparent": "transparent_max_bounces",
+    "caustics_reflective": "caustics_reflective",
+    "caustics_refractive": "caustics_refractive",
+    "filter_glossy": "blur_glossy",
+}
+
+# Render pass name -> (view layer sub-owner, property). "" is the view layer itself.
+RENDER_PASSES = {
+    name: ("", f"use_pass_{name}") for name in (
+        "combined", "z", "mist", "normal", "position", "vector", "uv",
+        "object_index", "material_index", "ambient_occlusion", "shadow", "emit",
+        "environment", "diffuse_direct", "diffuse_indirect", "diffuse_color",
+        "glossy_direct", "glossy_indirect", "glossy_color",
+        "transmission_direct", "transmission_indirect", "transmission_color",
+        "subsurface_direct", "subsurface_indirect", "subsurface_color",
+        "cryptomatte_object", "cryptomatte_material", "cryptomatte_asset",
+        "grease_pencil",
+    )
+}
+RENDER_PASSES.update({
+    "shadow_catcher": ("cycles", "use_pass_shadow_catcher"),
+    "volume_direct": ("cycles", "use_pass_volume_direct"),
+    "volume_indirect": ("cycles", "use_pass_volume_indirect"),
+    "transparent": ("eevee", "use_pass_transparent"),
+})
+
+
+def _apply(owner, mapping, params):
+    """Set each given parameter through the mapping and report every mapped value."""
+    for key, prop in mapping.items():
+        if key in params:
+            setattr(owner, prop, params[key])
+    return {key: getattr(owner, prop) for key, prop in mapping.items()}
+
+
+def handle_set_denoising(params):
+    """Set Cycles denoising options."""
+    cycles = bpy.context.scene.cycles
+    if "denoiser" in params:
+        try:
+            cycles.denoiser = params["denoiser"]
+        except TypeError:
+            raise ValueError(
+                f"Denoiser '{params['denoiser']}' is not available on this machine"
+            ) from None
+    return _apply(cycles, DENOISING_PROPERTIES, params)
+
+
+def handle_set_cycles_sampling(params):
+    """Set Cycles adaptive sampling, time limit, clamping, guiding and seed."""
+    return _apply(bpy.context.scene.cycles, SAMPLING_PROPERTIES, params)
+
+
+def handle_set_light_paths(params):
+    """Set Cycles bounce limits, caustics and glossy filtering."""
+    return _apply(bpy.context.scene.cycles, LIGHT_PATH_PROPERTIES, params)
+
+
+def handle_set_motion_blur(params):
+    """Set render motion blur and EEVEE blur steps."""
+    scene = bpy.context.scene
+    render = scene.render
+    if "enabled" in params:
+        render.use_motion_blur = params["enabled"]
+    if "shutter" in params:
+        render.motion_blur_shutter = params["shutter"]
+    if "position" in params:
+        render.motion_blur_position = params["position"]
+    if "eevee_steps" in params:
+        scene.eevee.motion_blur_steps = params["eevee_steps"]
+    return {
+        "enabled": render.use_motion_blur,
+        "shutter": render.motion_blur_shutter,
+        "position": render.motion_blur_position,
+        "eevee_steps": scene.eevee.motion_blur_steps,
+    }
+
+
+def handle_set_render_passes(params):
+    """Turn render passes on or off on the active view layer."""
+    passes = params.get("passes", [])
+    unknown = [p for p in passes if p not in RENDER_PASSES]
+    if unknown:
+        raise ValueError(f"Unknown render pass(es): {', '.join(map(str, unknown))}")
+    enabled = bool(params.get("enabled", True))
+    view_layer = bpy.context.view_layer
+    for name in passes:
+        sub, prop = RENDER_PASSES[name]
+        owner = getattr(view_layer, sub) if sub else view_layer
+        setattr(owner, prop, enabled)
+    return {"view_layer": view_layer.name, "enabled": enabled, "changed": list(passes)}
+
+
 def register():
     """Register all rendering handlers with the dispatcher."""
     dispatcher.register_handler("set_render_engine", handle_set_render_engine)
@@ -238,3 +358,8 @@ def register():
     dispatcher.register_handler("set_eevee_light_path", handle_set_eevee_light_path)
     dispatcher.register_handler("set_color_management", handle_set_color_management)
     dispatcher.register_handler("set_film", handle_set_film)
+    dispatcher.register_handler("set_denoising", handle_set_denoising)
+    dispatcher.register_handler("set_cycles_sampling", handle_set_cycles_sampling)
+    dispatcher.register_handler("set_light_paths", handle_set_light_paths)
+    dispatcher.register_handler("set_motion_blur", handle_set_motion_blur)
+    dispatcher.register_handler("set_render_passes", handle_set_render_passes)

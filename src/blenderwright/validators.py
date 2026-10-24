@@ -211,6 +211,14 @@ def validate_numeric_range(value: float | int | str, min_val: float | int | None
     return value
 
 
+def validate_int(value: int | float | str, min_val: int | None = None, max_val: int | None = None, name: str = "value") -> int:
+    """Validate a whole number within range. 4.0 and "4" are accepted as 4."""
+    number = validate_numeric_range(value, min_val=min_val, max_val=max_val, name=name)
+    if number != int(number):
+        raise ValidationError(f"{name} must be a whole number, got {value}")
+    return int(number)
+
+
 def validate_color(color: list | tuple) -> tuple:
     """Validate an RGBA or RGB color value."""
     if not isinstance(color, (list, tuple)):
