@@ -15,10 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Blender 4.2 LTS
+      - name: Download Blender 5.2 LTS
         run: |
           curl -sSfL -o blender.tar.xz \
-            https://download.blender.org/release/Blender4.2/blender-4.2.0-linux-x64.tar.xz
+            https://download.blender.org/release/Blender5.2/blender-5.2.3-linux-x64.tar.xz
           mkdir -p blender
           tar -xf blender.tar.xz -C blender --strip-components=1
           echo "$PWD/blender" >> "$GITHUB_PATH"
