@@ -318,8 +318,73 @@ def handle_select_linked(params):
     }
 
 
+SYMMETRIZE_DIRECTIONS = {
+    "NEGATIVE_X", "POSITIVE_X", "NEGATIVE_Y", "POSITIVE_Y", "NEGATIVE_Z", "POSITIVE_Z",
+}
+# Loop tool operation -> built-in mesh operator (LoopTools moved into Blender 5.2)
+LOOP_OPERATORS = {
+    "CIRCLE": "circularize",
+    "SPACE": "space_edge_loops_evenly",
+    "FLATTEN": "flatten",
+}
+
+
+def _run_in_edit(obj, selection, operator, **kwargs):
+    _enter_edit(obj, selection)
+    try:
+        result = operator(**kwargs)
+    finally:
+        bpy.ops.object.mode_set(mode="OBJECT")
+    if result != {"FINISHED"}:
+        raise RuntimeError(f"The operation did not finish: {result}")
+
+
+def handle_symmetrize_mesh(params):
+    """Copy one half of a mesh onto the other."""
+    _ensure_object_mode()
+    obj = _get_mesh_object(params["object_name"])
+    direction = params.get("direction", "NEGATIVE_X")
+    if direction not in SYMMETRIZE_DIRECTIONS:
+        raise ValueError(f"Unknown direction {direction!r}")
+    _run_in_edit(obj, params.get("selection", "ALL"), bpy.ops.mesh.symmetrize,
+                 direction=direction, threshold=params.get("threshold", 0.0001))
+    return {"object": obj.name, "direction": direction, "vertices": len(obj.data.vertices)}
+
+
+def handle_bisect_mesh(params):
+    """Slice a mesh with a world-space plane."""
+    _ensure_object_mode()
+    obj = _get_mesh_object(params["object_name"])
+    _run_in_edit(obj, params.get("selection", "ALL"), bpy.ops.mesh.bisect,
+                 plane_co=tuple(params.get("plane_point", (0, 0, 0))),
+                 plane_no=tuple(params.get("plane_normal", (0, 0, 1))),
+                 clear_inner=bool(params.get("clear_inner", False)),
+                 clear_outer=bool(params.get("clear_outer", False)),
+                 use_fill=bool(params.get("fill", False)))
+    return {"object": obj.name, "vertices": len(obj.data.vertices)}
+
+
+def handle_loop_tools(params):
+    """Make selected loops round, evenly spaced or flat."""
+    _ensure_object_mode()
+    obj = _get_mesh_object(params["object_name"])
+    operation = params.get("operation")
+    op_name = LOOP_OPERATORS.get(operation)
+    if op_name is None:
+        raise ValueError(f"Unknown loop operation {operation!r}")
+    kwargs = {"factor": params.get("factor", 1.0)}
+    if operation == "CIRCLE" and "radius" in params:
+        kwargs.update(use_custom_radius=True, custom_radius=params["radius"])
+    _run_in_edit(obj, params.get("selection", "CURRENT"), getattr(bpy.ops.mesh, op_name),
+                 **kwargs)
+    return {"object": obj.name, "operation": operation}
+
+
 def register():
     """Register all mesh editing handlers with the dispatcher."""
+    dispatcher.register_handler("symmetrize_mesh", handle_symmetrize_mesh)
+    dispatcher.register_handler("bisect_mesh", handle_bisect_mesh)
+    dispatcher.register_handler("loop_tools", handle_loop_tools)
     dispatcher.register_handler("inset_faces", handle_inset_faces)
     dispatcher.register_handler("fill_faces", handle_fill_faces)
     dispatcher.register_handler("grid_fill", handle_grid_fill)

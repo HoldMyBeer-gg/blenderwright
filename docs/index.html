@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 214 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 214 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 217 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 217 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 214 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 217 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>214</b> tools</span>
+    <span><b>217</b> tools</span>
     <span><b>31</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -133,7 +133,7 @@ footer a { color: var(--accent); }
 <a href="#gpencil">Grease Pencil <span class="n">5</span></a>
 <a href="#lighting">Lighting <span class="n">7</span></a>
 <a href="#materials">Materials &amp; Shaders <span class="n">25</span></a>
-<a href="#mesh_editing">Mesh Editing <span class="n">16</span></a>
+<a href="#mesh_editing">Mesh Editing <span class="n">19</span></a>
 <a href="#mesh_quality">Mesh Quality <span class="n">3</span></a>
 <a href="#modeling">Modeling <span class="n">13</span></a>
 <a href="#objects">Objects <span class="n">15</span></a>
@@ -662,7 +662,19 @@ and &#x27;bands_direction&#x27;, Noise &#x27;noise_dimensions&#x27;.</p><table c
 <tr><th>node_name</th><td>Name of the node.</td></tr>
 <tr><th>property</th><td>Property name. Must be one of the allowed node properties.</td></tr>
 <tr><th>value</th><td>String enum identifier, number, or boolean.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the node, property, and the value that was applied.</p></article></section>
-<section class="module" id="mesh_editing" data-module="mesh editing"><h2>Mesh Editing <span class="n">16</span></h2><article class="tool" id="dissolve_edges" data-search="dissolve_edges dissolve all edges, merging adjacent faces.
+<section class="module" id="mesh_editing" data-module="mesh editing"><h2>Mesh Editing <span class="n">19</span></h2><article class="tool" id="bisect_mesh" data-search="bisect_mesh slice a mesh with a plane, optionally deleting one side and capping the cut.
+
+cuts a new edge loop where the plane crosses, which is also a clean way
+to halve a model before adding a mirror modifier."><h3><a href="#bisect_mesh">bisect_mesh</a></h3><pre class="sig"><code>bisect_mesh(object_name: str, plane_point: list[float] | tuple[float, ...] = (0, 0, 0), plane_normal: list[float] | tuple[float, ...] = (0, 0, 1), clear_inner: bool = False, clear_outer: bool = False, fill: bool = False, selection: str = &#x27;ALL&#x27;)</code></pre><p>Slice a mesh with a plane, optionally deleting one side and capping the cut.
+
+Cuts a new edge loop where the plane crosses, which is also a clean way
+to halve a model before adding a Mirror modifier.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>plane_point</th><td>A point on the cutting plane, in world space.</td></tr>
+<tr><th>plane_normal</th><td>The plane&#x27;s direction, in world space; it need not be unit length but must not be zero. [0, 0, 1] is a horizontal cut.</td></tr>
+<tr><th>clear_inner</th><td>Delete everything behind the plane (against the normal).</td></tr>
+<tr><th>clear_outer</th><td>Delete everything in front of the plane (along the normal).</td></tr>
+<tr><th>fill</th><td>Cap the cut with a face. Only useful when one side is cleared.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; for the whole mesh, or &quot;CURRENT&quot; for the part already selected.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the vertex count afterwards.</p></article><article class="tool" id="dissolve_edges" data-search="dissolve_edges dissolve all edges, merging adjacent faces.
 
 simplifies topology by removing unnecessary edge loops while
 preserving the overall shape."><h3><a href="#dissolve_edges">dissolve_edges</a></h3><pre class="sig"><code>dissolve_edges(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Dissolve all edges, merging adjacent faces.
@@ -732,7 +744,17 @@ the target mesh, cutting new edges into it."><h3><a href="#knife_project">knife_
 
 The cutter object (curve or mesh) is projected from the viewport onto
 the target mesh, cutting new edges into it.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh to cut into.</td></tr>
-<tr><th>cutter_name</th><td>Name of the cutter object (curve or mesh) to project.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="mark_seam" data-search="mark_seam mark or clear uv seams on all edges of a mesh.
+<tr><th>cutter_name</th><td>Name of the cutter object (curve or mesh) to project.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="loop_tools" data-search="loop_tools reshape selected loops: make them round, even or flat.
+
+blender 5.2&#x27;s built-in versions of the looptools add-on. select a loop or
+region first with the select_* tools."><h3><a href="#loop_tools">loop_tools</a></h3><pre class="sig"><code>loop_tools(object_name: str, operation: str, factor: float = 1.0, radius: float | None = None, selection: str = &#x27;CURRENT&#x27;)</code></pre><p>Reshape selected loops: make them round, even or flat.
+
+Blender 5.2&#x27;s built-in versions of the LoopTools add-on. Select a loop or
+region first with the select_* tools.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>operation</th><td>CIRCLE (shape the selection into a circle: round holes for bolts and pipes), SPACE (space vertices evenly along the loop), or FLATTEN (press the selection onto a best-fit plane).</td></tr>
+<tr><th>factor</th><td>How far to move toward the result, 0.0 to 1.0.</td></tr>
+<tr><th>radius</th><td>CIRCLE only: a fixed radius instead of the best fit, above 0.</td></tr>
+<tr><th>selection</th><td>&quot;CURRENT&quot; (default) for what is selected, or &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the operation and the object.</p></article><article class="tool" id="mark_seam" data-search="mark_seam mark or clear uv seams on all edges of a mesh.
 
 uv seams guide the uv unwrapping process. edges marked as seams define
 where the mesh is &quot;cut&quot; when unwrapped to 2d."><h3><a href="#mark_seam">mark_seam</a></h3><pre class="sig"><code>mark_seam(object_name: str, clear: bool = False, selection: str = &#x27;ALL&#x27;)</code></pre><p>Mark or clear UV seams on all edges of a mesh.
@@ -792,7 +814,16 @@ vases, columns, or wheels.</p><table class="args"><tbody><tr><th>object_name</th
 <tr><th>steps</th><td>Number of steps in the spin. Range: 1-1000.</td></tr>
 <tr><th>axis</th><td>Spin axis as XYZ vector. Defaults to Z-up (0, 0, 1).</td></tr>
 <tr><th>center</th><td>Center point for the spin as XYZ. Defaults to origin.</td></tr>
-<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="tris_to_quads" data-search="tris_to_quads convert adjacent triangle pairs to quad faces where possible.
+<tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="symmetrize_mesh" data-search="symmetrize_mesh make a mesh symmetrical by copying one half onto the other.
+
+fixes a model that drifted out of symmetry, or builds the second half of
+a half-modelled object. works in the object&#x27;s local axes."><h3><a href="#symmetrize_mesh">symmetrize_mesh</a></h3><pre class="sig"><code>symmetrize_mesh(object_name: str, direction: str = &#x27;NEGATIVE_X&#x27;, threshold: float = 0.0001, selection: str = &#x27;ALL&#x27;)</code></pre><p>Make a mesh symmetrical by copying one half onto the other.
+
+Fixes a model that drifted out of symmetry, or builds the second half of
+a half-modelled object. Works in the object&#x27;s local axes.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>direction</th><td>Which half is copied where. NEGATIVE_X copies the -X side onto +X; POSITIVE_X the reverse; likewise for Y and Z.</td></tr>
+<tr><th>threshold</th><td>Distance within which vertices on the centre line merge, 0.0 to 1.0.</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; for the whole mesh, or &quot;CURRENT&quot; for the part already selected with the select_* tools.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the direction and the vertex count afterwards.</p></article><article class="tool" id="tris_to_quads" data-search="tris_to_quads convert adjacent triangle pairs to quad faces where possible.
 
 improves topology for subdivision and deformation. not all triangles
 can be merged: only adjacent pairs with compatible angles."><h3><a href="#tris_to_quads">tris_to_quads</a></h3><pre class="sig"><code>tris_to_quads(object_name: str, selection: str = &#x27;ALL&#x27;)</code></pre><p>Convert adjacent triangle pairs to quad faces where possible.
