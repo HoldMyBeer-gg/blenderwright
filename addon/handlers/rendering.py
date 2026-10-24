@@ -354,6 +354,89 @@ def handle_set_render_passes(params):
     return {"view_layer": view_layer.name, "enabled": enabled, "changed": list(passes)}
 
 
+RAY_VISIBILITY = {
+    "camera": "visible_camera",
+    "diffuse": "visible_diffuse",
+    "glossy": "visible_glossy",
+    "transmission": "visible_transmission",
+    "volume_scatter": "visible_volume_scatter",
+    "shadow": "visible_shadow",
+    "holdout": "is_holdout",
+    "shadow_catcher": "is_shadow_catcher",
+}
+EEVEE_QUALITY = {
+    "raytracing": "use_raytracing",
+    "ray_tracing_method": "ray_tracing_method",
+    "fast_gi": "use_fast_gi",
+    "fast_gi_method": "fast_gi_method",
+    "shadow_pool_size": "shadow_pool_size",
+    "shadow_rays": "shadow_ray_count",
+    "shadow_steps": "shadow_step_count",
+    "volumetric_samples": "volumetric_samples",
+    "volumetric_tile_size": "volumetric_tile_size",
+    "volumetric_shadows": "use_volumetric_shadows",
+    "clamp_direct": "clamp_surface_direct",
+    "clamp_indirect": "clamp_surface_indirect",
+}
+# Sizes Blender stores as enum text
+EEVEE_ENUM_NUMBERS = {"shadow_pool_size", "volumetric_tile_size"}
+
+
+def handle_set_object_ray_visibility(params):
+    """Set which rays see an object."""
+    name = params.get("object_name")
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        raise ValueError(f"Object '{name}' not found")
+    for key, prop in RAY_VISIBILITY.items():
+        if key in params:
+            setattr(obj, prop, bool(params[key]))
+    return {"object": obj.name, **{key: getattr(obj, prop) for key, prop in RAY_VISIBILITY.items()}}
+
+
+def handle_set_eevee_quality(params):
+    """Set EEVEE ray tracing, GI, shadow and volume quality."""
+    eevee = bpy.context.scene.eevee
+    for key, prop in EEVEE_QUALITY.items():
+        if key in params:
+            value = params[key]
+            setattr(eevee, prop, str(int(value)) if key in EEVEE_ENUM_NUMBERS else value)
+    return {key: (int(getattr(eevee, prop)) if key in EEVEE_ENUM_NUMBERS
+                  else getattr(eevee, prop)) for key, prop in EEVEE_QUALITY.items()}
+
+
+def handle_set_render_performance(params):
+    """Set Simplify, texture limits, persistent data, tiles and filtering."""
+    scene = bpy.context.scene
+    render, cycles = scene.render, scene.cycles
+    if "simplify" in params:
+        render.use_simplify = bool(params["simplify"])
+    if "max_subdivision" in params:
+        render.simplify_subdivision_render = int(params["max_subdivision"])
+    if "texture_limit" in params:
+        cycles.texture_limit_render = params["texture_limit"]
+    if "texture_resolution" in params:
+        cycles.texture_resolution_render = float(params["texture_resolution"])
+    if "persistent_data" in params:
+        render.use_persistent_data = bool(params["persistent_data"])
+    if "auto_tile" in params:
+        cycles.use_auto_tile = bool(params["auto_tile"])
+    if "tile_size" in params:
+        cycles.tile_size = int(params["tile_size"])
+    if "anisotropic_filter" in params:
+        render.anisotropic_filter = f"FILTER_{int(params['anisotropic_filter'])}"
+    return {
+        "simplify": render.use_simplify,
+        "max_subdivision": render.simplify_subdivision_render,
+        "texture_limit": cycles.texture_limit_render,
+        "texture_resolution": cycles.texture_resolution_render,
+        "persistent_data": render.use_persistent_data,
+        "auto_tile": cycles.use_auto_tile,
+        "tile_size": cycles.tile_size,
+        "anisotropic_filter": int(render.anisotropic_filter.split("_")[1]),
+    }
+
+
 def register():
     """Register all rendering handlers with the dispatcher."""
     dispatcher.register_handler("set_render_engine", handle_set_render_engine)
@@ -370,3 +453,6 @@ def register():
     dispatcher.register_handler("set_light_paths", handle_set_light_paths)
     dispatcher.register_handler("set_motion_blur", handle_set_motion_blur)
     dispatcher.register_handler("set_render_passes", handle_set_render_passes)
+    dispatcher.register_handler("set_object_ray_visibility", handle_set_object_ray_visibility)
+    dispatcher.register_handler("set_eevee_quality", handle_set_eevee_quality)
+    dispatcher.register_handler("set_render_performance", handle_set_render_performance)
