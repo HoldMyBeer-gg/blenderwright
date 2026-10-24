@@ -192,8 +192,8 @@ def handle_capture_viewport(params: dict) -> dict:
         scene.render.resolution_y = height
         scene.render.resolution_percentage = 100
 
-        use_temp = not filepath
-        if use_temp:
+        temp_dir = None
+        if not filepath:
             temp_dir = tempfile.mkdtemp()
             filepath = os.path.join(temp_dir, "viewport_capture.png")
 
@@ -206,7 +206,7 @@ def handle_capture_viewport(params: dict) -> dict:
 
         result = {"width": width, "height": height}
 
-        if use_temp:
+        if temp_dir is not None:
             # Read file and encode as base64
             with open(filepath, "rb") as f:
                 image_data = f.read()
