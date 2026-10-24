@@ -528,14 +528,40 @@ class TestAssignMaterialSlots:
         assert obj.data.materials == [other, sage, None]
         assert result["slot"] == 1
 
-    def test_appends_when_no_slot_is_empty(self, mh, monkeypatch):
+    def test_single_material_is_replaced(self, mh, monkeypatch):
+        """The default cube carries "Material" in slot 0 and every face uses it.
+
+        Appending left the cube grey; replacing the only slot recolours it.
+        """
         sage = self._mat("Wall_Sage")
-        other = self._mat("Other")
-        obj = self._obj([other])
+        default = self._mat("Material")
+        obj = self._obj([default])
         self._patch(monkeypatch, obj, sage)
         result = mh.handle_assign_material({"object_name": "Wall", "material_name": "Wall_Sage"})
-        assert obj.data.materials == [other, sage]
-        assert result["slot"] == 1
+        assert obj.data.materials == [sage]
+        assert result["slot"] == 0
+        assert result["action"] == "replaced"
+        assert result["replaced"] == "Material"
+
+    def test_no_slots_gets_one(self, mh, monkeypatch):
+        sage = self._mat("Wall_Sage")
+        obj = self._obj([])
+        self._patch(monkeypatch, obj, sage)
+        result = mh.handle_assign_material({"object_name": "Wall", "material_name": "Wall_Sage"})
+        assert obj.data.materials == [sage]
+        assert result["slot"] == 0
+        assert result["action"] == "assigned"
+
+    def test_multi_material_object_keeps_its_materials(self, mh, monkeypatch):
+        """A car body plus glass: adding paint must not wipe either."""
+        sage = self._mat("Wall_Sage")
+        body, glass = self._mat("Body"), self._mat("Glass")
+        obj = self._obj([body, glass])
+        self._patch(monkeypatch, obj, sage)
+        result = mh.handle_assign_material({"object_name": "Wall", "material_name": "Wall_Sage"})
+        assert obj.data.materials == [body, glass, sage]
+        assert result["slot"] == 2
+        assert result["action"] == "added_slot"
 
     def test_already_assigned_is_reported(self, mh, monkeypatch):
         sage = self._mat("Wall_Sage")
