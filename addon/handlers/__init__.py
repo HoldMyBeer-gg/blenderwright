@@ -31,6 +31,7 @@ from . import (
     print3d,
     sequencer,
     compositor,
+    deform,
 )
 
 _modules = [
@@ -64,6 +65,7 @@ _modules = [
     print3d,
     sequencer,
     compositor,
+    deform,
 ]
 
 

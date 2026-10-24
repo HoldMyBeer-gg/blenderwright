@@ -54,6 +54,7 @@ from blenderwright.tools import (  # noqa: E402, F401
     sequencer,
     compositor,
     render_settings,
+    deform,
 )
 
 # Import resources and prompts

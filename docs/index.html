@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 203 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 203 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 213 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 213 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 203 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 213 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,8 +110,8 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>203</b> tools</span>
-    <span><b>30</b> modules</span>
+    <span><b>213</b> tools</span>
+    <span><b>31</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
   </div>
@@ -127,6 +127,7 @@ footer a { color: var(--accent); }
 <a href="#collections">Collections <span class="n">4</span></a>
 <a href="#compositor">compositor <span class="n">5</span></a>
 <a href="#curves">Curves <span class="n">10</span></a>
+<a href="#deform">deform <span class="n">10</span></a>
 <a href="#file_ops">File I/O <span class="n">5</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">5</span></a>
 <a href="#gpencil">Grease Pencil <span class="n">5</span></a>
@@ -321,6 +322,63 @@ over. Effects then stack between the render and the output.</p><table class="arg
 <tr><th>value</th><td>Value to set. Type depends on property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with property name and new value.</p></article><article class="tool" id="set_handle_type" data-search="set_handle_type set the handle type for all control points of a curve."><h3><a href="#set_handle_type">set_handle_type</a></h3><pre class="sig"><code>set_handle_type(curve_name: str, handle_type: str = &#x27;AUTOMATIC&#x27;)</code></pre><p>Set the handle type for all control points of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr>
 <tr><th>handle_type</th><td>Handle type - AUTO, VECTOR, ALIGNED, or FREE_ALIGN.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of handle type change.</p></article><article class="tool" id="smooth_curve" data-search="smooth_curve smooth the control points of a curve."><h3><a href="#smooth_curve">smooth_curve</a></h3><pre class="sig"><code>smooth_curve(curve_name: str)</code></pre><p>Smooth the control points of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of smoothing.</p></article><article class="tool" id="subdivide_curve" data-search="subdivide_curve subdivide a curve by adding control points between existing ones."><h3><a href="#subdivide_curve">subdivide_curve</a></h3><pre class="sig"><code>subdivide_curve(curve_name: str, number_cuts: int = 1)</code></pre><p>Subdivide a curve by adding control points between existing ones.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr>
 <tr><th>number_cuts</th><td>Number of cuts to make (1-100).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of subdivision.</p></article><article class="tool" id="switch_curve_direction" data-search="switch_curve_direction switch the direction of a curve&#x27;s splines."><h3><a href="#switch_curve_direction">switch_curve_direction</a></h3><pre class="sig"><code>switch_curve_direction(curve_name: str)</code></pre><p>Switch the direction of a curve&#x27;s splines.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of direction switch.</p></article><article class="tool" id="toggle_cyclic" data-search="toggle_cyclic toggle the cyclic (closed loop) state of a curve."><h3><a href="#toggle_cyclic">toggle_cyclic</a></h3><pre class="sig"><code>toggle_cyclic(curve_name: str)</code></pre><p>Toggle the cyclic (closed loop) state of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of cyclic toggle.</p></article></section>
+<section class="module" id="deform" data-module="deform"><h2>deform <span class="n">10</span></h2><article class="tool" id="add_shape_key" data-search="add_shape_key add a shape key (blend shape). the first call also creates the basis.
+
+shape keys store alternative vertex positions blended by a 0-1 value:
+facial expressions, morphs, corrective shapes. shape it with
+move_shape_key_vertices, blend with set_shape_key, animate with
+keyframe_shape_key."><h3><a href="#add_shape_key">add_shape_key</a></h3><pre class="sig"><code>add_shape_key(object_name: str, key_name: str, from_mix: bool = False)</code></pre><p>Add a shape key (blend shape). The first call also creates the Basis.
+
+Shape keys store alternative vertex positions blended by a 0-1 value:
+facial expressions, morphs, corrective shapes. Shape it with
+move_shape_key_vertices, blend with set_shape_key, animate with
+keyframe_shape_key.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>key_name</th><td>Name for the new shape key.</td></tr>
+<tr><th>from_mix</th><td>Start from the current blend of all keys instead of the Basis.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the new key and every key on the object.</p></article><article class="tool" id="assign_vertex_group" data-search="assign_vertex_group put vertices into a vertex group with a weight, creating the group if needed.
+
+vertex groups drive armature skinning, and limit modifiers (displace,
+solidify, mask) and shape keys to part of a mesh."><h3><a href="#assign_vertex_group">assign_vertex_group</a></h3><pre class="sig"><code>assign_vertex_group(object_name: str, group_name: str, vertex_indices: list[int] | None = None, weight: float = 1.0, mode: str = &#x27;REPLACE&#x27;, selection: str = &#x27;ALL&#x27;)</code></pre><p>Put vertices into a vertex group with a weight, creating the group if needed.
+
+Vertex groups drive armature skinning, and limit modifiers (Displace,
+Solidify, Mask) and shape keys to part of a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>group_name</th><td>Vertex group; created if it does not exist.</td></tr>
+<tr><th>vertex_indices</th><td>Vertices to change. Omit to use the whole mesh, or the edit-mode selection with selection=&quot;CURRENT&quot;.</td></tr>
+<tr><th>weight</th><td>0.0 to 1.0.</td></tr>
+<tr><th>mode</th><td>REPLACE sets the weight, ADD and SUBTRACT change it, REMOVE takes the vertices out of the group.</td></tr>
+<tr><th>selection</th><td>When vertex_indices is omitted: ALL vertices, or CURRENT for the ones selected in edit mode (use the select_* tools first).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the group name, its index and how many vertices changed.</p></article><article class="tool" id="keyframe_shape_key" data-search="keyframe_shape_key keyframe a shape key&#x27;s value so the blend shape animates."><h3><a href="#keyframe_shape_key">keyframe_shape_key</a></h3><pre class="sig"><code>keyframe_shape_key(object_name: str, key_name: str, frame: int, value: float | None = None)</code></pre><p>Keyframe a shape key&#x27;s value so the blend shape animates.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>key_name</th><td>Shape key.</td></tr>
+<tr><th>frame</th><td>Frame number.</td></tr>
+<tr><th>value</th><td>Value to set before keying; omit to key the current value.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the key, frame and keyed value.</p></article><article class="tool" id="list_shape_keys" data-search="list_shape_keys list an object&#x27;s shape keys with values, ranges and options."><h3><a href="#list_shape_keys">list_shape_keys</a></h3><pre class="sig"><code>list_shape_keys(object_name: str)</code></pre><p>List an object&#x27;s shape keys with values, ranges and options.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the reference key and each key&#x27;s settings.</p></article><article class="tool" id="list_vertex_groups" data-search="list_vertex_groups list an object&#x27;s vertex groups with vertex counts and weight ranges."><h3><a href="#list_vertex_groups">list_vertex_groups</a></h3><pre class="sig"><code>list_vertex_groups(object_name: str)</code></pre><p>List an object&#x27;s vertex groups with vertex counts and weight ranges.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with each group&#x27;s name, index, vertex count, min and max weight.</p></article><article class="tool" id="move_shape_key_vertices" data-search="move_shape_key_vertices move vertices inside a shape key, building the blend shape.
+
+the offset is in the object&#x27;s local space. with a vertex group, each
+vertex moves by offset times its weight, which gives soft falloff:
+weight the cheeks, then move them out to puff them."><h3><a href="#move_shape_key_vertices">move_shape_key_vertices</a></h3><pre class="sig"><code>move_shape_key_vertices(object_name: str, key_name: str, offset: list[float], vertex_indices: list[int] | None = None, vertex_group: str = &#x27;&#x27;)</code></pre><p>Move vertices inside a shape key, building the blend shape.
+
+The offset is in the object&#x27;s local space. With a vertex group, each
+vertex moves by offset times its weight, which gives soft falloff:
+weight the cheeks, then move them out to puff them.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>key_name</th><td>Shape key to edit (not the Basis).</td></tr>
+<tr><th>offset</th><td>[x, y, z] distance to move, each -1000 to 1000.</td></tr>
+<tr><th>vertex_indices</th><td>Vertices to move. Leave out to use vertex_group, or neither to move the whole mesh.</td></tr>
+<tr><th>vertex_group</th><td>Move by this group&#x27;s weights instead of by index.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the number of vertices moved.</p></article><article class="tool" id="remove_shape_key" data-search="remove_shape_key delete a shape key."><h3><a href="#remove_shape_key">remove_shape_key</a></h3><pre class="sig"><code>remove_shape_key(object_name: str, key_name: str)</code></pre><p>Delete a shape key.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>key_name</th><td>Shape key to delete.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the removed key and the keys left.</p></article><article class="tool" id="remove_vertex_group" data-search="remove_vertex_group delete a vertex group and every weight in it."><h3><a href="#remove_vertex_group">remove_vertex_group</a></h3><pre class="sig"><code>remove_vertex_group(object_name: str, group_name: str)</code></pre><p>Delete a vertex group and every weight in it.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>group_name</th><td>Vertex group to delete.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the removed group and the groups left.</p></article><article class="tool" id="set_shape_key" data-search="set_shape_key set how strongly a shape key applies, and its options."><h3><a href="#set_shape_key">set_shape_key</a></h3><pre class="sig"><code>set_shape_key(object_name: str, key_name: str, value: float | None = None, slider_min: float | None = None, slider_max: float | None = None, mute: bool | None = None, vertex_group: str | None = None, relative_key: str = &#x27;&#x27;)</code></pre><p>Set how strongly a shape key applies, and its options.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>key_name</th><td>Shape key.</td></tr>
+<tr><th>value</th><td>Blend amount, normally 0.0 to 1.0, within the slider range.</td></tr>
+<tr><th>slider_min</th><td>Lowest allowed value, -10.0 to 10.0 (0.0 by default). Negative values let a &quot;smile&quot; key also frown.</td></tr>
+<tr><th>slider_max</th><td>Highest allowed value, -10.0 to 10.0 (1.0 by default).</td></tr>
+<tr><th>mute</th><td>Switch the key off without losing its value.</td></tr>
+<tr><th>vertex_group</th><td>Limit the key to this vertex group&#x27;s weights; &quot;&quot; clears it.</td></tr>
+<tr><th>relative_key</th><td>Key this one is measured against (the Basis by default).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the key&#x27;s settings after the change.</p></article><article class="tool" id="vertex_group_operation" data-search="vertex_group_operation clean up or reshape the weights in a vertex group."><h3><a href="#vertex_group_operation">vertex_group_operation</a></h3><pre class="sig"><code>vertex_group_operation(object_name: str, group_name: str, operation: str, factor: float = 0.5, repeat: int = 1, threshold: float = 0.0, offset: float = 0.0, gain: float = 1.0, max_groups: int = 4, steps: int = 4)</code></pre><p>Clean up or reshape the weights in a vertex group.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>group_name</th><td>Vertex group to work on.</td></tr>
+<tr><th>operation</th><td>One of: NORMALIZE (scale so the highest weight is 1), NORMALIZE_ALL (make each vertex&#x27;s weights across all groups sum to 1, as armatures expect), INVERT (weight becomes 1 - weight), CLEAN (drop weights at or below threshold), SMOOTH (blur weights with neighbours: factor, repeat), LEVELS (weight * gain + offset), LIMIT_TOTAL (keep at most max_groups groups per vertex, as game engines need), MIRROR (mirror the weights across X), QUANTIZE (snap weights to steps levels).</td></tr>
+<tr><th>factor</th><td>SMOOTH strength, 0.0 to 1.0.</td></tr>
+<tr><th>repeat</th><td>SMOOTH passes, 1 to 200.</td></tr>
+<tr><th>threshold</th><td>CLEAN cut-off, 0.0 to 1.0.</td></tr>
+<tr><th>offset</th><td>LEVELS offset, -1.0 to 1.0.</td></tr>
+<tr><th>gain</th><td>LEVELS gain, 0.0 to 10.0.</td></tr>
+<tr><th>max_groups</th><td>LIMIT_TOTAL groups per vertex, 1 to 32.</td></tr>
+<tr><th>steps</th><td>QUANTIZE levels, 1 to 1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the group&#x27;s vertex count and weight range afterwards.</p></article></section>
 <section class="module" id="file_ops" data-module="file i/o"><h2>File I/O <span class="n">5</span></h2><article class="tool" id="export_file" data-search="export_file export scene or selected objects to a 3d file.
 
 supports fbx, obj, gltf/glb, usd, stl, ply, and alembic (abc) formats."><h3><a href="#export_file">export_file</a></h3><pre class="sig"><code>export_file(filepath: str, type: str = &#x27;&#x27;, selected_only: bool = False)</code></pre><p>Export scene or selected objects to a 3D file.

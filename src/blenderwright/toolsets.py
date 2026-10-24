@@ -61,6 +61,8 @@ TOOLSETS: dict[str, str] = {
     "physics": "Rigid body, cloth, fluid, particles, bake",
     "geometry_nodes": "Geometry node trees: create, add, connect, set inputs",
     "armature": "Armatures, bones, constraints, weights, pose",
+    "deform": "Vertex groups and weights (normalize, smooth, limit), shape keys and "
+              "blend shapes, animating them",
     "gpencil": "Annotation layers and strokes",
     "collections": "Collections: create, move objects, visibility, delete",
     "file_ops": "Import and export FBX, OBJ, glTF, USD, STL; save and open .blend",
