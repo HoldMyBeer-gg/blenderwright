@@ -1,5 +1,7 @@
 """Blender handlers for lighting operations."""
 
+import os
+
 import bpy
 from .. import dispatcher
 
@@ -98,57 +100,94 @@ def handle_set_light_property(params: dict) -> dict:
         raise RuntimeError(f"Failed to set light property: {e}")
 
 
+BUILTIN_HDRIS = {"city", "courtyard", "forest", "interior", "night", "studio", "sunrise", "sunset"}
+SKY_TYPES = {"MULTIPLE_SCATTERING", "SINGLE_SCATTERING", "PREETHAM", "HOSEK_WILKIE"}
+SKY_PROPERTIES = ("sun_elevation", "sun_rotation", "sun_intensity", "sun_disc", "altitude",
+                  "air_density", "aerosol_density", "ozone_density")
+
+
+def _fresh_world_tree():
+    """The scene's world node tree, emptied. Worlds always use nodes in 5.x."""
+    world = bpy.context.scene.world
+    if world is None:
+        world = bpy.data.worlds.new("World")
+        bpy.context.scene.world = world
+    tree = world.node_tree
+    tree.nodes.clear()
+    return tree
+
+
+def _background_to_output(tree, color_socket, strength):
+    bg_node = tree.nodes.new(type='ShaderNodeBackground')
+    bg_node.location = (0, 300)
+    bg_node.inputs["Strength"].default_value = strength
+    output_node = tree.nodes.new(type='ShaderNodeOutputWorld')
+    output_node.location = (200, 300)
+    if color_socket is not None:
+        tree.links.new(color_socket, bg_node.inputs["Color"])
+    tree.links.new(bg_node.outputs["Background"], output_node.inputs["Surface"])
+    return bg_node
+
+
 def handle_set_world_background(params: dict) -> dict:
     """Set world background color or HDRI."""
     try:
-        world = bpy.context.scene.world
-        if world is None:
-            world = bpy.data.worlds.new("World")
-            bpy.context.scene.world = world
-
-        world.use_nodes = True
-        tree = world.node_tree
-        tree.nodes.clear()
-
         strength = params.get("strength", 1.0)
+        builtin = params.get("builtin_hdri")
+        if builtin is not None:
+            if builtin not in BUILTIN_HDRIS:
+                raise ValueError(f"Unknown built-in HDRI {builtin!r}")
+            hdri_path = os.path.join(
+                bpy.utils.system_resource("DATAFILES", path="studiolights/world"),
+                f"{builtin}.exr")
+        else:
+            hdri_path = params.get("hdri_path")
 
-        if "hdri_path" in params:
-            hdri_path = params["hdri_path"]
-
-            # Create nodes: Environment Texture -> Background -> World Output
+        tree = _fresh_world_tree()
+        if hdri_path:
+            # Environment Texture -> Background -> World Output
             env_tex = tree.nodes.new(type='ShaderNodeTexEnvironment')
             env_tex.location = (-300, 300)
-            img = bpy.data.images.load(hdri_path, check_existing=True)
-            env_tex.image = img
+            env_tex.image = bpy.data.images.load(hdri_path, check_existing=True)
+            rotation = params.get("rotation", 0.0)
+            if rotation:
+                coords = tree.nodes.new(type='ShaderNodeTexCoord')
+                coords.location = (-700, 300)
+                mapping = tree.nodes.new(type='ShaderNodeMapping')
+                mapping.location = (-500, 300)
+                mapping.inputs["Rotation"].default_value = (0.0, 0.0, rotation)
+                tree.links.new(coords.outputs["Generated"], mapping.inputs["Vector"])
+                tree.links.new(mapping.outputs["Vector"], env_tex.inputs["Vector"])
+            _background_to_output(tree, env_tex.outputs["Color"], strength)
+            result = {"type": "hdri", "hdri_path": hdri_path, "strength": strength,
+                      "rotation": rotation}
+            if builtin is not None:
+                result["builtin_hdri"] = builtin
+            return result
 
-            bg_node = tree.nodes.new(type='ShaderNodeBackground')
-            bg_node.location = (0, 300)
-            bg_node.inputs["Strength"].default_value = strength
-
-            output_node = tree.nodes.new(type='ShaderNodeOutputWorld')
-            output_node.location = (200, 300)
-
-            tree.links.new(env_tex.outputs["Color"], bg_node.inputs["Color"])
-            tree.links.new(bg_node.outputs["Background"], output_node.inputs["Surface"])
-
-            return {"type": "hdri", "hdri_path": hdri_path, "strength": strength}
-        else:
-            color = tuple(params.get("color", (0.05, 0.05, 0.05)))
-
-            # Create nodes: Background -> World Output
-            bg_node = tree.nodes.new(type='ShaderNodeBackground')
-            bg_node.location = (0, 300)
-            bg_node.inputs["Color"].default_value = (*color[:3], 1.0)
-            bg_node.inputs["Strength"].default_value = strength
-
-            output_node = tree.nodes.new(type='ShaderNodeOutputWorld')
-            output_node.location = (200, 300)
-
-            tree.links.new(bg_node.outputs["Background"], output_node.inputs["Surface"])
-
-            return {"type": "color", "color": list(color[:3]), "strength": strength}
+        color = tuple(params.get("color", (0.05, 0.05, 0.05)))
+        bg_node = _background_to_output(tree, None, strength)
+        bg_node.inputs["Color"].default_value = (*color[:3], 1.0)
+        return {"type": "color", "color": list(color[:3]), "strength": strength}
     except Exception as e:
         raise RuntimeError(f"Failed to set world background: {e}")
+
+
+def handle_set_world_sky(params: dict) -> dict:
+    """Build a procedural sky: Sky Texture -> Background -> World Output."""
+    sky_type = params.get("sky_type", "MULTIPLE_SCATTERING")
+    if sky_type not in SKY_TYPES:
+        raise ValueError(f"Unknown sky type {sky_type!r}")
+    tree = _fresh_world_tree()
+    sky = tree.nodes.new(type='ShaderNodeTexSky')
+    sky.location = (-300, 300)
+    sky.sky_type = sky_type
+    for prop in SKY_PROPERTIES:
+        if prop in params:
+            setattr(sky, prop, params[prop])
+    _background_to_output(tree, sky.outputs["Color"], params.get("strength", 1.0))
+    return {"sky_type": sky.sky_type, "strength": params.get("strength", 1.0),
+            **{prop: getattr(sky, prop) for prop in SKY_PROPERTIES}}
 
 
 def handle_create_light_rig(params: dict) -> dict:
@@ -309,3 +348,4 @@ def register():
     dispatcher.register_handler("list_lights", handle_list_lights)
     dispatcher.register_handler("delete_light", handle_delete_light)
     dispatcher.register_handler("set_shadow_settings", handle_set_shadow_settings)
+    dispatcher.register_handler("set_world_sky", handle_set_world_sky)

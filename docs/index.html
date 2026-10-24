@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 225 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 225 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 226 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 226 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 225 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 226 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>225</b> tools</span>
+    <span><b>226</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -132,7 +132,7 @@ footer a { color: var(--accent); }
 <a href="#file_ops">File I/O <span class="n">7</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">6</span></a>
 <a href="#gpencil">Grease Pencil <span class="n">5</span></a>
-<a href="#lighting">Lighting <span class="n">7</span></a>
+<a href="#lighting">Lighting <span class="n">8</span></a>
 <a href="#materials">Materials &amp; Shaders <span class="n">25</span></a>
 <a href="#mesh_editing">Mesh Editing <span class="n">19</span></a>
 <a href="#mesh_quality">Mesh Quality <span class="n">3</span></a>
@@ -497,7 +497,7 @@ Unlike Grease Pencil objects, annotations are not positioned in 3D space.</p><ta
 <tr><th>stroke_index</th><td>Index of the stroke in the layer (0-based).</td></tr>
 <tr><th>property</th><td>Property to set. One of: line_width, material_index, display_mode.</td></tr>
 <tr><th>value</th><td>The value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
-<section class="module" id="lighting" data-module="lighting"><h2>Lighting <span class="n">7</span></h2><article class="tool" id="create_light" data-search="create_light create a new light in the scene."><h3><a href="#create_light">create_light</a></h3><pre class="sig"><code>create_light(type: str, name: str = &#x27;&#x27;, location: list = [0, 0, 0], energy: float = 1000.0, color: list = [1.0, 1.0, 1.0])</code></pre><p>Create a new light in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Light type. One of: POINT, SUN, SPOT, AREA.</td></tr>
+<section class="module" id="lighting" data-module="lighting"><h2>Lighting <span class="n">8</span></h2><article class="tool" id="create_light" data-search="create_light create a new light in the scene."><h3><a href="#create_light">create_light</a></h3><pre class="sig"><code>create_light(type: str, name: str = &#x27;&#x27;, location: list = [0, 0, 0], energy: float = 1000.0, color: list = [1.0, 1.0, 1.0])</code></pre><p>Create a new light in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Light type. One of: POINT, SUN, SPOT, AREA.</td></tr>
 <tr><th>name</th><td>Optional name for the light.</td></tr>
 <tr><th>location</th><td>XYZ location as [x, y, z], default [0, 0, 0].</td></tr>
 <tr><th>energy</th><td>Light energy/power, default 1000.</td></tr>
@@ -507,9 +507,36 @@ Unlike Grease Pencil objects, annotations are not positioned in 3D space.</p><ta
 <tr><th>property</th><td>Property to set. One of: energy, color, shadow_soft_size, spot_size, spot_blend, area_size, area_size_y, use_shadow, angle, specular_factor, diffuse_factor, volume_factor.</td></tr>
 <tr><th>value</th><td>The value to set. Type depends on the property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_shadow_settings" data-search="set_shadow_settings configure shadow settings for a light."><h3><a href="#set_shadow_settings">set_shadow_settings</a></h3><pre class="sig"><code>set_shadow_settings(object_name: str, use_shadow: bool = True, shadow_soft_size: float = 0.25)</code></pre><p>Configure shadow settings for a light.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the light object.</td></tr>
 <tr><th>use_shadow</th><td>Whether to enable shadows, default True.</td></tr>
-<tr><th>shadow_soft_size</th><td>Soft shadow radius, default 0.25.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_world_background" data-search="set_world_background set the world background to a solid color or hdri environment map."><h3><a href="#set_world_background">set_world_background</a></h3><pre class="sig"><code>set_world_background(color: list | None = None, hdri_path: str | None = None, strength: float = 1.0)</code></pre><p>Set the world background to a solid color or HDRI environment map.</p><table class="args"><tbody><tr><th>color</th><td>RGB color as [r, g, b] for solid background. Mutually exclusive with hdri_path.</td></tr>
-<tr><th>hdri_path</th><td>Absolute path to an HDRI image file. Mutually exclusive with color.</td></tr>
-<tr><th>strength</th><td>Background strength/intensity, default 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<tr><th>shadow_soft_size</th><td>Soft shadow radius, default 0.25.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_world_background" data-search="set_world_background set the world background to a solid colour or an hdri environment.
+
+an hdri lights the whole scene and gives metal and glass something to
+reflect; without one, metals look dull. give exactly one of color,
+hdri_path or builtin_hdri."><h3><a href="#set_world_background">set_world_background</a></h3><pre class="sig"><code>set_world_background(color: list | None = None, hdri_path: str | None = None, builtin_hdri: str | None = None, strength: float = 1.0, rotation: float = 0.0)</code></pre><p>Set the world background to a solid colour or an HDRI environment.
+
+An HDRI lights the whole scene and gives metal and glass something to
+reflect; without one, metals look dull. Give exactly one of color,
+hdri_path or builtin_hdri.</p><table class="args"><tbody><tr><th>color</th><td>RGB colour [r, g, b] for a plain background.</td></tr>
+<tr><th>hdri_path</th><td>Absolute path to an HDRI image (.hdr, .exr, ...).</td></tr>
+<tr><th>builtin_hdri</th><td>One of the HDRIs that ship with Blender: city, courtyard, forest, interior, night, studio, sunrise, sunset.</td></tr>
+<tr><th>strength</th><td>Background strength, 0 to 1000, default 1.0.</td></tr>
+<tr><th>rotation</th><td>HDRI turn around the vertical axis in radians, to move where the light comes from. -6.283 to 6.283.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_world_sky" data-search="set_world_sky light the scene with a physically based procedural sky and sun.
+
+realistic daylight for any time of day with no image file. low sun
+elevation gives golden hour; negative gives dusk. pair with agx colour
+management (set_color_management) for natural results."><h3><a href="#set_world_sky">set_world_sky</a></h3><pre class="sig"><code>set_world_sky(sky_type: str = &#x27;MULTIPLE_SCATTERING&#x27;, sun_elevation: float = 0.2618, sun_rotation: float = 0.0, sun_intensity: float = 1.0, sun_disc: bool = True, altitude: float = 100.0, air_density: float = 1.0, aerosol_density: float = 1.0, ozone_density: float = 1.0, strength: float = 1.0)</code></pre><p>Light the scene with a physically based procedural sky and sun.
+
+Realistic daylight for any time of day with no image file. Low sun
+elevation gives golden hour; negative gives dusk. Pair with AgX colour
+management (set_color_management) for natural results.</p><table class="args"><tbody><tr><th>sky_type</th><td>MULTIPLE_SCATTERING (most realistic, new in 5.0), SINGLE_SCATTERING, PREETHAM or HOSEK_WILKIE.</td></tr>
+<tr><th>sun_elevation</th><td>Sun height above the horizon in radians, -1.571 to 1.571. 0.26 (15 degrees) is mid-morning; 0.05 golden hour.</td></tr>
+<tr><th>sun_rotation</th><td>Sun direction around the vertical axis in radians.</td></tr>
+<tr><th>sun_intensity</th><td>Sun brightness multiplier, 0 to 1000.</td></tr>
+<tr><th>sun_disc</th><td>Show the sun itself in the sky.</td></tr>
+<tr><th>altitude</th><td>Viewer height in metres, 0 to 100000.</td></tr>
+<tr><th>air_density</th><td>Air molecules, 0 to 10. Higher is bluer.</td></tr>
+<tr><th>aerosol_density</th><td>Dust and haze, 0 to 10. Higher is hazier and warmer.</td></tr>
+<tr><th>ozone_density</th><td>Ozone, 0 to 10. Affects the blue at dusk.</td></tr>
+<tr><th>strength</th><td>Overall sky brightness, 0 to 1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the sky settings applied.</p></article></section>
 <section class="module" id="materials" data-module="materials &amp; shaders"><h2>Materials &amp; Shaders <span class="n">25</span></h2><article class="tool" id="add_color_ramp_element" data-search="add_color_ramp_element add a colour stop to a colorramp (shadernodevaltorgb) node.
 
 a new ramp starts with two stops, black at 0.0 and white at 1.0. add
