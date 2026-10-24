@@ -30,6 +30,7 @@ from . import (
     sweep,
     print3d,
     sequencer,
+    compositor,
 )
 
 _modules = [
@@ -62,6 +63,7 @@ _modules = [
     sweep,
     print3d,
     sequencer,
+    compositor,
 ]
 
 

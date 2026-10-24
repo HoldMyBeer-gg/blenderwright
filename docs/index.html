@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 198 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 198 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 203 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 203 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 198 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 203 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,8 +110,8 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>198</b> tools</span>
-    <span><b>28</b> modules</span>
+    <span><b>203</b> tools</span>
+    <span><b>29</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
   </div>
@@ -125,6 +125,7 @@ footer a { color: var(--accent); }
 <a href="#camera">Camera <span class="n">6</span></a>
 <a href="#code_exec">Code Execution <span class="n">1</span></a>
 <a href="#collections">Collections <span class="n">4</span></a>
+<a href="#compositor">compositor <span class="n">5</span></a>
 <a href="#curves">Curves <span class="n">10</span></a>
 <a href="#file_ops">File I/O <span class="n">5</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">5</span></a>
@@ -293,6 +294,19 @@ listed in the panel so the user can see what ran.</p><table class="args"><tbody>
 <tr><th>visible</th><td>Whether the collection should be visible.</td></tr>
 <tr><th>viewport</th><td>Apply visibility change to viewport. Defaults to True.</td></tr>
 <tr><th>render</th><td>Apply visibility change to render. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with visibility state.</p></article></section>
+<section class="module" id="compositor" data-module="compositor"><h2>compositor <span class="n">5</span></h2><article class="tool" id="add_compositor_effect" data-search="add_compositor_effect add a post-processing effect at the end of the compositor chain.
+
+effects apply to every render in order, so add glare before film grain."><h3><a href="#add_compositor_effect">add_compositor_effect</a></h3><pre class="sig"><code>add_compositor_effect(effect: str, settings: dict[str, Any] | None = None)</code></pre><p>Add a post-processing effect at the end of the compositor chain.
+
+Effects apply to every render in order, so add glare before film grain.</p><table class="args"><tbody><tr><th>effect</th><td>One of: glare (inputs: Type Bloom/Fog Glow/Streaks/Ghosts/Simple Star/ Sun Beams, Quality High/Medium/Low, Threshold, Strength, Size, Saturation, Tint, Streaks, Streaks Angle), lens_distortion (Type Radial/Horizontal, Distortion -1..1, Dispersion, Fit), color_balance (Type Lift/Gamma/Gain or &quot;Offset/Power/Slope (ASC-CDL)&quot; or White Point, Factor, Lift, Gamma, Gain as RGBA lists, Temperature, Tint), denoise (Prefilter, Quality, HDR), blur (Size [x, y] in pixels, Type Gaussian...), exposure (Exposure), brightness_contrast (Brightness, Contrast), hue_saturation (Hue, Saturation, Value, Factor), kuwahara (painterly), pixelate, posterize, anti_aliasing, vignette (Factor, Feather, Corner Roundness, Scale [x, y]), film_grain (Preset, ISO 50..3200, Animated, Softness), chromatic_aberration (Factor, Type, Samples), sepia (Tone, Saturation, Contrast), split_toning (Highlights, Shadows as RGBA, Balance), sensor_noise (Luminance Noise, Chroma Noise), unsharp_mask (Radius, Factor), tune_image (Contrast, Color Boost, Clarity, Sharpen).</td></tr>
+<tr><th>settings</th><td>Input name to value, e.g. {&quot;Type&quot;: &quot;Fog Glow&quot;, &quot;Strength&quot;: 0.6}. Names are the node&#x27;s input labels.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the new node&#x27;s name (use it to edit or remove the effect) and its input names.</p></article><article class="tool" id="list_compositor" data-search="list_compositor list the compositor chain from render to output with each effect&#x27;s settings."><h3><a href="#list_compositor">list_compositor</a></h3><pre class="sig"><code>list_compositor()</code></pre><p>List the compositor chain from render to output with each effect&#x27;s settings.</p><p class="ret"><span>Returns</span> Dict with the tree name and the chain of effects in order.</p></article><article class="tool" id="remove_compositor_effect" data-search="remove_compositor_effect remove an effect and reconnect the chain around it."><h3><a href="#remove_compositor_effect">remove_compositor_effect</a></h3><pre class="sig"><code>remove_compositor_effect(node_name: str)</code></pre><p>Remove an effect and reconnect the chain around it.</p><table class="args"><tbody><tr><th>node_name</th><td>The node name from add_compositor_effect or list_compositor.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the removed name and the remaining chain.</p></article><article class="tool" id="set_compositor_effect" data-search="set_compositor_effect change the settings of an effect already in the compositor."><h3><a href="#set_compositor_effect">set_compositor_effect</a></h3><pre class="sig"><code>set_compositor_effect(node_name: str, settings: dict[str, Any])</code></pre><p>Change the settings of an effect already in the compositor.</p><table class="args"><tbody><tr><th>node_name</th><td>The node name returned by add_compositor_effect or list_compositor, e.g. &quot;Glare&quot;.</td></tr>
+<tr><th>settings</th><td>Input name to value, as for add_compositor_effect.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the node name and its inputs after the change.</p></article><article class="tool" id="setup_compositor" data-search="setup_compositor make sure the scene has a compositor: render layers into the output.
+
+add_compositor_effect calls this itself, so it is only needed to start
+over. effects then stack between the render and the output."><h3><a href="#setup_compositor">setup_compositor</a></h3><pre class="sig"><code>setup_compositor(reset: bool = False)</code></pre><p>Make sure the scene has a compositor: Render Layers into the output.
+
+add_compositor_effect calls this itself, so it is only needed to start
+over. Effects then stack between the render and the output.</p><table class="args"><tbody><tr><th>reset</th><td>Throw away the current compositor tree and start clean.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the tree name and the effect chain, render to output.</p></article></section>
 <section class="module" id="curves" data-module="curves"><h2>Curves <span class="n">10</span></h2><article class="tool" id="add_curve_point" data-search="add_curve_point add a control point to an existing curve."><h3><a href="#add_curve_point">add_curve_point</a></h3><pre class="sig"><code>add_curve_point(curve_name: str, location: list[float] | tuple[float, ...] = (0, 0, 0), handle_type: str = &#x27;AUTOMATIC&#x27;)</code></pre><p>Add a control point to an existing curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object to add a point to.</td></tr>
 <tr><th>location</th><td>3D location for the new point as (x, y, z).</td></tr>
 <tr><th>handle_type</th><td>Handle type - AUTO, VECTOR, ALIGNED, or FREE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with curve name and new point count.</p></article><article class="tool" id="convert_curve_to_mesh" data-search="convert_curve_to_mesh convert a curve object to a mesh object."><h3><a href="#convert_curve_to_mesh">convert_curve_to_mesh</a></h3><pre class="sig"><code>convert_curve_to_mesh(curve_name: str)</code></pre><p>Convert a curve object to a mesh object.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object to convert.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the converted object name.</p></article><article class="tool" id="create_curve" data-search="create_curve create a new curve object."><h3><a href="#create_curve">create_curve</a></h3><pre class="sig"><code>create_curve(type: str = &#x27;BEZIER&#x27;, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0))</code></pre><p>Create a new curve object.</p><table class="args"><tbody><tr><th>type</th><td>Curve type - BEZIER, NURBS, or PATH.</td></tr>

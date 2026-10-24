@@ -46,7 +46,10 @@ TOOLSETS: dict[str, str] = {
     "lighting": "Point, sun, spot and area lights, HDRI world, light rigs, shadows",
     "camera": "Create and aim cameras, depth of field, set from view, capture viewport",
     "animation": "Keyframes, interpolation, frame range, follow-path animation",
-    "rendering": "Engine, resolution, samples, output format, render stills and animations",
+    "rendering": "Engine, resolution, samples, colour management, denoising, passes, "
+                 "motion blur, render stills and animations",
+    "compositor": "Post-processing: glare, bloom, vignette, film grain, lens distortion, "
+                  "colour grading",
     "curves": "Bezier, NURBS and path curves, 3D text, convert to mesh",
     "sweep": "Sweep a profile along a path: tubes, hoses, cables, rails",
     "print3d": "Check a mesh for 3D printability",
