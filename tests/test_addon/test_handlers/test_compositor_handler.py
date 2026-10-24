@@ -74,20 +74,46 @@ class Node:
         self.outputs = [Socket(self, n, k, is_output=True) for n, k in outs]
 
 
+class Wrapper:
+    """Blender hands out a fresh Python wrapper on every access: equal, never identical."""
+
+    def __init__(self, target):
+        object.__setattr__(self, "_target", target)
+
+    def __getattr__(self, name):
+        return getattr(self._target, name)
+
+    def __eq__(self, other):
+        return self._target is getattr(other, "_target", other)
+
+    def __hash__(self):
+        return id(self._target)
+
+
+class Link:
+    def __init__(self, from_socket, to_socket):
+        self._from, self._to = from_socket, to_socket
+        self.from_node, self.to_node = from_socket.node, to_socket.node
+
+    from_socket = property(lambda self: Wrapper(self._from))
+    to_socket = property(lambda self: Wrapper(self._to))
+
+
 class Links(list):
     def new(self, from_socket, to_socket):
+        from_socket = getattr(from_socket, "_target", from_socket)
+        to_socket = getattr(to_socket, "_target", to_socket)
         for old in list(to_socket.links):
             self.remove(old)
-        link = SimpleNamespace(from_socket=from_socket, to_socket=to_socket,
-                               from_node=from_socket.node, to_node=to_socket.node)
+        link = Link(from_socket, to_socket)
         from_socket.links.append(link)
         to_socket.links.append(link)
         self.append(link)
         return link
 
     def remove(self, link):
-        link.from_socket.links.remove(link)
-        link.to_socket.links.remove(link)
+        link._from.links.remove(link)
+        link._to.links.remove(link)
         super().remove(link)
 
 
