@@ -1,11 +1,16 @@
-"""Auth token for the addon's TCP socket.
+"""Auth for the addon's TCP socket.
 
 Any local process can connect to 127.0.0.1, so the socket alone proves
 nothing. On start the server writes a fresh random token to a file only this
-user can read; the MCP server sends it with every command. The path logic is
-mirrored in src/blenderwright/auth.py and a test keeps the two in step.
+user can read. The token itself never crosses the socket: each side proves it
+knows it by signing fresh nonces, then signs every message with a session
+key. The path and crypto are mirrored in src/blenderwright/connection.py and
+tests keep the two in step.
 """
 
+import hashlib
+import hmac
+import json
 import os
 import secrets
 import sys
@@ -59,3 +64,27 @@ def clear_token() -> None:
         os.remove(token_path())
     except FileNotFoundError:
         pass
+
+
+# Challenge-response handshake (protocol 2). Mirrored in
+# src/blenderwright/connection.py; tests/test_handshake.py keeps them equal.
+PROTOCOL_VERSION = 2
+
+
+def proof(token: str, role: str, first_nonce: str, second_nonce: str) -> str:
+    """HMAC proving knowledge of the token, bound to both nonces and a role."""
+    message = f"blenderwright-{role}|{first_nonce}|{second_nonce}".encode("utf-8")
+    return hmac.new(token.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+
+def session_key(token: str, client_nonce: str, server_nonce: str) -> bytes:
+    """Per-connection key for signing commands and replies."""
+    message = f"blenderwright-session|{client_nonce}|{server_nonce}".encode("utf-8")
+    return hmac.new(token.encode("utf-8"), message, hashlib.sha256).digest()
+
+
+def message_mac(key: bytes, direction: str, seq: int, body: dict) -> str:
+    """Signature over one message body, its direction and its sequence number."""
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"))
+    message = f"{direction}|{seq}|".encode("utf-8") + canonical.encode("utf-8")
+    return hmac.new(key, message, hashlib.sha256).hexdigest()

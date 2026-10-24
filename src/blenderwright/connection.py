@@ -1,8 +1,11 @@
 """TCP socket client for communicating with the Blender addon."""
 
+import hashlib
+import hmac
 import json
 import logging
 import os
+import secrets
 import socket
 import struct
 import sys
@@ -22,7 +25,7 @@ class BlenderConnectionError(Exception):
 
 
 class BlenderAuthError(BlenderConnectionError):
-    """Blender refused the token, or there is no token to send."""
+    """The handshake or a signature failed, or there is no token to prove with."""
 
 
 def token_path() -> str:
@@ -57,6 +60,30 @@ def read_token() -> str:
     return token
 
 
+# Challenge-response handshake (protocol 2). Mirrored in addon/auth.py;
+# tests/test_handshake.py keeps them equal.
+PROTOCOL_VERSION = 2
+
+
+def proof(token: str, role: str, first_nonce: str, second_nonce: str) -> str:
+    """HMAC proving knowledge of the token, bound to both nonces and a role."""
+    message = f"blenderwright-{role}|{first_nonce}|{second_nonce}".encode("utf-8")
+    return hmac.new(token.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+
+def session_key(token: str, client_nonce: str, server_nonce: str) -> bytes:
+    """Per-connection key for signing commands and replies."""
+    message = f"blenderwright-session|{client_nonce}|{server_nonce}".encode("utf-8")
+    return hmac.new(token.encode("utf-8"), message, hashlib.sha256).digest()
+
+
+def message_mac(key: bytes, direction: str, seq: int, body: dict) -> str:
+    """Signature over one message body, its direction and its sequence number."""
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"))
+    message = f"{direction}|{seq}|".encode("utf-8") + canonical.encode("utf-8")
+    return hmac.new(key, message, hashlib.sha256).hexdigest()
+
+
 def _is_unauthorized(response: Any) -> bool:
     return isinstance(response, dict) and response.get("code") == "unauthorized"
 
@@ -82,16 +109,16 @@ class BlenderConnection:
         self._timeout = timeout
         self._socket: socket.socket | None = None
         self._token: str | None = None
+        self._key: bytes | None = None
+        self._seq = 0
+        self.addon_version: str | None = None
         self._lock = threading.Lock()
 
     @property
     def is_connected(self) -> bool:
         return self._socket is not None
 
-    def connect(self) -> None:
-        """Connect to the Blender addon socket server."""
-        if self._socket is not None:
-            return
+    def _open_socket(self) -> None:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(self._timeout)
@@ -103,6 +130,78 @@ class BlenderConnection:
                 "Ensure Blender is running with the blenderwright addon enabled."
             ) from e
 
+    def connect(self) -> None:
+        """Connect to the Blender addon and run the handshake.
+
+        Blender writes a new token each time its server starts, so a failed
+        proof is retried once with the token file read again.
+        """
+        if self._socket is not None:
+            return
+        for attempt in range(2):
+            if self._token is None or attempt:
+                stale = self._token
+                self._token = read_token()
+                if attempt and self._token == stale:
+                    break
+            self._open_socket()
+            try:
+                if self._handshake():
+                    return
+            except BaseException:
+                self.disconnect()
+                raise
+            self.disconnect()
+        raise BlenderAuthError(
+            f"The process on {self._host}:{self._port} could not prove it is Blender "
+            f"running blenderwright (it does not know the token in {token_path()}). "
+            f"Nothing was sent to it. Restart the server from Blender's blenderwright "
+            f"panel; if this keeps happening, another program may be using the port."
+        )
+
+    def _read_json(self) -> Any:
+        return json.loads(self._recv_raw().decode("utf-8"))
+
+    def _handshake(self) -> bool:
+        """Prove each side knows the token without sending it.
+
+        Returns False if Blender's proof fails, before anything but our
+        nonce has been sent.
+        """
+        client_nonce = secrets.token_hex(32)
+        self._send_raw(json.dumps({"hello": {
+            "protocol": PROTOCOL_VERSION, "nonce": client_nonce}}).encode("utf-8"))
+        hello = self._read_json()
+        if not isinstance(hello, dict):
+            raise BlenderConnectionError("Invalid handshake reply from Blender")
+        if hello.get("code") == "protocol":
+            raise BlenderConnectionError(f"blenderwright version mismatch: {hello.get('result')}")
+        if hello.get("status") != "hello":
+            raise BlenderConnectionError(
+                "The Blender add-on is older than this MCP server (it does not speak "
+                f"handshake protocol {PROTOCOL_VERSION}). Update the blenderwright add-on "
+                "in Blender, then restart its server."
+            )
+        server_nonce = hello.get("nonce")
+        sent_proof = hello.get("proof")
+        expected = proof(self._token, "server", client_nonce, str(server_nonce))
+        if not isinstance(server_nonce, str) or not isinstance(sent_proof, str) \
+                or not hmac.compare_digest(sent_proof.encode(), expected.encode()):
+            return False
+
+        self._send_raw(json.dumps({"auth": proof(
+            self._token, "client", server_nonce, client_nonce)}).encode("utf-8"))
+        ready = self._read_json()
+        if not isinstance(ready, dict) or ready.get("status") != "ready":
+            raise BlenderAuthError(
+                f"Blender refused this MCP server's proof: "
+                f"{ready.get('result') if isinstance(ready, dict) else ready}"
+            )
+        self._key = session_key(self._token, client_nonce, server_nonce)
+        self._seq = 0
+        self.addon_version = hello.get("addon_version")
+        return True
+
     def disconnect(self) -> None:
         """Disconnect from Blender."""
         if self._socket is not None:
@@ -111,6 +210,7 @@ class BlenderConnection:
             except OSError:
                 pass
             self._socket = None
+        self._key = None
 
     def _send_raw(self, data: bytes) -> None:
         """Send length-prefixed data."""
@@ -143,44 +243,37 @@ class BlenderConnection:
             remaining -= len(chunk)
         return b"".join(chunks)
 
-    def _roundtrip(self, message: dict[str, Any], timeout: float | None) -> Any:
-        """Send one message with the token and return the decoded reply."""
-        if self._socket is None:
-            raise BlenderConnectionError("Not connected to Blender")
-        if self._token is None:
-            self._token = read_token()
-        self._socket.settimeout(self._timeout if timeout is None else timeout)
-        self._send_raw(json.dumps({**message, "token": self._token}).encode("utf-8"))
-        return json.loads(self._recv_raw().decode("utf-8"))
-
     def _exchange(self, message: dict[str, Any], timeout: float | None) -> Any:
-        """Send one message and return the reply, re-reading a stale token once.
-
-        Blender writes a new token each time its server starts, so a rejection
-        right after a Blender restart is expected: read the file again and
-        resend. A second rejection means the token is wrong, and that is raised.
-        """
-        response = self._roundtrip(message, timeout)
-        if not _is_unauthorized(response):
-            return response
-
-        # Blender closes the socket after a rejection
-        self.disconnect()
-        stale = self._token
-        self._token = read_token()
-        if self._token != stale:
-            self.connect()
-            response = self._roundtrip(message, timeout)
-            if not _is_unauthorized(response):
-                return response
+        """Send one signed command and return Blender's verified reply."""
+        if self._socket is None or self._key is None:
+            raise BlenderConnectionError("Not connected to Blender")
+        self._socket.settimeout(self._timeout if timeout is None else timeout)
+        self._seq += 1
+        seq = self._seq
+        body = {"command": message["command"], "params": message.get("params", {})}
+        self._send_raw(json.dumps({
+            **body, "seq": seq, "mac": message_mac(self._key, "request", seq, body),
+        }).encode("utf-8"))
+        reply = self._read_json()
+        if _is_unauthorized(reply):
             self.disconnect()
+            raise BlenderAuthError(f"Blender refused the command: {reply.get('result')}")
+        return self._verify_reply(reply, seq)
 
-        raise BlenderAuthError(
-            f"Blender rejected the blenderwright auth token from {token_path()}. "
-            f"Another program may be listening on {self._host}:{self._port}, or "
-            f"the token file belongs to a different Blender. Restart the server "
-            f"from Blender's blenderwright panel, then retry."
-        )
+    def _verify_reply(self, reply: Any, seq: int) -> Any:
+        """Check a reply's sequence number and signature; return it without them."""
+        if not isinstance(reply, dict):
+            return reply
+        reply_body = {k: v for k, v in reply.items() if k not in ("seq", "mac")}
+        mac = reply.get("mac")
+        if reply.get("seq") != seq or not isinstance(mac, str) or not hmac.compare_digest(
+                mac.encode(), message_mac(self._key, "response", seq, reply_body).encode()):
+            self.disconnect()
+            raise BlenderAuthError(
+                "A reply from Blender failed signature verification and was discarded. "
+                "Something may be interfering with the connection."
+            )
+        return reply_body
 
     def _raise_unanswered(
         self, command: str, timeout: float | None, error: Exception

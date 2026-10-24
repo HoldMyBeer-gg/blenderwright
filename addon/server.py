@@ -6,6 +6,9 @@ Commands are executed on Blender's main thread via thread_safety module.
 
 import hmac
 import json
+import os
+import re
+import secrets
 import socket
 import struct
 import sys
@@ -26,6 +29,21 @@ def _reject_non_finite(constant: str):
     here rather than in each handler.
     """
     raise ValueError(f"Non-finite JSON constant '{constant}' is not accepted")
+
+
+def _addon_version() -> str:
+    """The add-on version from its manifest, reported in the handshake."""
+    path = os.path.join(os.path.dirname(__file__), "blender_manifest.toml")
+    try:
+        with open(path, encoding="utf-8") as f:
+            match = re.search(r'^version\s*=\s*"([^"]+)"', f.read(), re.MULTILINE)
+    except OSError:
+        return "unknown"
+    return match.group(1) if match else "unknown"
+
+
+ADDON_VERSION = _addon_version()
+NONCE_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _claim_port(sock: socket.socket) -> None:
@@ -59,6 +77,11 @@ class BlenderServer:
     def is_running(self) -> bool:
         return self._running
 
+    @property
+    def port(self) -> int:
+        """The bound port; the real one when started with port 0."""
+        return self._port
+
     def start(self) -> None:
         """Start the socket server in a background thread."""
         if self._running:
@@ -70,8 +93,9 @@ class BlenderServer:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         _claim_port(self._server_socket)
         self._server_socket.bind((self._host, self._port))
+        self._port = self._server_socket.getsockname()[1]
         self._server_socket.listen(1)
-        self._server_socket.settimeout(1.0)  # Allow periodic shutdown checks
+        self._server_socket.settimeout(0.2)  # Notice Stop Server within a fifth of a second
         self._running = True
 
         thread_safety.register_timer()
@@ -124,58 +148,115 @@ class BlenderServer:
                 if self._running:
                     break
 
-    def _handle_client(self, client: socket.socket) -> None:
-        """Handle a single client connection."""
+    def _read_json(self, client: socket.socket):
+        data = self._recv_message(client)
+        if data is None:
+            return None
+        return json.loads(data.decode("utf-8"), parse_constant=_reject_non_finite)
+
+    def _send_json(self, client: socket.socket, obj) -> None:
+        self._send_message(client, json.dumps(obj).encode("utf-8"))
+
+    def _handshake(self, client: socket.socket):
+        """Prove ourselves, then check the client's proof. Returns the session key.
+
+        The token never crosses the socket: each side signs both nonces with it.
+        Returns None, after answering, when the client fails or is outdated.
+        """
+        hello = self._read_json(client)
+        if hello is None:
+            return None
+        if not isinstance(hello, dict) or "hello" not in hello:
+            self._reject(client, "This blenderwright MCP server is older than the add-on "
+                                 f"(it needs protocol {auth.PROTOCOL_VERSION}); update it.")
+            return None
+        info = hello["hello"] if isinstance(hello["hello"], dict) else {}
+        if info.get("protocol") != auth.PROTOCOL_VERSION:
+            self._send_json(client, {
+                "status": "error", "code": "protocol", "protocol": auth.PROTOCOL_VERSION,
+                "addon_version": ADDON_VERSION,
+                "result": f"The add-on speaks protocol {auth.PROTOCOL_VERSION} and the MCP "
+                          f"server speaks {info.get('protocol')}; update whichever is older.",
+            })
+            return None
+        client_nonce = info.get("nonce")
+        if not isinstance(client_nonce, str) or not NONCE_PATTERN.match(client_nonce) \
+                or not self._token:
+            self._reject(client)
+            return None
+
+        server_nonce = secrets.token_hex(32)
+        self._send_json(client, {
+            "status": "hello", "protocol": auth.PROTOCOL_VERSION, "nonce": server_nonce,
+            "proof": auth.proof(self._token, "server", client_nonce, server_nonce),
+            "addon_version": ADDON_VERSION,
+        })
+        answer = self._read_json(client)
+        expected = auth.proof(self._token, "client", server_nonce, client_nonce)
+        sent = answer.get("auth") if isinstance(answer, dict) else None
+        if not isinstance(sent, str) or not hmac.compare_digest(sent.encode(), expected.encode()):
+            self._reject(client)
+            return None
+        self._send_json(client, {"status": "ready"})
+        return auth.session_key(self._token, client_nonce, server_nonce)
+
+    def _run_command(self, command, params):
+        # Check if Blender is rendering: main thread is blocked
+        if render_guard.is_rendering:
+            return {
+                "status": "busy",
+                "result": "Blender is currently rendering. "
+                          "Command will not be processed until "
+                          "the render completes.",
+            }
         try:
+            return thread_safety.execute_on_main_thread(dispatcher.dispatch, command, params)
+        except thread_safety.MainThreadBusyError:
+            return {
+                "status": "busy",
+                "result": "Blender's main thread is busy. "
+                          "The command was not run; send it again.",
+            }
+
+    def _handle_client(self, client: socket.socket) -> None:
+        """Handshake, then run signed commands until the client disconnects."""
+        try:
+            key = self._handshake(client)
+            if key is None:
+                return
+            expected_seq = 1
             while self._running:
                 try:
-                    data = self._recv_message(client)
-                    if data is None:
+                    message = self._read_json(client)
+                    if message is None:
                         break
-
-                    message = json.loads(
-                        data.decode("utf-8"), parse_constant=_reject_non_finite
-                    )
-                    if not self._is_authorized(message):
-                        self._reject(client)
+                    body = {"command": message.get("command", ""),
+                            "params": message.get("params", {})} \
+                        if isinstance(message, dict) else None
+                    mac = message.get("mac") if isinstance(message, dict) else None
+                    if (body is None or message.get("seq") != expected_seq
+                            or not isinstance(mac, str)
+                            or not hmac.compare_digest(
+                                mac.encode(),
+                                auth.message_mac(key, "request", expected_seq, body).encode())):
+                        self._reject(client, "Command signature or sequence did not verify. "
+                                             "The connection was closed and nothing was run.")
                         break
-                    command = message.get("command", "")
-                    params = message.get("params", {})
-
-                    # Check if Blender is rendering: main thread is blocked
-                    if render_guard.is_rendering:
-                        response = {
-                            "status": "busy",
-                            "result": "Blender is currently rendering. "
-                                      "Command will not be processed until "
-                                      "the render completes.",
-                        }
-                    else:
-                        # Execute on main thread via thread_safety
-                        try:
-                            response = thread_safety.execute_on_main_thread(
-                                dispatcher.dispatch, command, params
-                            )
-                        except thread_safety.MainThreadBusyError:
-                            response = {
-                                "status": "busy",
-                                "result": "Blender's main thread is busy. "
-                                          "The command was not run; send it again.",
-                            }
-
-                    response_data = json.dumps(response).encode("utf-8")
-                    self._send_message(client, response_data)
-
+                    response = self._run_command(body["command"], body["params"])
+                    self._send_json(client, {
+                        **response, "seq": expected_seq,
+                        "mac": auth.message_mac(key, "response", expected_seq, response),
+                    })
+                    expected_seq += 1
                 except json.JSONDecodeError:
-                    error_response = json.dumps({
-                        "status": "error",
-                        "result": "Invalid JSON in request",
-                    }).encode("utf-8")
-                    self._send_message(client, error_response)
+                    self._reject(client, "Invalid JSON; the connection was closed.")
+                    break
                 except socket.timeout:
                     continue
                 except OSError:
                     break
+        except (OSError, json.JSONDecodeError, ValueError):
+            pass
         finally:
             with self._lock:
                 if client in self._clients:
@@ -185,27 +266,23 @@ class BlenderServer:
             except OSError:
                 pass
 
-    def _is_authorized(self, message) -> bool:
-        if not isinstance(message, dict) or not self._token:
-            return False
-        sent = message.get("token")
-        if not isinstance(sent, str):
-            return False
-        return hmac.compare_digest(sent.encode("utf-8"), self._token.encode("utf-8"))
-
-    def _reject(self, client: socket.socket) -> None:
-        """Answer a bad token loudly, then the caller drops the connection."""
+    def _reject(self, client: socket.socket, reason: str = "") -> None:
+        """Refuse loudly, then the caller drops the connection."""
         self.rejected_connections += 1
         print(
-            "blenderwright: refused a connection with a missing or wrong auth "
-            f"token ({self.rejected_connections} so far)"
+            "blenderwright: refused a connection that did not authenticate "
+            f"({self.rejected_connections} so far)"
         )
-        self._send_message(client, json.dumps({
-            "status": "error",
-            "code": "unauthorized",
-            "result": "Unauthorized: missing or wrong blenderwright auth token. "
-                      "The connection was closed and the command was not run.",
-        }).encode("utf-8"))
+        try:
+            self._send_json(client, {
+                "status": "error",
+                "code": "unauthorized",
+                "result": reason or "Unauthorized: the client could not prove it knows the "
+                                    "blenderwright auth token. The connection was closed "
+                                    "and nothing was run.",
+            })
+        except OSError:
+            pass
 
     def _send_message(self, sock: socket.socket, data: bytes) -> None:
         """Send a length-prefixed message.
