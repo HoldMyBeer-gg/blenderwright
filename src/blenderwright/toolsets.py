@@ -60,7 +60,8 @@ TOOLSETS: dict[str, str] = {
     "print3d": "Check a mesh for 3D printability",
     "sequencer": "Video sequencer: image and sound strips, render to MP4, MKV or WebM",
     "sculpting": "Sculpt mode, brushes, remesh, multires, symmetry, dyntopo",
-    "uv": "UV unwrap, smart project, projection, pack islands",
+    "uv": "UV unwrap, smart project, projection, pack islands, average scale, relax, "
+          "randomize, arrange, texel density",
     "physics": "Rigid body, cloth, fluid, particles, bake",
     "geometry_nodes": "Geometry node trees: create, add, connect, set inputs; ready-made "
                       "array, scatter on surface, instance on elements, curve to tube",

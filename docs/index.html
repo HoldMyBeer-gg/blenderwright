@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 218 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 218 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 221 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 221 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 218 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 221 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>218</b> tools</span>
+    <span><b>221</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -148,7 +148,7 @@ footer a { color: var(--accent); }
 <a href="#sequencer">sequencer <span class="n">5</span></a>
 <a href="#sweep">sweep <span class="n">2</span></a>
 <a href="#transforms">Transforms <span class="n">6</span></a>
-<a href="#uv">UV Mapping <span class="n">4</span></a>
+<a href="#uv">UV Mapping <span class="n">7</span></a>
 <a href="#viewport">Viewport <span class="n">3</span></a>
 <a href="#screenshot">Viewport Capture <span class="n">1</span></a></nav>
   <main>
@@ -1334,8 +1334,28 @@ whether any bend is too tight for the profile to fit around.</p><table class="ar
 <tr><th>mode</th><td>Rotation mode, either EULER or QUATERNION. Defaults to EULER.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and new rotation.</p></article><article class="tool" id="set_scale" data-search="set_scale set the scale of an object."><h3><a href="#set_scale">set_scale</a></h3><pre class="sig"><code>set_scale(object_name: str, scale: Vector3)</code></pre><p>Set the scale of an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>scale</th><td>XYZ scale as a 3-element list/tuple.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and new scale.</p></article><article class="tool" id="snap_to_grid" data-search="snap_to_grid snap an object&#x27;s location to the nearest grid point."><h3><a href="#snap_to_grid">snap_to_grid</a></h3><pre class="sig"><code>snap_to_grid(object_name: str, grid_size: float = 1.0)</code></pre><p>Snap an object&#x27;s location to the nearest grid point.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>grid_size</th><td>Size of the grid cells. Defaults to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and snapped location.</p></article></section>
-<section class="module" id="uv" data-module="uv mapping"><h2>UV Mapping <span class="n">4</span></h2><article class="tool" id="pack_uv_islands" data-search="pack_uv_islands pack uv islands to fit efficiently within the uv space."><h3><a href="#pack_uv_islands">pack_uv_islands</a></h3><pre class="sig"><code>pack_uv_islands(object_name: str, margin: float = 0.001)</code></pre><p>Pack UV islands to fit efficiently within the UV space.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
-<tr><th>margin</th><td>Margin between packed islands (0.0-1.0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name.</p></article><article class="tool" id="set_uv_projection" data-search="set_uv_projection apply a projection-based uv mapping to a mesh object."><h3><a href="#set_uv_projection">set_uv_projection</a></h3><pre class="sig"><code>set_uv_projection(object_name: str, projection: str)</code></pre><p>Apply a projection-based UV mapping to a mesh object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<section class="module" id="uv" data-module="uv mapping"><h2>UV Mapping <span class="n">7</span></h2><article class="tool" id="get_texel_density" data-search="get_texel_density measure texel density: how many texture pixels cover one metre of surface.
+
+matching density across assets keeps texture sharpness consistent; game
+art often targets 512 or 1024 px/m."><h3><a href="#get_texel_density">get_texel_density</a></h3><pre class="sig"><code>get_texel_density(object_name: str, texture_size: int = 1024)</code></pre><p>Measure texel density: how many texture pixels cover one metre of surface.
+
+Matching density across assets keeps texture sharpness consistent; game
+art often targets 512 or 1024 px/m.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object with a UV map.</td></tr>
+<tr><th>texture_size</th><td>Texture width in pixels the UVs are meant for.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with density in px/m, surface area in m^2 (world scale), and the share of UV space used.</p></article><article class="tool" id="pack_uv_islands" data-search="pack_uv_islands pack uv islands to fit efficiently within the uv space."><h3><a href="#pack_uv_islands">pack_uv_islands</a></h3><pre class="sig"><code>pack_uv_islands(object_name: str, margin: float = 0.001, rotate: bool = True, rotate_method: str = &#x27;ANY&#x27;, scale: bool = True)</code></pre><p>Pack UV islands to fit efficiently within the UV space.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>margin</th><td>Margin between packed islands (0.0-1.0).</td></tr>
+<tr><th>rotate</th><td>Allow islands to rotate for a tighter fit.</td></tr>
+<tr><th>rotate_method</th><td>ANY, CARDINAL (90 degree steps), AXIS_ALIGNED, AXIS_ALIGNED_X or AXIS_ALIGNED_Y.</td></tr>
+<tr><th>scale</th><td>Scale islands to fill the space. Turn off after set_texel_density, or the pack undoes the density.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name.</p></article><article class="tool" id="set_texel_density" data-search="set_texel_density scale an object&#x27;s uvs to hit a target texel density.
+
+islands keep their layout and scale about their shared centre, so they
+may spill outside the 0-1 square; pack afterwards with
+pack_uv_islands(scale=false) to bring them back without undoing this."><h3><a href="#set_texel_density">set_texel_density</a></h3><pre class="sig"><code>set_texel_density(object_name: str, density: float, texture_size: int = 1024)</code></pre><p>Scale an object&#x27;s UVs to hit a target texel density.
+
+Islands keep their layout and scale about their shared centre, so they
+may spill outside the 0-1 square; pack afterwards with
+pack_uv_islands(scale=False) to bring them back without undoing this.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object with a UV map.</td></tr>
+<tr><th>density</th><td>Target pixels per metre, above 0 and up to 100000.</td></tr>
+<tr><th>texture_size</th><td>Texture width in pixels the UVs are meant for.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the density before and after.</p></article><article class="tool" id="set_uv_projection" data-search="set_uv_projection apply a projection-based uv mapping to a mesh object."><h3><a href="#set_uv_projection">set_uv_projection</a></h3><pre class="sig"><code>set_uv_projection(object_name: str, projection: str)</code></pre><p>Apply a projection-based UV mapping to a mesh object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>projection</th><td>Projection type - CUBE, CYLINDER, or SPHERE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name and projection type.</p></article><article class="tool" id="smart_uv_project" data-search="smart_uv_project apply smart uv project to a mesh object.
 
 automatically unwraps the mesh using angle-based projection."><h3><a href="#smart_uv_project">smart_uv_project</a></h3><pre class="sig"><code>smart_uv_project(object_name: str, angle_limit: float = 66.0, island_margin: float = 0.0, area_weight: float = 0.0)</code></pre><p>Apply Smart UV Project to a mesh object.
@@ -1343,7 +1363,16 @@ automatically unwraps the mesh using angle-based projection."><h3><a href="#smar
 Automatically unwraps the mesh using angle-based projection.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>angle_limit</th><td>Angle limit in degrees for splitting faces (0.0-89.0).</td></tr>
 <tr><th>island_margin</th><td>Margin between UV islands (0.0-1.0).</td></tr>
-<tr><th>area_weight</th><td>Weight given to face area for island arrangement (0.0-1.0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name and UV map info.</p></article><article class="tool" id="uv_unwrap" data-search="uv_unwrap unwrap a mesh object&#x27;s uvs using standard unwrap.
+<tr><th>area_weight</th><td>Weight given to face area for island arrangement (0.0-1.0).</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name and UV map info.</p></article><article class="tool" id="uv_island_operation" data-search="uv_island_operation tidy uv islands after unwrapping."><h3><a href="#uv_island_operation">uv_island_operation</a></h3><pre class="sig"><code>uv_island_operation(object_name: str, operation: str, selection: str = &#x27;ALL&#x27;, iterations: int = 20, rotation: float = 0.0, scale_variation: float = 0.0, offset: float = 0.0, seed: int = 0, margin: float = 0.05, threshold: float = 0.0001)</code></pre><p>Tidy UV islands after unwrapping.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object with a UV map.</td></tr>
+<tr><th>operation</th><td>One of: AVERAGE_SCALE (give every island the same texel size relative to its 3D area, so textures don&#x27;t look blurrier on some parts), MINIMIZE_STRETCH (relax UVs to reduce distortion: iterations), ALIGN_ROTATION (turn islands to line up with the axes), RANDOMIZE (jitter islands so tiled textures don&#x27;t repeat visibly: rotation in radians, scale_variation, offset, seed), SEAMS_FROM_ISLANDS (mark seams along the current island borders), ARRANGE (lay islands out in rows, new in 5.0: margin), WELD (merge UV points closer than threshold).</td></tr>
+<tr><th>selection</th><td>&quot;ALL&quot; for the whole mesh, or &quot;CURRENT&quot; for the faces already selected.</td></tr>
+<tr><th>iterations</th><td>MINIMIZE_STRETCH passes, 1 to 1000.</td></tr>
+<tr><th>rotation</th><td>RANDOMIZE maximum rotation, 0 to 6.283 radians.</td></tr>
+<tr><th>scale_variation</th><td>RANDOMIZE scale range, 0.0 to 1.0.</td></tr>
+<tr><th>offset</th><td>RANDOMIZE maximum position change, 0.0 to 1.0.</td></tr>
+<tr><th>seed</th><td>RANDOMIZE seed, 0 or more.</td></tr>
+<tr><th>margin</th><td>ARRANGE spacing, 0.0 to 1.0.</td></tr>
+<tr><th>threshold</th><td>WELD distance, 0.0 to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the operation and the object.</p></article><article class="tool" id="uv_unwrap" data-search="uv_unwrap unwrap a mesh object&#x27;s uvs using standard unwrap.
 
 requires seams to be marked for best results."><h3><a href="#uv_unwrap">uv_unwrap</a></h3><pre class="sig"><code>uv_unwrap(object_name: str, method: str = &#x27;ANGLE_BASED&#x27;)</code></pre><p>Unwrap a mesh object&#x27;s UVs using standard unwrap.
 
