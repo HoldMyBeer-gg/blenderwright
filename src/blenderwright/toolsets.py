@@ -30,7 +30,7 @@ from mcp.server.fastmcp import Context
 # so each line names the things a user would ask for, not the implementation.
 TOOLSETS: dict[str, str] = {
     "scene": "Scene info, frame range, units, scenes, extension suggestions",
-    "objects": "Create primitives, prisms and threaded shafts; duplicate, join, parent, "
+    "objects": "Create primitives, metaballs, prisms and threaded shafts; duplicate, join, parent, "
                "rename, delete, visibility, auto-smooth",
     "transforms": "Move, rotate, scale, apply transforms, set origin, snap to grid",
     "modeling": "Modifiers, boolean via modifier, subdivide, extrude, bevel, loop cut, "

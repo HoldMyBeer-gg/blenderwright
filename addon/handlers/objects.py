@@ -599,9 +599,14 @@ def handle_convert_object(params: dict) -> dict:
     try:
         obj = _get_object(object_name)
         _select_only(obj)
+        original = obj.name
         bpy.ops.object.convert(target=target)
 
         result_obj = bpy.context.active_object
+        # Metaballs convert into a new object ("Blob.001") and the old one is
+        # deleted; give the result its name back so later calls still find it
+        if result_obj.name != original and bpy.data.objects.get(original) is None:
+            result_obj.name = original
         return {
             "name": result_obj.name,
             "type": result_obj.type,
@@ -661,6 +666,32 @@ def handle_make_single_user(params: dict) -> dict:
         raise RuntimeError(f"Failed to make single user for '{object_name}': {e}")
 
 
+METABALL_TYPES = {"BALL", "CAPSULE", "PLANE", "ELLIPSOID", "CUBE"}
+
+
+def handle_create_metaball(params):
+    data = bpy.data.metaballs.new(params.get("name", "Metaball"))
+    data.resolution = float(params.get("resolution", 0.2))
+    data.threshold = float(params.get("threshold", 0.6))
+    for spec in params.get("elements", []):
+        if spec.get("type") not in METABALL_TYPES:
+            bpy.data.metaballs.remove(data)
+            raise ValueError(f"Unknown metaball type {spec.get('type')!r}")
+        element = data.elements.new(type=spec["type"])
+        element.co = spec.get("location", (0, 0, 0))
+        element.radius = float(spec.get("radius", 1.0))
+        element.stiffness = float(spec.get("stiffness", 2.0))
+        element.use_negative = bool(spec.get("negative", False))
+        if "size" in spec:
+            element.size_x, element.size_y, element.size_z = spec["size"]
+    obj = bpy.data.objects.new(data.name, data)
+    obj.location = params.get("location", (0, 0, 0))
+    bpy.context.scene.collection.objects.link(obj)
+    bpy.context.view_layer.update()
+    return {"name": obj.name, "type": obj.type, "elements": len(data.elements),
+            "dimensions": list(obj.dimensions)}
+
+
 def register():
     """Register object handlers with the dispatcher."""
     dispatcher.register_handler("create_object", handle_create_object)
@@ -675,6 +706,7 @@ def register():
     dispatcher.register_handler("set_object_visibility", handle_set_object_visibility)
     dispatcher.register_handler("parent_objects", handle_parent_objects)
     dispatcher.register_handler("join_objects", handle_join_objects)
+    dispatcher.register_handler("create_metaball", handle_create_metaball)
     dispatcher.register_handler("convert_object", handle_convert_object)
     dispatcher.register_handler("shade_auto_smooth", handle_shade_auto_smooth)
     dispatcher.register_handler("make_single_user", handle_make_single_user)
