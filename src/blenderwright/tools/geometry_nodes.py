@@ -17,6 +17,18 @@ from blenderwright.validators import (
 
 _NODE_TYPE_PATTERN = re.compile(r"^(Geometry|Function|Shader)Node[A-Z][A-Za-z0-9]*$")
 
+_SETTING_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+ALLOWED_INTERFACE_TYPES = {
+    "GEOMETRY", "FLOAT", "INT", "BOOLEAN", "VECTOR", "COLOR", "ROTATION", "STRING",
+    "OBJECT", "COLLECTION", "MATERIAL",
+}
+GROUP_NODES = {"Group Input", "Group Output"}
+MAX_SPEC_NODES = 200
+MAX_SPEC_LINKS = 500
+MAX_SPEC_SOCKETS = 50
+MAX_TEXT = 64
+MAX_COORD = 100_000.0
+
 # Node-group modifiers bundled in Blender 5.2's Essentials library
 ALLOWED_ESSENTIALS_MODIFIERS = {
     "array", "scatter_on_surface", "instance_on_elements", "randomize_transforms",
@@ -243,6 +255,207 @@ def add_essentials_modifier(
     }
     conn = get_connection()
     response = conn.send_command("add_essentials_modifier", params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+def _text(value: Any, what: str) -> str:
+    if not isinstance(value, str) or not value or len(value) > MAX_TEXT \
+            or not value.isprintable():
+        raise ValidationError(f"{what} must be printable text, 1 to {MAX_TEXT} characters")
+    return value
+
+
+def _plain_value(value: Any, what: str) -> Any:
+    """A socket or setting value: bool, finite number, short text, or 2 to 4 numbers."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        if value != value or value in (float("inf"), float("-inf")):
+            raise ValidationError(f"{what} must be a finite number")
+        return value
+    if isinstance(value, str):
+        return _text(value, what)
+    if isinstance(value, list) and 2 <= len(value) <= 4 and all(
+            isinstance(v, (int, float)) and not isinstance(v, bool) and v == v
+            and abs(v) != float("inf") for v in value):
+        return value
+    raise ValidationError(f"{what} must be a number, true/false, short text or 2-4 numbers")
+
+
+def _socket_ref(ref: Any, what: str) -> str | int:
+    if isinstance(ref, int) and not isinstance(ref, bool):
+        if ref < 0:
+            raise ValidationError(f"{what} index must be 0 or more")
+        return ref
+    return _text(ref, what)
+
+
+def _interface_items(items: Any, what: str) -> list[dict[str, Any]]:
+    if not isinstance(items, list) or len(items) > MAX_SPEC_SOCKETS:
+        raise ValidationError(f"{what} must be a list of at most {MAX_SPEC_SOCKETS} sockets")
+    clean = []
+    for item in items:
+        if not isinstance(item, dict) or not set(item) <= {"name", "type", "default",
+                                                           "min", "max"}:
+            raise ValidationError(f"Each of {what} is {{name, type, default?, min?, max?}}")
+        entry = {"name": _text(item.get("name"), f"{what} name"),
+                 "type": validate_enum(item.get("type"), ALLOWED_INTERFACE_TYPES,
+                                       name=f"{what} type")}
+        for key in ("default", "min", "max"):
+            if key in item:
+                value = _plain_value(item[key], f"{what} {key}")
+                if key != "default" and not isinstance(value, (int, float)):
+                    raise ValidationError(f"{what} {key} must be a number")
+                if key == "default" and isinstance(value, str) and entry["type"] not in (
+                        "STRING", "OBJECT", "COLLECTION", "MATERIAL"):
+                    raise ValidationError(f"{what} default for {entry['type']} must not be text")
+                entry[key] = value
+        clean.append(entry)
+    return clean
+
+
+def _validate_spec(spec: Any) -> dict[str, Any]:
+    if not isinstance(spec, dict) or not set(spec) <= {"inputs", "outputs", "nodes", "links"}:
+        raise ValidationError("spec is an object with inputs, outputs, nodes and links")
+    nodes = spec.get("nodes", [])
+    links = spec.get("links", [])
+    if not isinstance(nodes, list) or len(nodes) > MAX_SPEC_NODES:
+        raise ValidationError(f"nodes must be a list of at most {MAX_SPEC_NODES}")
+    if not isinstance(links, list) or len(links) > MAX_SPEC_LINKS:
+        raise ValidationError(f"links must be a list of at most {MAX_SPEC_LINKS}")
+
+    clean_nodes, names = [], set(GROUP_NODES)
+    for node in nodes:
+        if not isinstance(node, dict) or not set(node) <= {"name", "type", "location",
+                                                           "settings", "inputs"}:
+            raise ValidationError("Each node is {name, type, location?, settings?, inputs?}")
+        name = validate_object_name(node.get("name"))
+        if name in names:
+            raise ValidationError(f"Node name {name!r} is used twice or is reserved")
+        names.add(name)
+        node_type = node.get("type")
+        if not isinstance(node_type, str) or not _NODE_TYPE_PATTERN.match(node_type):
+            raise ValidationError(f"Node type {node_type!r} is not a node identifier, "
+                                  f"e.g. GeometryNodeMeshGrid or ShaderNodeMath")
+        entry: dict[str, Any] = {"name": name, "type": node_type}
+        if "location" in node:
+            entry["location"] = [float(v) for v in validate_vector(node["location"], size=2,
+                                                                   name="location")]
+            if any(abs(v) > MAX_COORD for v in entry["location"]):
+                raise ValidationError("location is out of range")
+        settings = node.get("settings", {})
+        if not isinstance(settings, dict):
+            raise ValidationError("settings must be an object")
+        for key, value in settings.items():
+            if not isinstance(key, str) or not _SETTING_PATTERN.match(key):
+                raise ValidationError(f"Setting {key!r} must be a lowercase name like operation")
+            if not isinstance(value, (bool, int, float, str)):
+                raise ValidationError(f"Setting {key!r} must be a single value")
+            _plain_value(value, f"setting {key}")
+        entry["settings"] = dict(settings)
+        inputs = node.get("inputs", {})
+        if not isinstance(inputs, dict):
+            raise ValidationError("inputs must be an object of socket to value")
+        entry["inputs"] = {}
+        for key, value in inputs.items():
+            ref = _socket_ref(int(key) if isinstance(key, str) and key.isdigit() else key,
+                              "input socket")
+            entry["inputs"][str(ref)] = _plain_value(value, f"input {key!r}")
+        clean_nodes.append(entry)
+
+    clean_links = []
+    for link in links:
+        if not isinstance(link, list) or len(link) != 4:
+            raise ValidationError("Each link is [from_node, from_socket, to_node, to_socket]")
+        from_node, from_socket, to_node, to_socket = link
+        for node_name in (from_node, to_node):
+            if node_name not in names:
+                raise ValidationError(f"Link refers to unknown node {node_name!r}")
+        clean_links.append([from_node, _socket_ref(from_socket, "from_socket"),
+                            to_node, _socket_ref(to_socket, "to_socket")])
+    return {"inputs": _interface_items(spec.get("inputs", []), "inputs"),
+            "outputs": _interface_items(spec.get("outputs", []), "outputs"),
+            "nodes": clean_nodes, "links": clean_links}
+
+
+@mcp.tool()
+def build_geometry_nodes(
+    object_name: str,
+    spec: dict[str, Any],
+    modifier_name: str = "GeometryNodes",
+) -> dict[str, Any]:
+    """Build a whole geometry node graph on an object in one call.
+
+    The graph is built in a new node group and only put on the modifier if
+    every step works; on any error nothing changes. The group always gets a
+    Geometry input and output, wired through nodes named "Group Input" and
+    "Group Output". Read a graph back with get_geometry_node_tree.
+
+    Args:
+        object_name: Object to put the graph on (the modifier is created if needed).
+        spec: {
+            "inputs": [{"name", "type", "default"?, "min"?, "max"?}]  extra group
+                inputs, shown on the modifier. type: FLOAT, INT, BOOLEAN, VECTOR,
+                COLOR, ROTATION, STRING, OBJECT, COLLECTION, MATERIAL, GEOMETRY.
+            "outputs": same shape, extra group outputs.
+            "nodes": [{"name", "type", "location"?: [x, y],
+                       "settings"?: {"operation": "SINE"},  node options
+                       "inputs"?: {"Size X": 4, "Offset": [0, 0, 1]}}]  socket values;
+                       a socket is a name, identifier (Value_001) or index;
+                       object/collection/material sockets take a name.
+            "links": [[from_node, from_socket, to_node, to_socket]]
+        }
+            Example: a wavy grid
+            {"inputs": [{"name": "Size", "type": "FLOAT", "default": 4}],
+             "nodes": [{"name": "grid", "type": "GeometryNodeMeshGrid",
+                        "inputs": {"Vertices X": 40, "Vertices Y": 40}},
+                       {"name": "pos", "type": "GeometryNodeInputPosition"},
+                       {"name": "xyz", "type": "ShaderNodeSeparateXYZ"},
+                       {"name": "sine", "type": "ShaderNodeMath",
+                        "settings": {"operation": "SINE"}},
+                       {"name": "up", "type": "ShaderNodeCombineXYZ"},
+                       {"name": "move", "type": "GeometryNodeSetPosition"}],
+             "links": [["Group Input", "Size", "grid", "Size X"],
+                       ["Group Input", "Size", "grid", "Size Y"],
+                       ["pos", 0, "xyz", 0], ["xyz", "X", "sine", 0],
+                       ["sine", 0, "up", "Z"], ["grid", "Mesh", "move", "Geometry"],
+                       ["up", 0, "move", "Offset"],
+                       ["move", "Geometry", "Group Output", "Geometry"]]}
+        modifier_name: Geometry nodes modifier to use or create.
+
+    Returns:
+        Dict with the modifier, the node group, and the node and link counts.
+    """
+    return _send_gn("build_geometry_nodes", {
+        "object_name": validate_object_name(object_name),
+        "modifier_name": validate_new_name(modifier_name),
+        "spec": _validate_spec(spec),
+    })
+
+
+@mcp.tool()
+def get_geometry_node_tree(object_name: str, modifier_name: str) -> dict[str, Any]:
+    """Read a geometry nodes modifier's graph: group interface, nodes with their
+    settings and unlinked input values, and links.
+
+    Args:
+        object_name: Object with the modifier.
+        modifier_name: Geometry nodes modifier.
+
+    Returns:
+        Dict with interface, nodes and links, in the shape build_geometry_nodes takes.
+    """
+    return _send_gn("get_geometry_node_tree", {
+        "object_name": validate_object_name(object_name),
+        "modifier_name": validate_object_name(modifier_name),
+    })
+
+
+def _send_gn(command: str, params: dict[str, Any]) -> Any:
+    conn = get_connection()
+    response = conn.send_command(command, params)
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")

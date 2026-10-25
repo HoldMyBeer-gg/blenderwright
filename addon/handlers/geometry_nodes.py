@@ -133,8 +133,7 @@ def handle_add_geometry_node(params: dict) -> dict:
         # list that goes stale. nodes.new() on an unknown type raises a bare
         # RuntimeError naming nothing useful, so near misses are offered:
         # GeometryNodeCube for GeometryNodeMeshCube is an easy guess to make.
-        known = {c.__name__ for base in ("GeometryNode", "FunctionNode", "ShaderNode")
-                 for c in getattr(bpy.types, base).__subclasses__()}
+        known = _known_node_types()
         if node_type not in known:
             lowered = node_type.lower()
             near = sorted(n for n in known
@@ -419,10 +418,202 @@ def handle_add_essentials_modifier(params):
             "inputs": _modifier_input_values(modifier)}
 
 
+INTERFACE_SOCKETS = {
+    "GEOMETRY": "NodeSocketGeometry", "FLOAT": "NodeSocketFloat", "INT": "NodeSocketInt",
+    "BOOLEAN": "NodeSocketBool", "VECTOR": "NodeSocketVector", "COLOR": "NodeSocketColor",
+    "ROTATION": "NodeSocketRotation", "STRING": "NodeSocketString",
+    "OBJECT": "NodeSocketObject", "COLLECTION": "NodeSocketCollection",
+    "MATERIAL": "NodeSocketMaterial",
+}
+NODE_SETTING_TYPES = {"BOOLEAN", "INT", "FLOAT", "ENUM", "STRING"}
+
+
+def _known_node_types():
+    """Node classes this Blender has, by name. 5.2 creates bpy.types classes
+    lazily, so __subclasses__() is empty and refused every node."""
+    bases = tuple(getattr(bpy.types, b) for b in ("GeometryNode", "FunctionNode", "ShaderNode"))
+    known = set()
+    for name in dir(bpy.types):
+        if name.startswith(("GeometryNode", "FunctionNode", "ShaderNode")):
+            cls = getattr(bpy.types, name, None)
+            if isinstance(cls, type) and issubclass(cls, bases):
+                known.add(name)
+    return known
+
+
+def _base_node_props():
+    """Properties every node has (name, location, label...): not node settings."""
+    return set(bpy.types.Node.bl_rna.properties.keys())
+
+
+def _data_block(socket_type, name, what):
+    collection = getattr(bpy.data, ID_SOCKETS[socket_type])
+    found = collection.get(name) if isinstance(name, str) else None
+    if found is None:
+        raise ValueError(f"{what} needs an existing {ID_SOCKETS[socket_type][:-1]}; "
+                         f"'{name}' not found")
+    return found
+
+
+def _find_socket(node, sockets, ref, side):
+    if isinstance(ref, str) and ref.isdigit():
+        ref = int(ref)
+    if isinstance(ref, int):
+        if ref >= len(sockets):
+            raise ValueError(f"'{node.name}' has {len(sockets)} {side}s; index {ref} is past them")
+        return sockets[ref]
+    for want_enabled in (True, False):
+        for sock in sockets:
+            if (sock.name == ref or sock.identifier == ref) and (sock.enabled or not want_enabled):
+                return sock
+    names = ", ".join(sock.name for sock in sockets if sock.enabled)
+    raise ValueError(f"'{node.name}' has no {side} '{ref}'. {side.capitalize()}s: {names}")
+
+
+def _apply_node_settings(node, settings):
+    base = _base_node_props()
+    props = node.bl_rna.properties
+    for key, value in settings.items():
+        rna = props.get(key)
+        if rna is None or key in base or rna.is_readonly or rna.type not in NODE_SETTING_TYPES:
+            own = sorted(k for k, p in props.items() if k not in base and not p.is_readonly
+                         and p.type in NODE_SETTING_TYPES)
+            raise ValueError(f"'{key}' is not a setting of {node.bl_idname}. "
+                             f"Settings: {', '.join(own) or 'none'}")
+        try:
+            setattr(node, key, value)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"{node.name}: cannot set {key} to {value!r}: {e}") from None
+
+
+def _set_socket_value(node, sock, value):
+    if sock.bl_idname in ID_SOCKETS:
+        value = _data_block(sock.bl_idname, value, f"'{node.name}' input '{sock.name}'")
+    else:
+        value = _from_text(value, sock.bl_idname)
+    try:
+        sock.default_value = value
+    except (TypeError, ValueError, AttributeError) as e:
+        raise ValueError(f"'{node.name}' input '{sock.name}' cannot take {value!r}: {e}") from None
+
+
+def _add_interface(group, items, in_out):
+    for item in items:
+        socket_type = INTERFACE_SOCKETS[item["type"]]
+        sock = group.interface.new_socket(name=item["name"], in_out=in_out,
+                                          socket_type=socket_type)
+        if "default" in item:
+            value = item["default"]
+            if socket_type in ID_SOCKETS:
+                value = _data_block(socket_type, value, f"Group input '{item['name']}'")
+            sock.default_value = value
+        if "min" in item:
+            sock.min_value = item["min"]
+        if "max" in item:
+            sock.max_value = item["max"]
+
+
+def _fill_group(group, spec):
+    _add_interface(group, [{"name": "Geometry", "type": "GEOMETRY"}] + spec["inputs"], "INPUT")
+    _add_interface(group, [{"name": "Geometry", "type": "GEOMETRY"}] + spec["outputs"], "OUTPUT")
+    group_in = group.nodes.new("NodeGroupInput")
+    group_in.location = (-400, 0)
+    group_out = group.nodes.new("NodeGroupOutput")
+    group_out.location = (400, 0)
+    nodes = {"Group Input": group_in, "Group Output": group_out}
+
+    known = _known_node_types()
+    for entry in spec["nodes"]:
+        if entry["type"] not in known:
+            lowered = entry["type"].lower()
+            near = sorted(n for n in known if lowered in n.lower() or n.lower() in lowered)
+            hint = f" Did you mean: {', '.join(near[:5])}?" if near else ""
+            raise ValueError(f"Unknown node type '{entry['type']}'.{hint}")
+        node = group.nodes.new(type=entry["type"])
+        node.name = entry["name"]
+        node.location = tuple(entry.get("location", (0, 0)))
+        _apply_node_settings(node, entry.get("settings", {}))  # may change which sockets exist
+        for ref, value in entry.get("inputs", {}).items():
+            _set_socket_value(node, _find_socket(node, node.inputs, ref, "input"), value)
+        nodes[entry["name"]] = node
+
+    links = spec["links"]
+    if not any(link[2] == "Group Output" for link in links):
+        links = [["Group Input", "Geometry", "Group Output", "Geometry"]] + links
+    for from_name, from_ref, to_name, to_ref in links:
+        source, target = nodes[from_name], nodes[to_name]
+        group.links.new(_find_socket(source, source.outputs, from_ref, "output"),
+                        _find_socket(target, target.inputs, to_ref, "input"))
+    return len(nodes), len(links)
+
+
+def handle_build_geometry_nodes(params):
+    """Build into a fresh group; swap it onto the modifier only if every step worked."""
+    obj = bpy.data.objects.get(params.get("object_name"))
+    if obj is None:
+        raise ValueError(f"Object '{params.get('object_name')}' not found")
+    if not hasattr(obj, "modifiers"):
+        raise ValueError(f"Object '{obj.name}' cannot take modifiers")
+    name = params.get("modifier_name", "GeometryNodes")
+    group = bpy.data.node_groups.new(name=name, type="GeometryNodeTree")
+    try:
+        node_count, link_count = _fill_group(group, params["spec"])
+    except Exception:
+        bpy.data.node_groups.remove(group)
+        raise
+    modifier = obj.modifiers.get(name)
+    if modifier is None:
+        modifier = obj.modifiers.new(name=name, type="NODES")
+    elif modifier.type != "NODES":
+        bpy.data.node_groups.remove(group)
+        raise ValueError(f"Modifier '{name}' is not a geometry nodes modifier")
+    modifier.node_group = group
+    return {"object": obj.name, "modifier": modifier.name, "node_group": group.name,
+            "nodes": node_count, "links": link_count}
+
+
+def _plain(value):
+    if hasattr(value, "name") and not isinstance(value, str):
+        return value.name
+    if hasattr(value, "__len__") and not isinstance(value, str):
+        return [round(v, 4) if isinstance(v, float) else v for v in value]
+    return round(value, 4) if isinstance(value, float) else value
+
+
+def handle_get_geometry_node_tree(params):
+    obj = bpy.data.objects.get(params.get("object_name"))
+    if obj is None:
+        raise ValueError(f"Object '{params.get('object_name')}' not found")
+    modifier = obj.modifiers.get(params.get("modifier_name"))
+    if modifier is None or modifier.type != "NODES" or modifier.node_group is None:
+        raise ValueError(f"'{obj.name}' has no geometry nodes modifier "
+                         f"'{params.get('modifier_name')}'")
+    group = modifier.node_group
+    base = _base_node_props()
+    interface = [{"name": i.name, "in_out": i.in_out,
+                  "type": next((k for k, v in INTERFACE_SOCKETS.items() if v == i.socket_type),
+                               i.socket_type)}
+                 for i in group.interface.items_tree if i.item_type == "SOCKET"]
+    nodes = []
+    for node in group.nodes:
+        settings = {k: _plain(getattr(node, k)) for k, p in node.bl_rna.properties.items()
+                    if k not in base and not p.is_readonly and p.type in NODE_SETTING_TYPES}
+        inputs = {sock.identifier: _plain(sock.default_value) for sock in node.inputs
+                  if sock.enabled and not sock.is_linked and hasattr(sock, "default_value")}
+        nodes.append({"name": node.name, "type": node.bl_idname,
+                      "location": [round(v) for v in node.location],
+                      "settings": settings, "inputs": inputs})
+    links = [[lk.from_node.name, lk.from_socket.identifier, lk.to_node.name,
+              lk.to_socket.identifier] for lk in group.links]
+    return {"node_group": group.name, "interface": interface, "nodes": nodes, "links": links}
+
+
 def register():
     """Register geometry nodes handlers with the dispatcher."""
     dispatcher.register_handler("create_geometry_nodes", handle_create_geometry_nodes)
     dispatcher.register_handler("add_geometry_node", handle_add_geometry_node)
+    dispatcher.register_handler("build_geometry_nodes", handle_build_geometry_nodes)
+    dispatcher.register_handler("get_geometry_node_tree", handle_get_geometry_node_tree)
     dispatcher.register_handler("connect_geometry_nodes", handle_connect_geometry_nodes)
     dispatcher.register_handler("set_geometry_node_input", handle_set_geometry_node_input)
     dispatcher.register_handler("list_geometry_node_inputs", handle_list_geometry_node_inputs)
