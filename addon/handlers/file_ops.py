@@ -270,6 +270,87 @@ def handle_link_or_append(params):
             "instances": instances}
 
 
+ESSENTIALS = "Essentials"
+MAX_ASSET_FILES = 200
+
+
+def _library_root(name):
+    """The folder of a local, enabled library. Online libraries are refused:
+    nothing here may reach the internet."""
+    if name == ESSENTIALS:
+        return os.path.realpath(bpy.utils.system_resource("DATAFILES", path="assets"))
+    for lib in bpy.context.preferences.filepaths.asset_libraries:
+        if lib.name == name:
+            if getattr(lib, "use_remote_url", False):
+                raise ValueError(f"'{name}' is an online library; only local ones are used")
+            if not lib.enabled:
+                raise ValueError(f"Library '{name}' is disabled in Preferences")
+            return os.path.realpath(lib.path)
+    raise ValueError(f"No asset library '{name}'")
+
+
+def _inside(root, path):
+    real = os.path.realpath(path)
+    return real == root or real.startswith(root + os.sep)
+
+
+def _library_file(library, rel):
+    """A .blend inside the library, after resolving '..' and symlinks."""
+    root = _library_root(library)
+    if os.path.isabs(rel):
+        raise ValueError(f"{rel!r} must be relative to the library")
+    path = os.path.realpath(os.path.join(root, rel))
+    if not _inside(root, path):
+        raise ValueError(f"{rel!r} is outside library '{library}'")
+    return _blend_path(path)
+
+
+def handle_list_asset_libraries(params):
+    libraries = [{"name": ESSENTIALS, "path": _library_root(ESSENTIALS)}]
+    for lib in bpy.context.preferences.filepaths.asset_libraries:
+        if lib.enabled and not getattr(lib, "use_remote_url", False):
+            libraries.append({"name": lib.name, "path": lib.path,
+                              "exists": os.path.isdir(lib.path)})
+    return {"libraries": libraries}
+
+
+def handle_list_assets(params):
+    library = params.get("library")
+    root = _library_root(library)
+    wanted = params.get("asset_type")
+    types = {wanted: LINK_TYPES[wanted]} if wanted else LINK_TYPES
+    files = []
+    for folder, dirs, names in os.walk(root):
+        dirs.sort()
+        files += [os.path.join(folder, n) for n in sorted(names)
+                  if n.lower().endswith(".blend") and _inside(root, os.path.join(folder, n))]
+    assets = []
+    for path in files[:MAX_ASSET_FILES]:
+        with bpy.data.libraries.load(_blend_path(path), assets_only=True) as (src, _dst):
+            rel = os.path.relpath(path, root).replace(os.sep, "/")
+            for data_type, attr in types.items():
+                assets += [{"file": rel, "type": data_type, "name": n}
+                           for n in sorted(getattr(src, attr))]
+    return {"library": library, "assets": assets, "files_read": min(len(files), MAX_ASSET_FILES),
+            "truncated": len(files) > MAX_ASSET_FILES}
+
+
+def handle_place_asset(params):
+    path = _library_file(params.get("library"), params.get("file", ""))
+    data_type, name = params.get("asset_type"), params.get("name")
+    attr = LINK_TYPES.get(data_type)
+    if attr is None:
+        raise ValueError(f"Cannot place {data_type!r}")
+    with bpy.data.libraries.load(path, assets_only=True) as (src, _dst):
+        marked = set(getattr(src, attr))
+    if name not in marked:
+        raise ValueError(f"'{name}' is not an asset in {params.get('file')}; assets: "
+                         f"{', '.join(sorted(marked)) or 'none'}")
+    return handle_link_or_append({"filepath": path, "data_type": params.get("asset_type"),
+                                  "names": [params.get("name")],
+                                  "link": bool(params.get("link", False))})
+
+
 PACKABLE = (("image", "images"), ("sound", "sounds"), ("font", "fonts"), ("volume", "volumes"))
 
 
@@ -355,3 +436,6 @@ def register():
     dispatcher.register_handler("pack_resources", handle_pack_resources)
     dispatcher.register_handler("unpack_resources", handle_unpack_resources)
     dispatcher.register_handler("manage_external_paths", handle_manage_external_paths)
+    dispatcher.register_handler("list_asset_libraries", handle_list_asset_libraries)
+    dispatcher.register_handler("list_assets", handle_list_assets)
+    dispatcher.register_handler("place_asset", handle_place_asset)
