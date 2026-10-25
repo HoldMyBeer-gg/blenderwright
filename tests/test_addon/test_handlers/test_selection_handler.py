@@ -1,16 +1,9 @@
 """Handler tests for sub-object selection.
 
-Three things here were found only by running the operators against a live
-Blender 5.1, not by reading the API:
+select_by_axis splits at the middle of the bounding box and sets the flags
+itself, flushing vertices up to edges and faces.
 
-  select_axis compares against the *active* element, and an element becomes
-  active through the bmesh select_history, not by setting its select flag.
-  Without that it warns "requires an active vertex" and selects nothing.
-
-  The result of select_axis lands on vertices. Without select_flush, a caller
-  asking for "the top" gets 9 vertices and 0 faces.
-
-  select_by_index must set the select mode to match the element, or Blender
+select_by_index must set the select mode to match the element, or Blender
   remaps the flags on the next mode switch.
 """
 
@@ -38,28 +31,74 @@ def _load_selection_handler():
     return mod
 
 
-class TestSelectByAxisUsesSelectHistory:
-    def test_the_seed_is_added_to_select_history(self):
-        """Setting .select is not enough; select_axis needs an active element."""
-        source = open(os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                                   "addon", "handlers", "selection.py")).read()
-        assert "select_history.add" in source, (
-            "select_axis warns 'requires an active vertex' without this"
-        )
+class TestSideOfAxis:
+    """Split at the middle of the bounding box. The old version seeded
+    select_axis with the most extreme vertex, which on a cube gave the top
+    face but on Suzanne gave 1 vertex of 507 for "the left half"."""
 
-    def test_the_selection_is_flushed_to_faces(self):
-        source = open(os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                                   "addon", "handlers", "selection.py")).read()
-        assert "select_flush" in source, (
-            "select_axis lands on vertices; without a flush a caller asking "
-            "for the top sees 0 faces selected"
-        )
+    def test_negative_half_of_an_organic_shape(self):
+        mod = _load_selection_handler()
+        xs = [-1.3, -0.9, -0.4, 0.0, 0.4, 0.9, 1.3]
+        assert mod._on_side(xs, "NEG") == [True, True, True, True, False, False, False]
 
-    def test_negative_sign_seeds_from_the_other_end(self):
-        """A NEG selection seeded from the most positive vertex selects nothing."""
-        source = open(os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                                   "addon", "handlers", "selection.py")).read()
-        assert "direction = -1 if sign == \"NEG\" else 1" in source
+    def test_positive_half_includes_the_middle_seam(self):
+        mod = _load_selection_handler()
+        assert mod._on_side([-1.0, 0.0, 1.0], "POS") == [False, True, True]
+
+    def test_cube_top_is_the_top_face(self):
+        mod = _load_selection_handler()
+        zs = [-1.0, -1.0, 1.0, 1.0]
+        assert mod._on_side(zs, "POS") == [False, False, True, True]
+
+    def test_off_centre_object_uses_its_own_middle(self):
+        mod = _load_selection_handler()
+        assert mod._on_side([10.0, 11.0, 12.0], "NEG") == [True, True, False]
+
+    def test_align_is_the_middle_plane(self):
+        mod = _load_selection_handler()
+        assert mod._on_side([-1.0, 0.0, 0.0, 1.0], "ALIGN") == [False, True, True, False]
+
+    def test_flat_mesh_is_all_aligned(self):
+        mod = _load_selection_handler()
+        assert mod._on_side([2.0, 2.0], "ALIGN") == [True, True]
+        assert mod._on_side([2.0, 2.0], "POS") == [True, True]
+
+
+class TestSelectByAxisFlushes:
+    def _quad_strip(self):
+        from types import SimpleNamespace as NS
+
+        # Two quads side by side along X: verts 0-5, x = -1, 0, 1
+        co = [(-1, 0, 0), (0, 0, 0), (1, 0, 0), (-1, 1, 0), (0, 1, 0), (1, 1, 0)]
+        verts = [NS(index=i, co=c, select=False) for i, c in enumerate(co)]
+        edges = [NS(vertices=v, select=False) for v in
+                 ((0, 1), (1, 2), (3, 4), (4, 5), (0, 3), (1, 4), (2, 5))]
+        faces = [NS(vertices=(0, 1, 4, 3), select=False),
+                 NS(vertices=(1, 2, 5, 4), select=False)]
+        return NS(name="Strip", type="MESH", mode="OBJECT",
+                  data=NS(vertices=verts, edges=edges, polygons=faces))
+
+    def test_faces_on_the_side_are_selected(self, monkeypatch):
+
+        mod = _load_selection_handler()
+        obj = self._quad_strip()
+        monkeypatch.setattr(mod, "_get_mesh", lambda name: obj)
+        monkeypatch.setattr(mod, "_activate", lambda o: None)
+        result = mod.handle_select_by_axis({"object_name": "Strip", "axis": "X",
+                                            "sign": "NEG"})
+        assert [v.select for v in obj.data.vertices] == [True, True, False, True, True, False]
+        assert [f.select for f in obj.data.polygons] == [True, False]
+        assert result["faces"]["selected"] == 1
+
+    def test_extend_keeps_existing(self, monkeypatch):
+        mod = _load_selection_handler()
+        obj = self._quad_strip()
+        obj.data.vertices[2].select = True
+        monkeypatch.setattr(mod, "_get_mesh", lambda name: obj)
+        monkeypatch.setattr(mod, "_activate", lambda o: None)
+        mod.handle_select_by_axis({"object_name": "Strip", "axis": "X", "sign": "NEG",
+                                   "extend": True})
+        assert obj.data.vertices[2].select is True
 
 
 class TestSelectByIndexSetsTheMode:

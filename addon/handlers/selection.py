@@ -6,7 +6,6 @@ across leaving edit mode, across deselecting the object, and into the saved
 and via Blender's operators where the logic is Blender's.
 """
 
-import bmesh
 import bpy
 
 from .. import dispatcher
@@ -100,14 +99,25 @@ def handle_select_by_index(params):
     }
 
 
-def handle_select_by_axis(params):
-    """Select geometry on one side of the object.
+def _on_side(values, sign):
+    """Which values lie on one side of the middle of their range. The middle
+    plane counts for both halves, so faces along the seam are not lost."""
+    low, high = min(values), max(values)
+    middle = (low + high) / 2
+    tolerance = max(high - low, 1.0) * 1e-5
+    if sign == "ALIGN":
+        return [abs(v - middle) <= tolerance for v in values]
+    if sign == "NEG":
+        return [v <= middle + tolerance for v in values]
+    return [v >= middle - tolerance for v in values]
 
-    Two things this needs that are easy to miss, both found by running it:
-    select_axis compares against the *active* element, and an element is made
-    active through the bmesh select_history, not by setting its select flag.
-    And the result lands on vertices, so it must be flushed up to edges and
-    faces or a caller asking for "the top" sees no faces selected at all.
+
+def handle_select_by_axis(params):
+    """Select geometry on one side of the middle of the object's bounding box.
+
+    Flags are set directly. Blender's select_axis compares against the active
+    vertex, so seeding it with the most extreme one gave a cube's top face
+    but only 1 vertex of Suzanne's 507 for "the left half".
     """
     obj = _get_mesh(params["object_name"])
     axis = params.get("axis", "Z")
@@ -119,32 +129,20 @@ def handle_select_by_axis(params):
     if not mesh.vertices:
         raise ValueError(f"Object '{obj.name}' has no geometry")
 
-    component = "XYZ".index(axis)
-    direction = -1 if sign == "NEG" else 1
-    index = max(range(len(mesh.vertices)),
-                key=lambda i: mesh.vertices[i].co[component] * direction)
-
     bpy.ops.object.mode_set(mode="EDIT")
-    try:
-        bpy.ops.mesh.select_mode(type="VERT")
-        if not extend:
-            bpy.ops.mesh.select_all(action="DESELECT")
+    bpy.ops.mesh.select_mode(type="VERT")
+    if not extend:
+        bpy.ops.mesh.select_all(action="DESELECT")
+    bpy.ops.object.mode_set(mode="OBJECT")
 
-        bm = bmesh.from_edit_mesh(mesh)
-        bm.verts.ensure_lookup_table()
-        seed = bm.verts[index]
-        seed.select = True
-        bm.select_history.clear()
-        bm.select_history.add(seed)
-        bmesh.update_edit_mesh(mesh)
-
-        bpy.ops.mesh.select_axis(axis=axis, sign=sign)
-
-        bm = bmesh.from_edit_mesh(mesh)
-        bm.select_flush(True)
-        bmesh.update_edit_mesh(mesh)
-    finally:
-        bpy.ops.object.mode_set(mode="OBJECT")
+    component = "XYZ".index(axis)
+    chosen = _on_side([v.co[component] for v in mesh.vertices], sign)
+    for vertex, picked in zip(mesh.vertices, chosen):
+        if picked:
+            vertex.select = True
+    for element in list(mesh.edges) + list(mesh.polygons):
+        if all(mesh.vertices[i].select for i in element.vertices):
+            element.select = True
 
     return {"object_name": obj.name, "axis": axis, "sign": sign, **_counts(obj)}
 

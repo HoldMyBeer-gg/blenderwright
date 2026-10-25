@@ -1617,7 +1617,7 @@ object. to select whole objects in the scene, use select_objects."><h3><a href="
 The usual way to say &quot;the top&quot;, &quot;the front&quot; or &quot;the left half&quot; of one
 object. To select whole objects in the scene, use select_objects.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>axis</th><td>One of: X, Y, Z.</td></tr>
-<tr><th>sign</th><td>POS for the positive side, NEG for the negative side, ALIGN for geometry lying in the plane.</td></tr>
+<tr><th>sign</th><td>POS for the positive half, NEG for the negative half, split at the middle of the object&#x27;s bounding box (the middle counts for both); ALIGN for geometry lying on that middle plane.</td></tr>
 <tr><th>extend</th><td>Add to the current selection instead of replacing it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many elements were selected.</p></article><article class="tool" id="select_by_index" data-search="select_by_index select specific vertices, edges or faces of one mesh by index.
 
 the deterministic way to select: no operator, no viewport, no guessing.

@@ -140,8 +140,9 @@ def select_by_axis(
     Args:
         object_name: Name of the mesh object.
         axis: One of: X, Y, Z.
-        sign: POS for the positive side, NEG for the negative side, ALIGN for
-            geometry lying in the plane.
+        sign: POS for the positive half, NEG for the negative half, split at
+            the middle of the object's bounding box (the middle counts for
+            both); ALIGN for geometry lying on that middle plane.
         extend: Add to the current selection instead of replacing it.
 
     Returns:
