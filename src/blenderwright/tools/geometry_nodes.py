@@ -329,8 +329,9 @@ def _validate_spec(spec: Any) -> dict[str, Any]:
     clean_nodes, names = [], set(GROUP_NODES)
     for node in nodes:
         if not isinstance(node, dict) or not set(node) <= {"name", "type", "location",
-                                                           "settings", "inputs"}:
-            raise ValidationError("Each node is {name, type, location?, settings?, inputs?}")
+                                                           "settings", "inputs", "pair_with"}:
+            raise ValidationError("Each node is {name, type, location?, settings?, inputs?, "
+                                  "pair_with?}")
         name = validate_object_name(node.get("name"))
         if name in names:
             raise ValidationError(f"Node name {name!r} is used twice or is reserved")
@@ -340,6 +341,8 @@ def _validate_spec(spec: Any) -> dict[str, Any]:
             raise ValidationError(f"Node type {node_type!r} is not a node identifier, "
                                   f"e.g. GeometryNodeMeshGrid or ShaderNodeMath")
         entry: dict[str, Any] = {"name": name, "type": node_type}
+        if "pair_with" in node:
+            entry["pair_with"] = node["pair_with"]
         if "location" in node:
             entry["location"] = [float(v) for v in validate_vector(node["location"], size=2,
                                                                    name="location")]
@@ -364,6 +367,14 @@ def _validate_spec(spec: Any) -> dict[str, Any]:
                               "input socket")
             entry["inputs"][str(ref)] = _plain_value(value, f"input {key!r}")
         clean_nodes.append(entry)
+
+    spec_names = {entry["name"] for entry in clean_nodes}
+    for entry in clean_nodes:
+        partner = entry.get("pair_with")
+        if partner is not None and (not isinstance(partner, str) or partner == entry["name"]
+                                    or partner not in spec_names):
+            raise ValidationError(f"{entry['name']}: pair_with must name the zone's output "
+                                  f"node in this spec")
 
     clean_links = []
     for link in links:
@@ -401,6 +412,9 @@ def build_geometry_nodes(
                 COLOR, ROTATION, STRING, OBJECT, COLLECTION, MATERIAL, GEOMETRY.
             "outputs": same shape, extra group outputs.
             "nodes": [{"name", "type", "location"?: [x, y],
+                       "pair_with"?: zone output node name, on a zone's input node
+                           (GeometryNodeSimulationInput, GeometryNodeRepeatInput,
+                           GeometryNodeForeachGeometryElementInput),
                        "settings"?: {"operation": "SINE"},  node options
                        "inputs"?: {"Size X": 4, "Offset": [0, 0, 1]}}]  socket values;
                        a socket is a name, identifier (Value_001) or index;

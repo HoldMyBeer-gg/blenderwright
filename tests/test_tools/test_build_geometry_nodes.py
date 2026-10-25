@@ -95,3 +95,19 @@ def test_get_tree(mock_conn):
     get_geometry_node_tree("Ground", "GeometryNodes")
     assert _sent(mock_conn) == ("get_geometry_node_tree",
                                 {"object_name": "Ground", "modifier_name": "GeometryNodes"})
+
+
+class TestZones:
+    def test_pair_with_is_sent(self, mock_conn):
+        build_geometry_nodes("Ground", {"nodes": [
+            {"name": "rep_in", "type": "GeometryNodeRepeatInput", "pair_with": "rep_out"},
+            {"name": "rep_out", "type": "GeometryNodeRepeatOutput"}]})
+        nodes = _sent(mock_conn)[1]["spec"]["nodes"]
+        assert nodes[0]["pair_with"] == "rep_out" and "pair_with" not in nodes[1]
+
+    @pytest.mark.parametrize("pair", ["ghost", "rep_in", "Group Output", 5])
+    def test_pair_must_name_another_node(self, mock_conn, pair):
+        with pytest.raises(ValidationError):
+            build_geometry_nodes("Ground", {"nodes": [
+                {"name": "rep_in", "type": "GeometryNodeRepeatInput", "pair_with": pair},
+                {"name": "rep_out", "type": "GeometryNodeRepeatOutput"}]})
