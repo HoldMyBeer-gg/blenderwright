@@ -533,9 +533,23 @@ def _fill_group(group, spec):
         node.name = entry["name"]
         node.location = tuple(entry.get("location", (0, 0)))
         _apply_node_settings(node, entry.get("settings", {}))  # may change which sockets exist
+        nodes[entry["name"]] = node
+
+    # Zones get their sockets from pairing, so pair before any value or link
+    for entry in spec["nodes"]:
+        if "pair_with" in entry:
+            node = nodes[entry["name"]]
+            if not hasattr(node, "pair_with_output"):
+                raise ValueError(f"'{node.name}' is not a zone input node; only simulation, "
+                                 f"repeat and for-each zone inputs pair")
+            if not node.pair_with_output(nodes[entry["pair_with"]]):
+                raise ValueError(f"'{node.name}' cannot pair with '{entry['pair_with']}': "
+                                 f"use the matching zone output node")
+
+    for entry in spec["nodes"]:
+        node = nodes[entry["name"]]
         for ref, value in entry.get("inputs", {}).items():
             _set_socket_value(node, _find_socket(node, node.inputs, ref, "input"), value)
-        nodes[entry["name"]] = node
 
     links = spec["links"]
     if not any(link[2] == "Group Output" for link in links):

@@ -422,6 +422,9 @@ def handle_get_object_info(params: dict) -> dict:
         obj = bpy.data.objects.get(name)
         if obj is None:
             raise ValueError(f"Object '{name}' not found")
+        # dimensions come from the evaluated mesh; without this they lag a
+        # modifier or node change made just before
+        bpy.context.view_layer.update()
 
         modifiers = [{"name": m.name, "type": m.type} for m in obj.modifiers]
         materials = [{"name": m.name, "index": i} for i, m in enumerate(obj.data.material_slots) if m.material] if hasattr(obj, "data") and obj.data and hasattr(obj.data, "material_slots") else []  # noqa: F841
