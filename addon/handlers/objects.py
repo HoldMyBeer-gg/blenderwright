@@ -445,6 +445,9 @@ def handle_get_object_info(params: dict) -> dict:
             "name": obj.name,
             "type": obj.type,
             "location": list(obj.location),
+            # Where it really is after parents, constraints and simulation
+            "world_location": list(obj.evaluated_get(
+                bpy.context.evaluated_depsgraph_get()).matrix_world.translation),
             "rotation_euler": list(obj.rotation_euler),
             "rotation_mode": obj.rotation_mode,
             "scale": list(obj.scale),

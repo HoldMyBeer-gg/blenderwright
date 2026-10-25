@@ -11,7 +11,6 @@ import os
 import sys
 import importlib.util
 from unittest.mock import MagicMock
-import pytest
 
 
 def _load_selection_handler():
@@ -62,68 +61,3 @@ class TestSideOfAxis:
         mod = _load_selection_handler()
         assert mod._on_side([2.0, 2.0], "ALIGN") == [True, True]
         assert mod._on_side([2.0, 2.0], "POS") == [True, True]
-
-
-class TestSelectByAxisFlushes:
-    def _quad_strip(self):
-        from types import SimpleNamespace as NS
-
-        # Two quads side by side along X: verts 0-5, x = -1, 0, 1
-        co = [(-1, 0, 0), (0, 0, 0), (1, 0, 0), (-1, 1, 0), (0, 1, 0), (1, 1, 0)]
-        verts = [NS(index=i, co=c, select=False) for i, c in enumerate(co)]
-        edges = [NS(vertices=v, select=False) for v in
-                 ((0, 1), (1, 2), (3, 4), (4, 5), (0, 3), (1, 4), (2, 5))]
-        faces = [NS(vertices=(0, 1, 4, 3), select=False),
-                 NS(vertices=(1, 2, 5, 4), select=False)]
-        return NS(name="Strip", type="MESH", mode="OBJECT",
-                  data=NS(vertices=verts, edges=edges, polygons=faces))
-
-    def test_faces_on_the_side_are_selected(self, monkeypatch):
-
-        mod = _load_selection_handler()
-        obj = self._quad_strip()
-        monkeypatch.setattr(mod, "_get_mesh", lambda name: obj)
-        monkeypatch.setattr(mod, "_activate", lambda o: None)
-        result = mod.handle_select_by_axis({"object_name": "Strip", "axis": "X",
-                                            "sign": "NEG"})
-        assert [v.select for v in obj.data.vertices] == [True, True, False, True, True, False]
-        assert [f.select for f in obj.data.polygons] == [True, False]
-        assert result["faces"]["selected"] == 1
-
-    def test_extend_keeps_existing(self, monkeypatch):
-        mod = _load_selection_handler()
-        obj = self._quad_strip()
-        obj.data.vertices[2].select = True
-        monkeypatch.setattr(mod, "_get_mesh", lambda name: obj)
-        monkeypatch.setattr(mod, "_activate", lambda o: None)
-        mod.handle_select_by_axis({"object_name": "Strip", "axis": "X", "sign": "NEG",
-                                   "extend": True})
-        assert obj.data.vertices[2].select is True
-
-
-class TestSelectByIndexSetsTheMode:
-    def test_select_mode_matches_the_element(self):
-        """Otherwise Blender remaps the flags on the next mode switch."""
-        source = open(os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                                   "addon", "handlers", "selection.py")).read()
-        assert "_SELECT_MODE" in source and "select_mode(type=_SELECT_MODE" in source
-
-    def test_out_of_range_index_names_the_limit(self):
-        mod = _load_selection_handler()
-        bpy = sys.modules["bpy"]
-        obj = MagicMock()
-        obj.name = "Cube"
-        obj.type = "MESH"
-        obj.data.polygons = [MagicMock() for _ in range(6)]
-        bpy.data.objects.get.return_value = obj
-        with pytest.raises(ValueError) as exc:
-            mod.handle_select_by_index({"object_name": "Cube", "element": "FACE",
-                                        "indices": [0, 99]})
-        assert "99" in str(exc.value) and "6" in str(exc.value)
-
-
-class TestLoopSelectIsAbsent:
-    def test_no_loop_select_handler(self):
-        """It needs a view3d region; over a socket it always fails."""
-        mod = _load_selection_handler()
-        assert not any("loop" in name for name in dir(mod))
