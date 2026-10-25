@@ -94,10 +94,17 @@ def handle_focus_on_object(params: dict) -> dict:
         if obj is None:
             raise ValueError(f"Object '{object_name}' not found")
 
-        # Deselect all, select target, make active
-        bpy.ops.object.select_all(action='DESELECT')
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj
+        # Already sculpting or editing it: frame it in that mode. Otherwise
+        # select it by flags; object.select_all fails its poll outside
+        # object mode.
+        current = bpy.context.object
+        if current is None or current != obj or current.mode == "OBJECT":
+            if current is not None and current.mode != "OBJECT":
+                bpy.ops.object.mode_set(mode="OBJECT")
+            for other in bpy.context.selected_objects:
+                other.select_set(False)
+            obj.select_set(True)
+            bpy.context.view_layer.objects.active = obj
 
         # Frame selected in all 3D viewports
         area, space = _get_3d_viewport_area()
