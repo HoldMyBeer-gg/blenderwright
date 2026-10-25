@@ -562,7 +562,8 @@ def get_node_tree(material_name: str) -> dict[str, Any]:
         material_name: Name of the material.
 
     Returns:
-        Dict with nodes list and links list.
+        Dict with nodes (name, type, location, input and output names, the
+        values of unlinked inputs, and the node's own settings) and links.
     """
     material_name = validate_object_name(material_name)
     return _send_material_command("get_node_tree", {

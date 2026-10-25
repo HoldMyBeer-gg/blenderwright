@@ -407,6 +407,14 @@ def handle_remove_shader_node(params: dict) -> dict:
         raise RuntimeError(f"Failed to remove shader node: {e}")
 
 
+def _plain_value(value):
+    if hasattr(value, "name") and not isinstance(value, str):
+        return value.name
+    if hasattr(value, "__len__") and not isinstance(value, str):
+        return [round(v, 4) if isinstance(v, float) else v for v in value]
+    return round(value, 4) if isinstance(value, float) else value
+
+
 def handle_get_node_tree(params: dict) -> dict:
     """Serialize the full node tree of a material."""
     try:
@@ -415,6 +423,7 @@ def handle_get_node_tree(params: dict) -> dict:
         mat = _get_material(mat_name)
         tree = _get_node_tree(mat)
 
+        base = set(bpy.types.Node.bl_rna.properties.keys())
         nodes = []
         for node in tree.nodes:
             nodes.append({
@@ -423,6 +432,14 @@ def handle_get_node_tree(params: dict) -> dict:
                 "location": [node.location[0], node.location[1]],
                 "inputs": [inp.name for inp in node.inputs],
                 "outputs": [out.name for out in node.outputs],
+                # What is not wired in, so callers can check what a tool set
+                "values": {inp.name: _plain_value(inp.default_value) for inp in node.inputs
+                           if inp.enabled and not inp.is_linked
+                           and hasattr(inp, "default_value")},
+                "settings": {k: _plain_value(getattr(node, k))
+                             for k, p in node.bl_rna.properties.items()
+                             if k not in base and not p.is_readonly
+                             and p.type in ("BOOLEAN", "INT", "FLOAT", "ENUM", "STRING")},
             })
 
         links = []
