@@ -393,3 +393,107 @@ class TestRenderSettings2:
                 cycles.texture_limit_render, render.anisotropic_filter) == (
             True, 2, "1024", "FILTER_8")
         assert result["anisotropic_filter"] == 8
+
+
+class _Named(list):
+    """bpy collections of light groups / AOVs: add() renames duplicates."""
+
+    def __init__(self, make):
+        super().__init__()
+        self._make = make
+
+    def get(self, name):
+        return next((x for x in self if x.name == name), None)
+
+    def remove(self, item):
+        super().remove(item)
+
+
+@pytest.fixture
+def view_layer(rendering_handler, monkeypatch):
+    import bpy
+    from types import SimpleNamespace
+
+    lightgroups = _Named(None)
+    lightgroups.add = lambda name: (lightgroups.append(SimpleNamespace(
+        name=name.replace(".", "_"))), lightgroups[-1])[1]
+    aovs = _Named(None)
+
+    def aov_add():
+        aovs.append(SimpleNamespace(name="AOV", type="COLOR"))
+        return aovs[-1]
+
+    aovs.add = aov_add
+    layer = SimpleNamespace(lightgroups=lightgroups, aovs=aovs)
+    sun = SimpleNamespace(name="Sun", lightgroup="")
+    lamp = SimpleNamespace(name="Lamp", lightgroup="")
+    world = SimpleNamespace(name="World", lightgroup="")
+    monkeypatch.setattr(bpy.context, "view_layer", layer, raising=False)
+    monkeypatch.setattr(bpy.context, "scene", SimpleNamespace(world=world), raising=False)
+    monkeypatch.setattr(bpy.data, "objects", {"Sun": sun, "Lamp": lamp})
+    return rendering_handler, layer, sun, lamp, world
+
+
+def _group(handler, group, objects=(), world=False, remove=False):
+    return handler.handle_set_light_group({"group": group, "objects": list(objects),
+                                           "world": world, "remove": remove})
+
+
+class TestSetLightGroupHandler:
+    def test_creates_and_assigns(self, view_layer):
+        h, layer, sun, lamp, world = view_layer
+        result = _group(h, "Key", ["Sun"], world=True)
+        assert sun.lightgroup == "Key" and world.lightgroup == "Key" and lamp.lightgroup == ""
+        assert result["groups"] == [{"name": "Key", "objects": ["Sun"], "world": True}]
+
+    def test_uses_the_name_blender_gave(self, view_layer):
+        h, layer, sun, *_ = view_layer
+        result = _group(h, "rim.1", ["Sun"])
+        assert sun.lightgroup == "rim_1" and result["group"] == "rim_1"
+
+    def test_reuses_existing_group(self, view_layer):
+        h, layer, sun, lamp, _ = view_layer
+        _group(h, "Key", ["Sun"])
+        _group(h, "Key", ["Lamp"])
+        assert len(layer.lightgroups) == 1 and lamp.lightgroup == "Key"
+
+    def test_missing_object_assigns_nothing(self, view_layer):
+        h, layer, sun, *_ = view_layer
+        with pytest.raises(ValueError, match="Ghost"):
+            _group(h, "Key", ["Sun", "Ghost"])
+        assert sun.lightgroup == "" and len(layer.lightgroups) == 0
+
+    def test_remove_clears_members(self, view_layer):
+        h, layer, sun, lamp, world = view_layer
+        _group(h, "Key", ["Sun"], world=True)
+        result = _group(h, "Key", remove=True)
+        assert sun.lightgroup == "" and world.lightgroup == ""
+        assert result["groups"] == []
+
+    def test_remove_missing(self, view_layer):
+        h, *_ = view_layer
+        with pytest.raises(ValueError, match="Key"):
+            _group(h, "Key", remove=True)
+
+
+class TestManageAOVHandler:
+    def test_add_and_list(self, view_layer):
+        h, layer, *_ = view_layer
+        result = h.handle_manage_aov({"action": "ADD", "name": "mask", "type": "VALUE"})
+        assert result["aovs"] == [{"name": "mask", "type": "VALUE"}]
+
+    def test_add_existing_refused(self, view_layer):
+        h, *_ = view_layer
+        h.handle_manage_aov({"action": "ADD", "name": "mask", "type": "VALUE"})
+        with pytest.raises(ValueError, match="already"):
+            h.handle_manage_aov({"action": "ADD", "name": "mask", "type": "COLOR"})
+
+    def test_remove(self, view_layer):
+        h, layer, *_ = view_layer
+        h.handle_manage_aov({"action": "ADD", "name": "mask", "type": "VALUE"})
+        assert h.handle_manage_aov({"action": "REMOVE", "name": "mask"})["aovs"] == []
+
+    def test_remove_missing(self, view_layer):
+        h, *_ = view_layer
+        with pytest.raises(ValueError, match="mask"):
+            h.handle_manage_aov({"action": "REMOVE", "name": "mask"})

@@ -1,5 +1,5 @@
 """MCP tools for render settings: colour management, film, denoising,
-sampling, light paths, motion blur and render passes.
+sampling, light paths, motion blur, render passes, light groups and AOVs.
 
 Kept apart from the core rendering tools so a small-context client can load
 them only when a task asks for a finished look.
@@ -11,6 +11,7 @@ from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_enum,
     validate_int,
+    validate_new_name,
     validate_numeric_range,
     validate_object_name,
     ValidationError,
@@ -383,6 +384,80 @@ def set_render_passes(passes: list[str], enabled: bool = True) -> dict[str, Any]
 
 RAY_VISIBILITY_FLAGS = ("camera", "diffuse", "glossy", "transmission", "volume_scatter",
                         "shadow", "holdout", "shadow_catcher")
+ALLOWED_AOV_ACTIONS = {"LIST", "ADD", "REMOVE"}
+ALLOWED_AOV_TYPES = {"COLOR", "VALUE"}
+MAX_LIGHT_GROUP_OBJECTS = 1000
+
+
+@mcp.tool()
+def set_light_group(
+    group: str,
+    objects: list[str] | None = None,
+    world: bool = False,
+    remove: bool = False,
+) -> dict[str, Any]:
+    """Put lights (or emissive objects, or the world) into a light group.
+
+    Each light group renders as its own pass (Cycles), so light balance can
+    be changed in the compositor without re-rendering: the Render Layers
+    node gets a Combined_<group> output. The group is created if needed.
+
+    Args:
+        group: Light group name. Blender turns dots into underscores; the
+            result gives the name actually used.
+        objects: Lights or emissive objects to move into the group.
+        world: Also put the world (sky/HDRI light) into the group.
+        remove: Delete the group and take every member out of it.
+
+    Returns:
+        Dict with the group name used and every light group with its members.
+    """
+    if not isinstance(world, bool) or not isinstance(remove, bool):
+        raise ValidationError("world and remove must be true or false")
+    if objects is None:
+        objects = []
+    if not isinstance(objects, list):
+        raise ValidationError("objects must be a list of object names")
+    if len(objects) > MAX_LIGHT_GROUP_OBJECTS:
+        raise ValidationError(f"At most {MAX_LIGHT_GROUP_OBJECTS} objects per call")
+    if remove and (objects or world):
+        raise ValidationError("remove deletes the whole group; leave objects and world out")
+    return _send_render_command("set_light_group", {
+        "group": validate_new_name(group),
+        "objects": [validate_object_name(object_name) for object_name in objects],
+        "world": world,
+        "remove": remove,
+    })
+
+
+@mcp.tool()
+def manage_aov(action: str, name: str | None = None, type: str = "COLOR") -> dict[str, Any]:
+    """List, add or remove shader AOVs: custom render passes written by materials.
+
+    In a material, an Output AOV node (ShaderNodeOutputAOV, its aov_name set to
+    this name) writes a color or value into the pass. Use for masks and IDs
+    in compositing. The Render Layers node gets an output with the AOV name.
+
+    Args:
+        action: LIST, ADD or REMOVE.
+        name: AOV name, for ADD and REMOVE.
+        type: ADD only: COLOR or VALUE.
+
+    Returns:
+        Dict with every AOV (name, type).
+    """
+    params: dict[str, Any] = {
+        "action": validate_enum(action, ALLOWED_AOV_ACTIONS, name="action"),
+    }
+    if action != "LIST":
+        if name is None:
+            raise ValidationError(f"{action} needs a name")
+        params["name"] = validate_new_name(name)
+    if action == "ADD":
+        params["type"] = validate_enum(type, ALLOWED_AOV_TYPES, name="type")
+    return _send_render_command("manage_aov", params)
+
+
 ALLOWED_RAY_TRACING_METHODS = {"PROBE", "SCREEN"}
 ALLOWED_FAST_GI_METHODS = {"AMBIENT_OCCLUSION_ONLY", "GLOBAL_ILLUMINATION"}
 ALLOWED_SHADOW_POOL_SIZES = {16, 32, 64, 128, 256, 512, 1024, 1536, 2048}

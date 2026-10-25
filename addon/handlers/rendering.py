@@ -437,6 +437,70 @@ def handle_set_render_performance(params):
     }
 
 
+def _light_groups():
+    scene_world = bpy.context.scene.world
+    return [{"name": lg.name,
+             "objects": [o.name for o in bpy.data.objects.values() if o.lightgroup == lg.name],
+             "world": scene_world is not None and scene_world.lightgroup == lg.name}
+            for lg in bpy.context.view_layer.lightgroups]
+
+
+def handle_set_light_group(params):
+    layer = bpy.context.view_layer
+    name = params.get("group")
+    world = bpy.context.scene.world
+    if params.get("remove"):
+        lg = layer.lightgroups.get(name)
+        if lg is None:
+            raise ValueError(f"No light group '{name}'; there are "
+                             f"{[g.name for g in layer.lightgroups]}")
+        for obj in bpy.data.objects.values():
+            if obj.lightgroup == name:
+                obj.lightgroup = ""
+        if world is not None and world.lightgroup == name:
+            world.lightgroup = ""
+        layer.lightgroups.remove(lg)
+        return {"group": name, "groups": _light_groups()}
+
+    members = []
+    for obj_name in params.get("objects", []):
+        obj = bpy.data.objects.get(obj_name)
+        if obj is None:
+            raise ValueError(f"Object '{obj_name}' not found")
+        members.append(obj)
+    if params.get("world") and world is None:
+        raise ValueError("The scene has no world to add")
+    lg = layer.lightgroups.get(name) or layer.lightgroups.add(name=name)
+    for obj in members:
+        obj.lightgroup = lg.name
+    if params.get("world"):
+        world.lightgroup = lg.name
+    return {"group": lg.name, "groups": _light_groups()}
+
+
+def handle_manage_aov(params):
+    aovs = bpy.context.view_layer.aovs
+    action = params.get("action")
+    name = params.get("name")
+    if action == "ADD":
+        if aovs.get(name) is not None:
+            raise ValueError(f"An AOV named '{name}' already exists")
+        aov_type = params.get("type", "COLOR")
+        if aov_type not in {"COLOR", "VALUE"}:
+            raise ValueError(f"Unknown AOV type {aov_type!r}")
+        aov = aovs.add()
+        aov.name = name
+        aov.type = aov_type
+    elif action == "REMOVE":
+        aov = aovs.get(name)
+        if aov is None:
+            raise ValueError(f"No AOV '{name}'; there are {[a.name for a in aovs]}")
+        aovs.remove(aov)
+    elif action != "LIST":
+        raise ValueError(f"Unknown action {action!r}")
+    return {"aovs": [{"name": a.name, "type": a.type} for a in aovs]}
+
+
 def register():
     """Register all rendering handlers with the dispatcher."""
     dispatcher.register_handler("set_render_engine", handle_set_render_engine)
@@ -456,3 +520,5 @@ def register():
     dispatcher.register_handler("set_object_ray_visibility", handle_set_object_ray_visibility)
     dispatcher.register_handler("set_eevee_quality", handle_set_eevee_quality)
     dispatcher.register_handler("set_render_performance", handle_set_render_performance)
+    dispatcher.register_handler("set_light_group", handle_set_light_group)
+    dispatcher.register_handler("manage_aov", handle_manage_aov)

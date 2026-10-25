@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 256 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 256 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 258 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 258 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 256 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 258 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>256</b> tools</span>
+    <span><b>258</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -140,7 +140,7 @@ footer a { color: var(--accent); }
 <a href="#objects">Objects <span class="n">15</span></a>
 <a href="#physics">Physics <span class="n">14</span></a>
 <a href="#print3d">print3d <span class="n">1</span></a>
-<a href="#render_settings">render_settings <span class="n">10</span></a>
+<a href="#render_settings">render_settings <span class="n">12</span></a>
 <a href="#rendering">Rendering <span class="n">7</span></a>
 <a href="#scene">Scene <span class="n">7</span></a>
 <a href="#sculpting">Sculpting <span class="n">8</span></a>
@@ -1362,7 +1362,17 @@ enable it; suggest_extensions also reports whether it is on.</p><table class="ar
 <tr><th>sharp_angle</th><td>Sharp-edge threshold in RADIANS.</td></tr>
 <tr><th>nonplanar_angle</th><td>Non-flat face threshold in RADIANS.</td></tr>
 <tr><th>zero_threshold</th><td>Area below which a face counts as zero-area.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with a count (and sample indices) per check that ran, plus checks_run, issues_found, and print_blocking: the defects that stop a print, as opposed to overhangs and sharp edges which are advisory.</p></article></section>
-<section class="module" id="render_settings" data-module="render_settings"><h2>render_settings <span class="n">10</span></h2><article class="tool" id="set_color_management" data-search="set_color_management set how the scene&#x27;s light becomes final pixel colours.
+<section class="module" id="render_settings" data-module="render_settings"><h2>render_settings <span class="n">12</span></h2><article class="tool" id="manage_aov" data-search="manage_aov list, add or remove shader aovs: custom render passes written by materials.
+
+in a material, an output aov node (shadernodeoutputaov, its aov_name set to
+this name) writes a color or value into the pass. use for masks and ids
+in compositing. the render layers node gets an output with the aov name."><h3><a href="#manage_aov">manage_aov</a></h3><pre class="sig"><code>manage_aov(action: str, name: str | None = None, type: str = &#x27;COLOR&#x27;)</code></pre><p>List, add or remove shader AOVs: custom render passes written by materials.
+
+In a material, an Output AOV node (ShaderNodeOutputAOV, its aov_name set to
+this name) writes a color or value into the pass. Use for masks and IDs
+in compositing. The Render Layers node gets an output with the AOV name.</p><table class="args"><tbody><tr><th>action</th><td>LIST, ADD or REMOVE.</td></tr>
+<tr><th>name</th><td>AOV name, for ADD and REMOVE.</td></tr>
+<tr><th>type</th><td>ADD only: COLOR or VALUE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with every AOV (name, type).</p></article><article class="tool" id="set_color_management" data-search="set_color_management set how the scene&#x27;s light becomes final pixel colours.
 
 agx (the default) handles bright highlights gracefully; standard is for
 flat graphics and ui shots; khronos pbr neutral keeps product colours
@@ -1416,7 +1426,18 @@ Leave anything unset to keep it.</p><table class="args"><tbody><tr><th>raytracin
 <tr><th>clamp_direct</th><td>Cap on direct light per sample, 0 for none.</td></tr>
 <tr><th>clamp_indirect</th><td>Cap on bounced light per sample, 0 for none.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the EEVEE settings after the change.</p></article><article class="tool" id="set_film" data-search="set_film set film options: transparent background and pixel filter."><h3><a href="#set_film">set_film</a></h3><pre class="sig"><code>set_film(transparent: bool | None = None, transparent_glass: bool | None = None, filter_width: float | None = None)</code></pre><p>Set film options: transparent background and pixel filter.</p><table class="args"><tbody><tr><th>transparent</th><td>Render the world background as transparent, for compositing or product cut-outs. Needs PNG or EXR output to keep the alpha.</td></tr>
 <tr><th>transparent_glass</th><td>Cycles only. Let the background show through glass and other transmissive surfaces when transparent is on.</td></tr>
-<tr><th>filter_width</th><td>Cycles pixel filter width in pixels, 0.01 to 10.0. 1.5 is Blender&#x27;s default; lower is sharper, higher is softer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the film settings after the change.</p></article><article class="tool" id="set_light_paths" data-search="set_light_paths set cycles light bounce limits and caustics.
+<tr><th>filter_width</th><td>Cycles pixel filter width in pixels, 0.01 to 10.0. 1.5 is Blender&#x27;s default; lower is sharper, higher is softer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the film settings after the change.</p></article><article class="tool" id="set_light_group" data-search="set_light_group put lights (or emissive objects, or the world) into a light group.
+
+each light group renders as its own pass (cycles), so light balance can
+be changed in the compositor without re-rendering: the render layers
+node gets a combined_&lt;group&gt; output. the group is created if needed."><h3><a href="#set_light_group">set_light_group</a></h3><pre class="sig"><code>set_light_group(group: str, objects: list[str] | None = None, world: bool = False, remove: bool = False)</code></pre><p>Put lights (or emissive objects, or the world) into a light group.
+
+Each light group renders as its own pass (Cycles), so light balance can
+be changed in the compositor without re-rendering: the Render Layers
+node gets a Combined_&lt;group&gt; output. The group is created if needed.</p><table class="args"><tbody><tr><th>group</th><td>Light group name. Blender turns dots into underscores; the result gives the name actually used.</td></tr>
+<tr><th>objects</th><td>Lights or emissive objects to move into the group.</td></tr>
+<tr><th>world</th><td>Also put the world (sky/HDRI light) into the group.</td></tr>
+<tr><th>remove</th><td>Delete the group and take every member out of it.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the group name used and every light group with its members.</p></article><article class="tool" id="set_light_paths" data-search="set_light_paths set cycles light bounce limits and caustics.
 
 fewer bounces render faster; glass and liquids need enough transmission
 bounces or they turn black. each bounce count is 0 to 1024. leave

@@ -57,7 +57,7 @@ TOOLSETS: dict[str, str] = {
     "render_settings": "Finished look: colour management (AgX, exposure, looks), "
                        "transparent background, denoising, Cycles sampling and bounces, "
                        "motion blur, render passes, per-object ray visibility and shadow "
-                       "catcher, EEVEE quality, render speed and memory",
+                       "catcher, EEVEE quality, render speed and memory, light groups, AOVs",
     "compositor": "Post-processing: glare, bloom, vignette, film grain, lens distortion, "
                   "colour grading",
     "curves": "Bezier, NURBS and path curves, 3D text, convert to mesh",
