@@ -78,7 +78,7 @@ TOOLSETS: dict[str, str] = {
     "gpencil": "Grease Pencil drawings (strokes with colour and taper, layers, frames), "
                "Line Art outlines, annotation layers and strokes",
     "collections": "Collections: create, move objects, visibility, delete; collection "
-                   "instances and making them real",
+                   "instances and making them real; view layers (holdout, overrides)",
     "file_ops": "Import and export FBX, OBJ, glTF, USD, STL; save and open .blend; "
                 "list, link and append from other .blend files; pack and unpack resources; "
                 "external paths (missing files, relative, relink)",

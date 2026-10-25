@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 258 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 258 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 260 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 260 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 258 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 260 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>258</b> tools</span>
+    <span><b>260</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -125,7 +125,7 @@ footer a { color: var(--accent); }
 <a href="#booltool">Bool Tool <span class="n">4</span></a>
 <a href="#camera">Camera <span class="n">6</span></a>
 <a href="#code_exec">Code Execution <span class="n">1</span></a>
-<a href="#collections">Collections <span class="n">6</span></a>
+<a href="#collections">Collections <span class="n">8</span></a>
 <a href="#compositor">compositor <span class="n">5</span></a>
 <a href="#curves">Curves <span class="n">10</span></a>
 <a href="#deform">deform <span class="n">12</span></a>
@@ -388,7 +388,7 @@ The code runs in a restricted namespace that blocks obvious mistakes
 against accidents, not a security boundary: the code runs in-process
 with full bpy. Every snippet is echoed to Blender&#x27;s system console and
 listed in the panel so the user can see what ran.</p><table class="args"><tbody><tr><th>code</th><td>Python code to execute. bpy is available but must be imported.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with &#x27;output&#x27; (captured stdout) and &#x27;success&#x27; boolean.</p></article></section>
-<section class="module" id="collections" data-module="collections"><h2>Collections <span class="n">6</span></h2><article class="tool" id="create_collection" data-search="create_collection create a new collection, optionally nested under a parent collection."><h3><a href="#create_collection">create_collection</a></h3><pre class="sig"><code>create_collection(name: str, parent: str = &#x27;&#x27;)</code></pre><p>Create a new collection, optionally nested under a parent collection.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new collection.</td></tr>
+<section class="module" id="collections" data-module="collections"><h2>Collections <span class="n">8</span></h2><article class="tool" id="create_collection" data-search="create_collection create a new collection, optionally nested under a parent collection."><h3><a href="#create_collection">create_collection</a></h3><pre class="sig"><code>create_collection(name: str, parent: str = &#x27;&#x27;)</code></pre><p>Create a new collection, optionally nested under a parent collection.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new collection.</td></tr>
 <tr><th>parent</th><td>Optional name of parent collection to nest under. Empty string uses the scene&#x27;s root collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the created collection&#x27;s name and parent.</p></article><article class="tool" id="create_collection_instance" data-search="create_collection_instance place a collection as a lightweight instance (an empty that shows it).
 
 instances share the collection&#x27;s data, so a hundred trees cost little
@@ -403,11 +403,30 @@ local and linked collections.</p><table class="args"><tbody><tr><th>collection_n
 <tr><th>rotation</th><td>Euler rotation [x, y, z] in radians.</td></tr>
 <tr><th>scale</th><td>Scale [x, y, z]; components must not be zero.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the instance object&#x27;s name and its collection.</p></article><article class="tool" id="delete_collection" data-search="delete_collection delete a collection."><h3><a href="#delete_collection">delete_collection</a></h3><pre class="sig"><code>delete_collection(collection_name: str, delete_objects: bool = False)</code></pre><p>Delete a collection.</p><table class="args"><tbody><tr><th>collection_name</th><td>Name of the collection to delete.</td></tr>
 <tr><th>delete_objects</th><td>If True, also delete all objects in the collection. If False, objects are unlinked but kept in the scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="make_instances_real" data-search="make_instances_real turn a collection instance into real, separately editable objects."><h3><a href="#make_instances_real">make_instances_real</a></h3><pre class="sig"><code>make_instances_real(object_name: str, keep_hierarchy: bool = False)</code></pre><p>Turn a collection instance into real, separately editable objects.</p><table class="args"><tbody><tr><th>object_name</th><td>The instance object (from create_collection_instance or a linked collection).</td></tr>
-<tr><th>keep_hierarchy</th><td>Keep the instanced objects&#x27; parent links.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the names of the new objects.</p></article><article class="tool" id="move_to_collection" data-search="move_to_collection move objects to a collection, unlinking them from their current collections."><h3><a href="#move_to_collection">move_to_collection</a></h3><pre class="sig"><code>move_to_collection(object_names: list[str], collection_name: str)</code></pre><p>Move objects to a collection, unlinking them from their current collections.</p><table class="args"><tbody><tr><th>object_names</th><td>List of object names to move.</td></tr>
+<tr><th>keep_hierarchy</th><td>Keep the instanced objects&#x27; parent links.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the names of the new objects.</p></article><article class="tool" id="manage_view_layer" data-search="manage_view_layer list, add, remove, rename or configure view layers (separate render layers).
+
+each view layer renders the scene with its own collection settings
+(see set_layer_collection) and passes, e.g. a foreground layer and a
+background layer composited together, or a clay layer. pass, light
+group and aov tools act on the active view layer: set_active first."><h3><a href="#manage_view_layer">manage_view_layer</a></h3><pre class="sig"><code>manage_view_layer(action: str, view_layer: str | None = None, new_name: str | None = None, material_override: str | None = None, world_override: str | None = None, use_for_render: bool | None = None)</code></pre><p>List, add, remove, rename or configure view layers (separate render layers).
+
+Each view layer renders the scene with its own collection settings
+(see set_layer_collection) and passes, e.g. a foreground layer and a
+background layer composited together, or a clay layer. Pass, light
+group and AOV tools act on the active view layer: SET_ACTIVE first.</p><table class="args"><tbody><tr><th>action</th><td>LIST; ADD (view_layer is the new name); REMOVE; RENAME (to new_name); SET_ACTIVE (the layer other tools change); SET (the overrides and use_for_render below).</td></tr>
+<tr><th>view_layer</th><td>The layer to act on.</td></tr>
+<tr><th>new_name</th><td>RENAME only.</td></tr>
+<tr><th>material_override</th><td>SET only: render every object with this material (a clay render); &quot;&quot; clears it.</td></tr>
+<tr><th>world_override</th><td>SET only: world used for this layer; &quot;&quot; clears it.</td></tr>
+<tr><th>use_for_render</th><td>SET only: whether this layer renders at all.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with every view layer (name, active, use_for_render, overrides).</p></article><article class="tool" id="move_to_collection" data-search="move_to_collection move objects to a collection, unlinking them from their current collections."><h3><a href="#move_to_collection">move_to_collection</a></h3><pre class="sig"><code>move_to_collection(object_names: list[str], collection_name: str)</code></pre><p>Move objects to a collection, unlinking them from their current collections.</p><table class="args"><tbody><tr><th>object_names</th><td>List of object names to move.</td></tr>
 <tr><th>collection_name</th><td>Name of the destination collection.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the moved objects and destination collection.</p></article><article class="tool" id="set_collection_visibility" data-search="set_collection_visibility set collection visibility in viewport and/or render."><h3><a href="#set_collection_visibility">set_collection_visibility</a></h3><pre class="sig"><code>set_collection_visibility(collection_name: str, visible: bool, viewport: bool = True, render: bool = True)</code></pre><p>Set collection visibility in viewport and/or render.</p><table class="args"><tbody><tr><th>collection_name</th><td>Name of the collection.</td></tr>
 <tr><th>visible</th><td>Whether the collection should be visible.</td></tr>
 <tr><th>viewport</th><td>Apply visibility change to viewport. Defaults to True.</td></tr>
-<tr><th>render</th><td>Apply visibility change to render. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with visibility state.</p></article></section>
+<tr><th>render</th><td>Apply visibility change to render. Defaults to True.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with visibility state.</p></article><article class="tool" id="set_layer_collection" data-search="set_layer_collection set how a collection takes part in one view layer."><h3><a href="#set_layer_collection">set_layer_collection</a></h3><pre class="sig"><code>set_layer_collection(collection_name: str, view_layer: str | None = None, exclude: bool | None = None, holdout: bool | None = None, indirect_only: bool | None = None)</code></pre><p>Set how a collection takes part in one view layer.</p><table class="args"><tbody><tr><th>collection_name</th><td>Collection, at any depth.</td></tr>
+<tr><th>view_layer</th><td>View layer to change; omit for the active one.</td></tr>
+<tr><th>exclude</th><td>Leave the collection out of this layer entirely.</td></tr>
+<tr><th>holdout</th><td>Render it as a transparent cut-out (the objects mask what is behind them), for compositing layers back together.</td></tr>
+<tr><th>indirect_only</th><td>Cycles: it shows only in reflections, shadows and bounce light, not directly to the camera.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the collection, the layer and its exclude/holdout/indirect_only.</p></article></section>
 <section class="module" id="compositor" data-module="compositor"><h2>compositor <span class="n">5</span></h2><article class="tool" id="add_compositor_effect" data-search="add_compositor_effect add a post-processing effect at the end of the compositor chain.
 
 effects apply to every render in order, so add glare before film grain."><h3><a href="#add_compositor_effect">add_compositor_effect</a></h3><pre class="sig"><code>add_compositor_effect(effect: str, settings: dict[str, Any] | None = None)</code></pre><p>Add a post-processing effect at the end of the compositor chain.
