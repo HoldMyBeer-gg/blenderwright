@@ -266,3 +266,108 @@ class TestShapeKeys:
     def test_missing_key(self, h, obj):
         with pytest.raises(ValueError, match="Smile"):
             h.handle_set_shape_key({"object_name": "Face", "key_name": "Smile", "value": 1})
+
+
+class ColorAttribute:
+    def __init__(self, name, data_type, domain, size):
+        self.name, self.data_type, self.domain = name, data_type, domain
+        self.data = [SimpleNamespace(color=(0.0, 0.0, 0.0, 1.0)) for _ in range(size)]
+
+
+class ColorAttributes(list):
+    def __init__(self, mesh):
+        super().__init__()
+        self._mesh = mesh
+        self.active_color_index = -1
+        self.render_color_index = -1
+
+    def new(self, name, type, domain):
+        size = len(self._mesh.vertices) if domain == "POINT" else len(self._mesh.loops)
+        attr = ColorAttribute(name, type, domain, size)
+        self.append(attr)
+        return attr
+
+    def get(self, name):
+        return next((a for a in self if a.name == name), None)
+
+    @property
+    def active_color(self):
+        return self[self.active_color_index] if self.active_color_index >= 0 else None
+
+    @active_color.setter
+    def active_color(self, attr):
+        self.active_color_index = self.index(attr)
+
+
+@pytest.fixture
+def quad():
+    """Two triangles over four vertices: loops 0-2 and 3-5."""
+    obj = _mesh(4)
+    obj.data.loops = [SimpleNamespace(index=i, vertex_index=v)
+                      for i, v in enumerate([0, 1, 2, 0, 2, 3])]
+    obj.data.color_attributes = ColorAttributes(obj.data)
+    return obj
+
+
+@pytest.fixture
+def color_handler(quad, monkeypatch):
+    import bpy
+
+    monkeypatch.setattr(bpy.data, "objects", {"Face": quad})
+    return _load_handler()
+
+
+RED = [1.0, 0.0, 0.0, 1.0]
+BLACK = (0.0, 0.0, 0.0, 1.0)
+
+
+def _paint(handler, **extra):
+    params = {"object_name": "Face", "color": RED, "attribute_name": "Color",
+              "domain": "CORNER", "data_type": "BYTE_COLOR", "selection": "ALL"} | extra
+    return handler.handle_paint_color_attribute(params)
+
+
+class TestPaintColorAttributeHandler:
+    def test_creates_paints_all_and_makes_it_render(self, color_handler, quad):
+        result = _paint(color_handler)
+        attrs = quad.data.color_attributes
+        assert [tuple(d.color) for d in attrs[0].data] == [tuple(RED)] * 6
+        assert attrs.active_color_index == 0 and attrs.render_color_index == 0
+        assert result["created"] is True and result["painted"] == 6
+
+    def test_corner_paints_loops_of_chosen_vertices(self, color_handler, quad):
+        _paint(color_handler, vertex_indices=[0])
+        colors = [tuple(d.color) for d in quad.data.color_attributes[0].data]
+        assert colors == [tuple(RED), BLACK, BLACK, tuple(RED), BLACK, BLACK]
+
+    def test_point_domain_by_selection(self, color_handler, quad):
+        _paint(color_handler, domain="POINT", selection="CURRENT")
+        colors = [tuple(d.color) for d in quad.data.color_attributes[0].data]
+        assert colors == [tuple(RED), BLACK, tuple(RED), BLACK]
+
+    def test_existing_attribute_keeps_its_layout(self, color_handler, quad):
+        quad.data.color_attributes.new("Color", "FLOAT_COLOR", "POINT")
+        result = _paint(color_handler)
+        assert result["created"] is False
+        assert (result["domain"], result["data_type"]) == ("POINT", "FLOAT_COLOR")
+        assert len(quad.data.color_attributes) == 1
+
+    def test_out_of_range_vertex(self, color_handler):
+        with pytest.raises(ValueError):
+            _paint(color_handler, vertex_indices=[9])
+
+    def test_remove(self, color_handler, quad):
+        quad.data.color_attributes.new("Mask", "BYTE_COLOR", "CORNER")
+        result = color_handler.handle_remove_color_attribute(
+            {"object_name": "Face", "attribute_name": "Mask"})
+        assert result == {"removed": "Mask", "color_attributes": []}
+
+    def test_remove_missing(self, color_handler):
+        with pytest.raises(ValueError, match="Mask"):
+            color_handler.handle_remove_color_attribute(
+                {"object_name": "Face", "attribute_name": "Mask"})
+
+    def test_registered(self, color_handler):
+        color_handler.register()
+        calls = {c.args[0] for c in color_handler.dispatcher.register_handler.call_args_list}
+        assert {"paint_color_attribute", "remove_color_attribute"} <= calls

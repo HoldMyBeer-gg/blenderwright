@@ -74,7 +74,7 @@ TOOLSETS: dict[str, str] = {
     "armature": "Armatures, bones, constraints, weights, pose, bone collections, IK "
                 "chains with pole targets",
     "deform": "Vertex groups and weights (normalize, smooth, limit), shape keys and "
-              "blend shapes, animating them",
+              "blend shapes, animating them; color attributes (vertex colors)",
     "gpencil": "Grease Pencil drawings (strokes with colour and taper, layers, frames), "
                "Line Art outlines, annotation layers and strokes",
     "collections": "Collections: create, move objects, visibility, delete; collection "
