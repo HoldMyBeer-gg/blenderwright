@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 252 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 252 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 253 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 253 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 252 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 253 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>252</b> tools</span>
+    <span><b>253</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -148,7 +148,7 @@ footer a { color: var(--accent); }
 <a href="#sequencer">sequencer <span class="n">5</span></a>
 <a href="#sweep">sweep <span class="n">2</span></a>
 <a href="#transforms">Transforms <span class="n">6</span></a>
-<a href="#uv">UV Mapping <span class="n">7</span></a>
+<a href="#uv">UV Mapping <span class="n">8</span></a>
 <a href="#viewport">Viewport <span class="n">3</span></a>
 <a href="#screenshot">Viewport Capture <span class="n">1</span></a></nav>
   <main>
@@ -1636,14 +1636,28 @@ whether any bend is too tight for the profile to fit around.</p><table class="ar
 <tr><th>mode</th><td>Rotation mode, either EULER or QUATERNION. Defaults to EULER.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and new rotation.</p></article><article class="tool" id="set_scale" data-search="set_scale set the scale of an object."><h3><a href="#set_scale">set_scale</a></h3><pre class="sig"><code>set_scale(object_name: str, scale: Vector3)</code></pre><p>Set the scale of an object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>scale</th><td>XYZ scale as a 3-element list/tuple.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and new scale.</p></article><article class="tool" id="snap_to_grid" data-search="snap_to_grid snap an object&#x27;s location to the nearest grid point."><h3><a href="#snap_to_grid">snap_to_grid</a></h3><pre class="sig"><code>snap_to_grid(object_name: str, grid_size: float = 1.0)</code></pre><p>Snap an object&#x27;s location to the nearest grid point.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object.</td></tr>
 <tr><th>grid_size</th><td>Size of the grid cells. Defaults to 1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and snapped location.</p></article></section>
-<section class="module" id="uv" data-module="uv mapping"><h2>UV Mapping <span class="n">7</span></h2><article class="tool" id="get_texel_density" data-search="get_texel_density measure texel density: how many texture pixels cover one metre of surface.
+<section class="module" id="uv" data-module="uv mapping"><h2>UV Mapping <span class="n">8</span></h2><article class="tool" id="get_texel_density" data-search="get_texel_density measure texel density: how many texture pixels cover one metre of surface.
 
 matching density across assets keeps texture sharpness consistent; game
 art often targets 512 or 1024 px/m."><h3><a href="#get_texel_density">get_texel_density</a></h3><pre class="sig"><code>get_texel_density(object_name: str, texture_size: int = 1024)</code></pre><p>Measure texel density: how many texture pixels cover one metre of surface.
 
 Matching density across assets keeps texture sharpness consistent; game
 art often targets 512 or 1024 px/m.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object with a UV map.</td></tr>
-<tr><th>texture_size</th><td>Texture width in pixels the UVs are meant for.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with density in px/m, surface area in m^2 (world scale), and the share of UV space used.</p></article><article class="tool" id="pack_uv_islands" data-search="pack_uv_islands pack uv islands to fit efficiently within the uv space."><h3><a href="#pack_uv_islands">pack_uv_islands</a></h3><pre class="sig"><code>pack_uv_islands(object_name: str, margin: float = 0.001, rotate: bool = True, rotate_method: str = &#x27;ANY&#x27;, scale: bool = True)</code></pre><p>Pack UV islands to fit efficiently within the UV space.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<tr><th>texture_size</th><td>Texture width in pixels the UVs are meant for.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with density in px/m, surface area in m^2 (world scale), and the share of UV space used.</p></article><article class="tool" id="manage_uv_map" data-search="manage_uv_map list, add, remove, rename uv maps, or choose which one is edited or rendered.
+
+a mesh holds up to 8 uv maps. common use: add a &quot;lightmap&quot; map, then
+smart_uv_project or pack_uv_islands on it for non-overlapping bake uvs,
+while textures keep using the first map. uv tools work on the active map;
+materials and export use the render map unless a uv map node picks one."><h3><a href="#manage_uv_map">manage_uv_map</a></h3><pre class="sig"><code>manage_uv_map(object_name: str, action: str, uv_map: str = &#x27;UVMap&#x27;, new_name: str | None = None, copy_active: bool = True)</code></pre><p>List, add, remove, rename UV maps, or choose which one is edited or rendered.
+
+A mesh holds up to 8 UV maps. Common use: ADD a &quot;Lightmap&quot; map, then
+smart_uv_project or pack_uv_islands on it for non-overlapping bake UVs,
+while textures keep using the first map. UV tools work on the active map;
+materials and export use the render map unless a UV Map node picks one.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>action</th><td>LIST, ADD (becomes the active map), REMOVE, SET_ACTIVE (the map UV tools edit), SET_RENDER (the map renders and exports), RENAME.</td></tr>
+<tr><th>uv_map</th><td>The map to act on, or the new map&#x27;s name for ADD.</td></tr>
+<tr><th>new_name</th><td>RENAME only: the new name.</td></tr>
+<tr><th>copy_active</th><td>ADD only: start from a copy of the active map&#x27;s UVs instead of blank ones.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with every UV map (name, active, render).</p></article><article class="tool" id="pack_uv_islands" data-search="pack_uv_islands pack uv islands to fit efficiently within the uv space."><h3><a href="#pack_uv_islands">pack_uv_islands</a></h3><pre class="sig"><code>pack_uv_islands(object_name: str, margin: float = 0.001, rotate: bool = True, rotate_method: str = &#x27;ANY&#x27;, scale: bool = True)</code></pre><p>Pack UV islands to fit efficiently within the UV space.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>margin</th><td>Margin between packed islands (0.0-1.0).</td></tr>
 <tr><th>rotate</th><td>Allow islands to rotate for a tighter fit.</td></tr>
 <tr><th>rotate_method</th><td>ANY, CARDINAL (90 degree steps), AXIS_ALIGNED, AXIS_ALIGNED_X or AXIS_ALIGNED_Y.</td></tr>

@@ -5,13 +5,21 @@ import bpy
 from .. import dispatcher
 
 
+def _make_only_active(obj):
+    """object.select_all fails its poll in edit mode, so leave it first; that
+    also writes the edit-mode selection back to the mesh."""
+    current = bpy.context.object
+    if current is not None and current.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+
 def _ensure_edit_mode_all_selected(obj):
     """Enter edit mode and select all faces. Returns the original mode."""
     original_mode = obj.mode
-
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
+    _make_only_active(obj)
 
     if obj.mode != "EDIT":
         bpy.ops.object.mode_set(mode='EDIT')
@@ -195,9 +203,7 @@ def _get_uv_mesh(name):
 
 def _enter_uv_edit(obj, selection):
     """Edit mode on obj with everything selected, or the current selection kept."""
-    bpy.ops.object.select_all(action="DESELECT")
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
+    _make_only_active(obj)
     if obj.mode != "EDIT":
         bpy.ops.object.mode_set(mode="EDIT")
     if selection != "CURRENT":
@@ -334,6 +340,50 @@ def handle_set_texel_density(params):
             "after": round(after, 3), "scale_factor": round(factor, 6)}
 
 
+MAX_UV_MAPS = 8
+
+
+def _uv_map_summary(layers):
+    active = layers.active
+    return [{"name": layer.name, "active": layer == active, "render": layer.active_render}
+            for layer in layers]
+
+
+def handle_manage_uv_map(params):
+    obj = _get_uv_mesh(params.get("object_name"))
+    action = params.get("action")
+    if action not in {"LIST", "ADD", "REMOVE", "SET_ACTIVE", "SET_RENDER", "RENAME"}:
+        raise ValueError(f"Unknown action {action!r}")
+    mode = _object_mode(obj)  # uv_layers changes made in edit mode are lost on exit
+    try:
+        layers = obj.data.uv_layers
+        name = params.get("uv_map")
+        if action == "ADD":
+            if layers.get(name) is not None:
+                raise ValueError(f"'{obj.name}' already has a UV map '{name}'")
+            layer = layers.new(name=name, do_init=bool(params.get("copy_active", True)))
+            if layer is None:
+                raise ValueError(f"'{obj.name}' already has {MAX_UV_MAPS} UV maps, the limit")
+            layers.active = layer
+        elif action != "LIST":
+            layer = layers.get(name)
+            if layer is None:
+                raise ValueError(f"'{obj.name}' has no UV map '{name}'; it has "
+                                 f"{[existing.name for existing in layers]}")
+            if action == "REMOVE":
+                layers.remove(layer)
+            elif action == "SET_ACTIVE":
+                layers.active = layer
+            elif action == "SET_RENDER":
+                layer.active_render = True
+            elif action == "RENAME":
+                layer.name = params["new_name"]
+        return {"object": obj.name, "uv_maps": _uv_map_summary(layers)}
+    finally:
+        if mode != "OBJECT":
+            bpy.ops.object.mode_set(mode=mode)
+
+
 def register():
     """Register UV handlers with the dispatcher."""
     dispatcher.register_handler("smart_uv_project", handle_smart_uv_project)
@@ -343,3 +393,4 @@ def register():
     dispatcher.register_handler("uv_island_operation", handle_uv_island_operation)
     dispatcher.register_handler("get_texel_density", handle_get_texel_density)
     dispatcher.register_handler("set_texel_density", handle_set_texel_density)
+    dispatcher.register_handler("manage_uv_map", handle_manage_uv_map)

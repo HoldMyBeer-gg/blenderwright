@@ -66,7 +66,7 @@ TOOLSETS: dict[str, str] = {
     "sequencer": "Video sequencer: image and sound strips, render to MP4, MKV or WebM",
     "sculpting": "Sculpt mode, brushes, remesh, multires, symmetry, dyntopo",
     "uv": "UV unwrap, smart project, projection, pack islands, average scale, relax, "
-          "randomize, arrange, texel density",
+          "randomize, arrange, texel density, multiple UV maps",
     "physics": "Rigid body, cloth, fluid, particles, soft body, force fields (wind, "
                "turbulence, vortex), colliders, bake",
     "geometry_nodes": "Geometry node trees: create, add, connect, set inputs; ready-made "
