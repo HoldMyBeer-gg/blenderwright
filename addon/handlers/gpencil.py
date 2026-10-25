@@ -63,7 +63,7 @@ def handle_add_annotation_stroke(params):
     """Add a stroke to an annotation layer.
 
     Args:
-        params: Dict with "annotation_name", "layer_name", "points", and optional "pressure".
+        params: Dict with "annotation_name", "layer_name" and "points".
 
     Returns:
         Dict with annotation name, layer info, and point count.
@@ -71,7 +71,6 @@ def handle_add_annotation_stroke(params):
     ann = _get_annotation(params["annotation_name"])
     layer_name = params["layer_name"]
     points_data = params["points"]
-    pressure = params.get("pressure", 1.0)
 
     layer = ann.layers.get(layer_name)
     if layer is None:
@@ -86,8 +85,7 @@ def handle_add_annotation_stroke(params):
     stroke.points.add(len(points_data))
 
     for i, pt in enumerate(points_data):
-        stroke.points[i].co = tuple(pt)
-        stroke.points[i].pressure = pressure
+        stroke.points[i].co = tuple(pt)  # 5.2 annotation points have no pressure
 
     return {
         "annotation": ann.name,

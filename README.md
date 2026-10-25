@@ -368,8 +368,11 @@ AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon
 # Install with dev dependencies
 uv pip install -e ".[dev]"
 
-# Run tests (1190 tests)
+# Unit tests: validation and logic, Blender faked
 uv run --extra dev pytest
+
+# Live tests: every tool against a real headless Blender 5.2
+BLENDER=/Applications/Blender.app/Contents/MacOS/Blender uv run --extra dev pytest tests_live
 
 # Run tests with coverage
 uv run --extra dev pytest --cov=blenderwright

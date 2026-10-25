@@ -4,7 +4,6 @@ from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
-    coerce_scalar,
     validate_color,
     validate_int,
     validate_object_name,
@@ -17,7 +16,9 @@ from blenderwright.validators import (
 
 MAX_GP_POINTS = 10000
 
-ALLOWED_GP_STROKE_PROPERTIES = {"line_width", "material_index", "display_mode"}
+# A 5.2 annotation stroke has display_mode only; line width is the layer's thickness
+ALLOWED_GP_STROKE_PROPERTIES = {"display_mode"}
+ALLOWED_ANNOTATION_DISPLAY_MODES = {"3DSPACE", "2DSPACE", "2DIMAGE"}
 
 
 @mcp.tool()
@@ -103,19 +104,17 @@ def add_annotation_stroke(
     annotation_name: str,
     layer_name: str,
     points: list[list[float]],
-    pressure: float = 1.0,
 ) -> dict[str, Any]:
     """Add a stroke to an annotation layer.
 
     Creates a new stroke with the given points on the specified layer.
-    Note: AnnotationStroke does not support per-point strength/opacity.
+    Annotation points in 5.2 are a position only: no pressure or strength.
 
     Args:
         annotation_name: Name of the annotation data block.
         layer_name: Name of the layer to add the stroke to.
         points: List of XYZ coordinates, e.g. [[0,0,0], [1,1,0], [2,0,0]].
             Maximum 10000 points.
-        pressure: Pen pressure for all points. Range: 0.0-1.0.
 
     Returns:
         Confirmation dict with point count.
@@ -132,14 +131,11 @@ def add_annotation_stroke(
     for i, pt in enumerate(points):
         validated_points.append(list(validate_vector(pt, size=3, name=f"points[{i}]")))
 
-    pressure = validate_numeric_range(pressure, min_val=0.0, max_val=1.0, name="pressure")
-
     conn = get_connection()
     response = conn.send_command("add_annotation_stroke", {
         "annotation_name": annotation_name,
         "layer_name": layer_name,
         "points": validated_points,
-        "pressure": pressure,
     })
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
@@ -160,8 +156,8 @@ def set_annotation_stroke_property(
         annotation_name: Name of the annotation data block.
         layer_name: Name of the layer containing the stroke.
         stroke_index: Index of the stroke in the layer (0-based).
-        property: Property to set. One of: line_width, material_index, display_mode.
-        value: The value to set.
+        property: display_mode, the only stroke setting in 5.2.
+        value: 3DSPACE (in the scene), 2DSPACE (stuck to the view) or 2DIMAGE.
 
     Returns:
         Confirmation dict.
@@ -170,7 +166,7 @@ def set_annotation_stroke_property(
     layer_name = validate_object_name(layer_name)
     stroke_index = validate_numeric_range(stroke_index, min_val=0, name="stroke_index")
     validate_enum(property, ALLOWED_GP_STROKE_PROPERTIES, name="property")
-    value = coerce_scalar(value)
+    value = validate_enum(value, ALLOWED_ANNOTATION_DISPLAY_MODES, name="display_mode")
 
     conn = get_connection()
     response = conn.send_command("set_annotation_stroke_property", {

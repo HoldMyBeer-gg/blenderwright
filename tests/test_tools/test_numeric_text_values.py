@@ -55,9 +55,6 @@ TEXT_CASES = [
      dict(armature_name="Rig", bone_name="Bone", property="roll", value="0.5"), 0.5),
     ("set_bone_property",
      dict(armature_name="Rig", bone_name="Bone", property="use_deform", value="false"), False),
-    ("set_annotation_stroke_property",
-     dict(annotation_name="Notes", layer_name="Layer", stroke_index=0,
-          property="line_width", value="3"), 3),
 ]
 
 

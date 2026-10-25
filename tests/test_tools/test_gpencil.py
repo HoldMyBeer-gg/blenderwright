@@ -133,7 +133,7 @@ class TestAddAnnotationStroke:
         assert args["annotation_name"] == "MyAnnotation"
         assert args["layer_name"] == "Lines"
         assert len(args["points"]) == 3
-        assert args["pressure"] == 1.0
+        assert "pressure" not in args
 
     def test_add_annotation_stroke_no_strength_param(self, mock_conn):
         """The MCP tool function signature must NOT have a 'strength' parameter."""
@@ -154,11 +154,11 @@ class TestAddAnnotationStroke:
             "Stroke payload must not include 'strength' (AnnotationStroke has no .strength)"
         )
 
-    def test_custom_pressure(self, mock_conn):
-        points = [[0, 0, 0], [1, 0, 0]]
-        add_annotation_stroke("MyAnnotation", "Lines", points, pressure=0.5)
-        args = mock_conn.send_command.call_args[0][1]
-        assert args["pressure"] == 0.5
+    def test_no_pressure_param(self):
+        """5.2 annotation points are a position only; pressure was removed."""
+        import inspect
+        from blenderwright.tools.gpencil import add_annotation_stroke as fn
+        assert "pressure" not in inspect.signature(fn).parameters
 
     def test_empty_points_raises(self, mock_conn):
         with pytest.raises(ValidationError):
@@ -181,10 +181,6 @@ class TestAddAnnotationStroke:
         with pytest.raises(ValidationError):
             add_annotation_stroke("MyAnnotation", "", [[0, 0, 0]])
 
-    def test_pressure_out_of_range_raises(self, mock_conn):
-        with pytest.raises(ValidationError):
-            add_annotation_stroke("MyAnnotation", "Lines", [[0, 0, 0]], pressure=-0.1)
-
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
@@ -196,20 +192,34 @@ class TestAddAnnotationStroke:
 # ---------------------------------------------------------------------------
 
 
-ALLOWED_ANNOTATION_STROKE_PROPERTIES = {"line_width", "material_index", "display_mode"}
-
-
 class TestSetAnnotationStrokeProperty:
+    def test_only_what_52_strokes_have(self):
+        """5.2 annotation strokes have display_mode only; line width is the
+        layer's thickness now and material_index is gone."""
+        from blenderwright.tools.gpencil import (
+            ALLOWED_ANNOTATION_DISPLAY_MODES, ALLOWED_GP_STROKE_PROPERTIES)
+        assert ALLOWED_GP_STROKE_PROPERTIES == {"display_mode"}
+        assert ALLOWED_ANNOTATION_DISPLAY_MODES == {"3DSPACE", "2DSPACE", "2DIMAGE"}
+
+    @pytest.mark.parametrize("prop", ["line_width", "material_index"])
+    def test_removed_properties_refused(self, mock_conn, prop):
+        with pytest.raises(ValidationError):
+            set_annotation_stroke_property("MyAnnotation", "Lines", 0, prop, 5)
+
+    def test_bad_display_mode(self, mock_conn):
+        with pytest.raises(ValidationError):
+            set_annotation_stroke_property("MyAnnotation", "Lines", 0, "display_mode", "4D")
+
     def test_valid(self, mock_conn):
-        set_annotation_stroke_property("MyAnnotation", "Lines", 0, "line_width", 5)
+        set_annotation_stroke_property("MyAnnotation", "Lines", 0, "display_mode", "2DSPACE")
         mock_conn.send_command.assert_called_once_with(
             "set_annotation_stroke_property",
             {
                 "annotation_name": "MyAnnotation",
                 "layer_name": "Lines",
                 "stroke_index": 0,
-                "property": "line_width",
-                "value": 5,
+                "property": "display_mode",
+                "value": "2DSPACE",
             },
         )
 
@@ -219,17 +229,17 @@ class TestSetAnnotationStrokeProperty:
 
     def test_negative_stroke_index_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            set_annotation_stroke_property("MyAnnotation", "Lines", -1, "line_width", 5)
+            set_annotation_stroke_property("MyAnnotation", "Lines", -1, "display_mode", "2DSPACE")
 
     def test_empty_annotation_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            set_annotation_stroke_property("", "Lines", 0, "line_width", 5)
+            set_annotation_stroke_property("", "Lines", 0, "display_mode", "2DSPACE")
 
     def test_empty_layer_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            set_annotation_stroke_property("MyAnnotation", "", 0, "line_width", 5)
+            set_annotation_stroke_property("MyAnnotation", "", 0, "display_mode", "2DSPACE")
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
         with pytest.raises(RuntimeError):
-            set_annotation_stroke_property("MyAnnotation", "Lines", 0, "line_width", 5)
+            set_annotation_stroke_property("MyAnnotation", "Lines", 0, "display_mode", "2DSPACE")
