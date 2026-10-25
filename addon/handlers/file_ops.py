@@ -194,14 +194,13 @@ def handle_open_file(params: dict) -> dict:
 
 
 def handle_list_recent_files(params: dict) -> list:
-    """List recently opened files."""
-    try:
-        recent_files = []
-        for recent in bpy.context.preferences.filepaths.recent_files:
-            recent_files.append(recent.filepath)
-        return recent_files
-    except Exception as e:
-        raise RuntimeError(f"Failed to list recent files: {e}")
+    """List recently opened files. In 5.2 preferences.filepaths.recent_files
+    is how many to remember; the list itself is recent-files.txt."""
+    path = bpy.utils.user_resource("CONFIG", path="recent-files.txt")
+    if not os.path.isfile(path):
+        return []
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        return [line.strip() for line in handle if line.strip()]
 
 
 # Linkable data type -> bpy.data collection name
