@@ -427,3 +427,79 @@ class TestAssetLibraryHandler:
         with pytest.raises(ValueError, match="not an asset"):
             h.handle_place_asset({"library": "Mine", "file": "props/chairs.blend",
                                   "asset_type": "OBJECT", "name": "Plain", "link": False})
+
+
+class _ID:
+    def __init__(self, name, library=None, **extra):
+        self.name, self.library, self.override_library = name, library, None
+        self.__dict__.update(extra)
+
+    def make_local(self):
+        self.library = None
+        return self
+
+
+@pytest.fixture
+def linked(handler, monkeypatch):
+    import bpy
+
+    lib = SimpleNamespace(name="chairs.blend", filepath="/lib/chairs.blend", is_missing=False,
+                          reload=MagicMock())
+    mesh = _ID("ChairMesh", lib)
+    scene_objects = SimpleNamespace(unlink=MagicMock())
+    chair_linked = _ID("Chair", lib, data=mesh, type="MESH",
+                       users_collection=[SimpleNamespace(library=None, objects=scene_objects)])
+    chair_local = _ID("Chair", None, data=None, type="MESH", users_collection=[])
+    oak = _ID("Oak", lib)
+
+    def override(scene, view_layer, do_fully_editable=False, reference=None):
+        made = _ID("Chair", None, type="MESH")
+        made.override_library = SimpleNamespace(reference=chair_linked)
+        return made
+
+    chair_linked.override_hierarchy_create = override
+    monkeypatch.setattr(bpy.data, "libraries", [lib])
+    monkeypatch.setattr(bpy.data, "objects", [chair_local, chair_linked])
+    monkeypatch.setattr(bpy.data, "materials", [oak])
+    for attr in ("collections", "node_groups", "worlds", "meshes"):
+        monkeypatch.setattr(bpy.data, attr, [mesh] if attr == "meshes" else [])
+    return handler, lib, chair_linked, chair_local, oak, mesh, scene_objects
+
+
+def _linked(h, action, **extra):
+    return h.handle_manage_linked_data({"action": action} | extra)
+
+
+class TestManageLinkedDataHandler:
+    def test_list(self, linked):
+        h, *_ = linked
+        result = _linked(h, "LIST")
+        assert result["libraries"] == [{"name": "chairs.blend", "filepath": "/lib/chairs.blend",
+                                        "missing": False}]
+        assert {"type": "OBJECT", "name": "Chair", "library": "chairs.blend"} in result["linked"]
+
+    def test_make_local_picks_the_linked_one_and_its_mesh(self, linked):
+        h, lib, chair_linked, chair_local, oak, mesh, _ = linked
+        _linked(h, "MAKE_LOCAL", data_name="Chair", data_type="OBJECT")
+        assert chair_linked.library is None and mesh.library is None
+
+    def test_make_local_of_local_data_refused(self, linked):
+        h, *_ = linked
+        with pytest.raises(ValueError, match="not linked"):
+            _linked(h, "MAKE_LOCAL", data_name="Nope", data_type="MATERIAL")
+
+    def test_override_replaces_the_linked_object_in_the_scene(self, linked):
+        h, lib, chair_linked, *_rest, scene_objects = linked
+        result = _linked(h, "OVERRIDE", data_name="Chair", data_type="OBJECT")
+        scene_objects.unlink.assert_called_once_with(chair_linked)
+        assert result["override"] == "Chair"
+
+    def test_reload(self, linked):
+        h, lib, *_ = linked
+        _linked(h, "RELOAD", library="chairs.blend")
+        lib.reload.assert_called_once_with()
+
+    def test_reload_unknown_library(self, linked):
+        h, *_ = linked
+        with pytest.raises(ValueError, match="chairs.blend"):
+            _linked(h, "RELOAD", library="other.blend")

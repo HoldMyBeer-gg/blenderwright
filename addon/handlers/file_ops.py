@@ -351,6 +351,79 @@ def handle_place_asset(params):
                                   "link": bool(params.get("link", False))})
 
 
+def _linked_block(data_type, name, library=None):
+    """The linked data-block of that name: a local one may share it."""
+    attr = LINK_TYPES.get(data_type)
+    if attr is None:
+        raise ValueError(f"Unknown data type {data_type!r}")
+    found = [b for b in getattr(bpy.data, attr) if b.name == name and b.library is not None
+             and (library is None or b.library.name == library)]
+    if not found:
+        raise ValueError(f"No linked {data_type.lower()} '{name}': it is not linked, "
+                         f"or not in this file")
+    if len(found) > 1:
+        raise ValueError(f"'{name}' is linked from several libraries "
+                         f"({', '.join(b.library.name for b in found)}); give library")
+    return found[0]
+
+
+def _get_library(name):
+    for lib in bpy.data.libraries:
+        if lib.name == name:
+            return lib
+    raise ValueError(f"No library '{name}'; libraries: "
+                     f"{', '.join(lib.name for lib in bpy.data.libraries) or 'none'}")
+
+
+def handle_manage_linked_data(params):
+    action = params.get("action")
+    if action == "LIST":
+        linked, overrides = [], []
+        for data_type, attr in LINK_TYPES.items():
+            for block in getattr(bpy.data, attr):
+                if block.library is not None:
+                    linked.append({"type": data_type, "name": block.name,
+                                   "library": block.library.name})
+                elif block.override_library is not None:
+                    overrides.append({"type": data_type, "name": block.name})
+        return {"libraries": [{"name": lib.name, "filepath": lib.filepath,
+                               "missing": lib.is_missing} for lib in bpy.data.libraries],
+                "linked": linked, "overrides": overrides}
+    if action == "RELOAD":
+        lib = _get_library(params.get("library"))
+        lib.reload()
+        return {"reloaded": lib.name}
+
+    data_type = params.get("data_type", "OBJECT")
+    block = _linked_block(data_type, params.get("data_name"), params.get("library"))
+    if action == "MAKE_LOCAL":
+        local = block.make_local()
+        data = getattr(local, "data", None)
+        if data is not None and data.library is not None:
+            data.make_local()  # otherwise the object is local but its mesh stays read-only
+        return {"made_local": local.name, "type": data_type}
+    if action == "OVERRIDE":
+        if data_type not in ("OBJECT", "COLLECTION"):
+            raise ValueError("OVERRIDE works on OBJECT or COLLECTION")
+        scene, layer = bpy.context.scene, bpy.context.view_layer
+        reference = None
+        if data_type == "COLLECTION":
+            reference = next((o for o in bpy.data.objects
+                              if getattr(o, "instance_collection", None) == block), None)
+        override = block.override_hierarchy_create(scene, layer, reference=reference,
+                                                   do_fully_editable=True)
+        if override is None:
+            raise RuntimeError(f"Blender could not override '{block.name}'")
+        if data_type == "OBJECT":
+            for coll in block.users_collection:
+                if coll.library is None:
+                    coll.objects.unlink(block)  # the editable override takes its place
+        elif reference is not None:
+            bpy.data.objects.remove(reference)
+        return {"override": override.name, "type": data_type}
+    raise ValueError(f"Unknown action {action!r}")
+
+
 PACKABLE = (("image", "images"), ("sound", "sounds"), ("font", "fonts"), ("volume", "volumes"))
 
 
@@ -439,3 +512,4 @@ def register():
     dispatcher.register_handler("list_asset_libraries", handle_list_asset_libraries)
     dispatcher.register_handler("list_assets", handle_list_assets)
     dispatcher.register_handler("place_asset", handle_place_asset)
+    dispatcher.register_handler("manage_linked_data", handle_manage_linked_data)
