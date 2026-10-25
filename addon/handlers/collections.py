@@ -209,6 +209,97 @@ def handle_make_instances_real(params: dict) -> dict:
     return {"instance": name, "objects": [o.name for o in bpy.context.selected_objects]}
 
 
+LAYER_COLLECTION_FLAGS = ("exclude", "holdout", "indirect_only")
+
+
+def _active_view_layer():
+    window = bpy.context.window
+    return window.view_layer if window is not None else bpy.context.view_layer
+
+
+def _get_view_layer(name):
+    layers = bpy.context.scene.view_layers
+    layer = layers.get(name)
+    if layer is None:
+        raise ValueError(f"No view layer '{name}'; there are {[v.name for v in layers]}")
+    return layer
+
+
+def _view_layers():
+    active = _active_view_layer()
+    return [{"name": v.name, "active": v == active, "use_for_render": v.use,
+             "material_override": v.material_override.name if v.material_override else None,
+             "world_override": v.world_override.name if v.world_override else None}
+            for v in bpy.context.scene.view_layers]
+
+
+def _override(source, name, label):
+    if name == "":
+        return None
+    target = source.get(name)
+    if target is None:
+        raise ValueError(f"{label} '{name}' not found")
+    return target
+
+
+def handle_manage_view_layer(params):
+    scene = bpy.context.scene
+    action = params.get("action")
+    name = params.get("view_layer")
+    if action == "ADD":
+        if scene.view_layers.get(name) is not None:
+            raise ValueError(f"A view layer '{name}' already exists")
+        scene.view_layers.new(name)
+    elif action == "REMOVE":
+        layer = _get_view_layer(name)
+        if len(scene.view_layers) == 1:
+            raise ValueError("Cannot remove the last view layer")
+        scene.view_layers.remove(layer)
+    elif action == "RENAME":
+        _get_view_layer(name).name = params["new_name"]
+    elif action == "SET_ACTIVE":
+        layer = _get_view_layer(name)
+        if bpy.context.window is None:
+            raise RuntimeError("No window to switch the active view layer in")
+        bpy.context.window.view_layer = layer
+    elif action == "SET":
+        layer = _get_view_layer(name)
+        if "material_override" in params:
+            layer.material_override = _override(bpy.data.materials,
+                                                params["material_override"], "Material")
+        if "world_override" in params:
+            layer.world_override = _override(bpy.data.worlds, params["world_override"], "World")
+        if "use_for_render" in params:
+            layer.use = bool(params["use_for_render"])
+    elif action != "LIST":
+        raise ValueError(f"Unknown action {action!r}")
+    return {"view_layers": _view_layers()}
+
+
+def _find_layer_collection(layer_col, name):
+    if layer_col.collection.name == name:
+        return layer_col
+    for child in layer_col.children:
+        found = _find_layer_collection(child, name)
+        if found is not None:
+            return found
+    return None
+
+
+def handle_set_layer_collection(params):
+    layer = (_get_view_layer(params["view_layer"]) if params.get("view_layer")
+             else _active_view_layer())
+    name = params.get("collection_name")
+    layer_col = _find_layer_collection(layer.layer_collection, name)
+    if layer_col is None:
+        raise ValueError(f"Collection '{name}' is not in view layer '{layer.name}'")
+    for key in LAYER_COLLECTION_FLAGS:
+        if key in params:
+            setattr(layer_col, key, bool(params[key]))
+    return {"collection": name, "view_layer": layer.name,
+            **{key: getattr(layer_col, key) for key in LAYER_COLLECTION_FLAGS}}
+
+
 def register():
     """Register collection handlers with the dispatcher."""
     dispatcher.register_handler("create_collection", handle_create_collection)
@@ -217,3 +308,5 @@ def register():
     dispatcher.register_handler("delete_collection", handle_delete_collection)
     dispatcher.register_handler("create_collection_instance", handle_create_collection_instance)
     dispatcher.register_handler("make_instances_real", handle_make_instances_real)
+    dispatcher.register_handler("manage_view_layer", handle_manage_view_layer)
+    dispatcher.register_handler("set_layer_collection", handle_set_layer_collection)

@@ -4,6 +4,7 @@ from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
+    validate_enum,
     validate_new_name,
     validate_numeric_range,
     validate_object_name,
@@ -12,6 +13,7 @@ from blenderwright.validators import (
 )
 
 MAX_TRANSFORM = 1_000_000.0
+ALLOWED_VIEW_LAYER_ACTIONS = {"LIST", "ADD", "REMOVE", "RENAME", "SET_ACTIVE", "SET"}
 
 
 @mcp.tool()
@@ -197,3 +199,106 @@ def make_instances_real(object_name: str, keep_hierarchy: bool = False) -> dict[
         "object_name": validate_object_name(object_name),
         "keep_hierarchy": bool(keep_hierarchy),
     })
+
+
+def _send_collection_command(command: str, params: dict[str, Any]) -> Any:
+    conn = get_connection()
+    response = conn.send_command(command, params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+def _optional_flag(params: dict[str, Any], key: str, value: Any) -> None:
+    if value is None:
+        return
+    if not isinstance(value, bool):
+        raise ValidationError(f"{key} must be true or false, got {value!r}")
+    params[key] = value
+
+
+@mcp.tool()
+def manage_view_layer(
+    action: str,
+    view_layer: str | None = None,
+    new_name: str | None = None,
+    material_override: str | None = None,
+    world_override: str | None = None,
+    use_for_render: bool | None = None,
+) -> dict[str, Any]:
+    """List, add, remove, rename or configure view layers (separate render layers).
+
+    Each view layer renders the scene with its own collection settings
+    (see set_layer_collection) and passes, e.g. a foreground layer and a
+    background layer composited together, or a clay layer. Pass, light
+    group and AOV tools act on the active view layer: SET_ACTIVE first.
+
+    Args:
+        action: LIST; ADD (view_layer is the new name); REMOVE; RENAME (to
+            new_name); SET_ACTIVE (the layer other tools change); SET (the
+            overrides and use_for_render below).
+        view_layer: The layer to act on.
+        new_name: RENAME only.
+        material_override: SET only: render every object with this material
+            (a clay render); "" clears it.
+        world_override: SET only: world used for this layer; "" clears it.
+        use_for_render: SET only: whether this layer renders at all.
+
+    Returns:
+        Dict with every view layer (name, active, use_for_render, overrides).
+    """
+    params: dict[str, Any] = {
+        "action": validate_enum(action, ALLOWED_VIEW_LAYER_ACTIONS, name="action"),
+    }
+    if action != "LIST":
+        if view_layer is None:
+            raise ValidationError(f"{action} needs view_layer")
+        params["view_layer"] = (validate_new_name(view_layer) if action == "ADD"
+                                else validate_object_name(view_layer))
+    if action == "RENAME":
+        if new_name is None:
+            raise ValidationError("RENAME needs new_name")
+        params["new_name"] = validate_new_name(new_name)
+    if action == "SET":
+        for key, value in (("material_override", material_override),
+                           ("world_override", world_override)):
+            if value is not None:
+                params[key] = "" if value == "" else validate_object_name(value)
+        _optional_flag(params, "use_for_render", use_for_render)
+        if len(params) == 2:
+            raise ValidationError("SET needs material_override, world_override or "
+                                  "use_for_render")
+    return _send_collection_command("manage_view_layer", params)
+
+
+@mcp.tool()
+def set_layer_collection(
+    collection_name: str,
+    view_layer: str | None = None,
+    exclude: bool | None = None,
+    holdout: bool | None = None,
+    indirect_only: bool | None = None,
+) -> dict[str, Any]:
+    """Set how a collection takes part in one view layer.
+
+    Args:
+        collection_name: Collection, at any depth.
+        view_layer: View layer to change; omit for the active one.
+        exclude: Leave the collection out of this layer entirely.
+        holdout: Render it as a transparent cut-out (the objects mask what is
+            behind them), for compositing layers back together.
+        indirect_only: Cycles: it shows only in reflections, shadows and bounce
+            light, not directly to the camera.
+
+    Returns:
+        Dict with the collection, the layer and its exclude/holdout/indirect_only.
+    """
+    params: dict[str, Any] = {"collection_name": validate_object_name(collection_name)}
+    if view_layer is not None:
+        params["view_layer"] = validate_object_name(view_layer)
+    _optional_flag(params, "exclude", exclude)
+    _optional_flag(params, "holdout", holdout)
+    _optional_flag(params, "indirect_only", indirect_only)
+    if not {"exclude", "holdout", "indirect_only"} & params.keys():
+        raise ValidationError("Give at least one of exclude, holdout, indirect_only")
+    return _send_collection_command("set_layer_collection", params)
