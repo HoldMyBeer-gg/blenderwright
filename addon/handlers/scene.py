@@ -109,6 +109,27 @@ def handle_set_scene_property(params: dict) -> dict:
         raise RuntimeError(f"Failed to set scene property '{prop}': {e}")
 
 
+UNIT_SETTINGS = (
+    "system", "scale_length", "length_unit", "mass_unit", "time_unit",
+    "temperature_unit", "system_rotation", "use_separate",
+)
+
+
+def handle_set_units(params: dict) -> dict:
+    """Set scene unit settings; the system goes first since unit names depend on it."""
+    units = bpy.context.scene.unit_settings
+    for key in UNIT_SETTINGS:
+        if key not in params:
+            continue
+        try:
+            setattr(units, key, params[key])
+        except TypeError:
+            raise ValueError(
+                f"{key} {params[key]!r} is not a {units.system} unit"
+            ) from None
+    return {key: getattr(units, key) for key in UNIT_SETTINGS}
+
+
 def handle_list_scenes(params: dict) -> list:
     """List all scenes in the current Blender file."""
     try:
@@ -192,6 +213,7 @@ def register():
     """Register scene handlers with the dispatcher."""
     dispatcher.register_handler("get_scene_info", handle_get_scene_info)
     dispatcher.register_handler("set_scene_property", handle_set_scene_property)
+    dispatcher.register_handler("set_units", handle_set_units)
     dispatcher.register_handler("list_scenes", handle_list_scenes)
     dispatcher.register_handler("create_scene", handle_create_scene)
     dispatcher.register_handler("delete_scene", handle_delete_scene)
