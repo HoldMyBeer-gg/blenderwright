@@ -51,8 +51,13 @@ def scene(monkeypatch):
     monkeypatch.setattr(bpy.ops.object, "mode_set", mode_set)
     frames = MagicMock()
     monkeypatch.setattr(bpy.ops.view3d, "view_selected", frames)
+    region_3d = SimpleNamespace(view_location=None, view_distance=None)
     monkeypatch.setattr(mod, "_get_3d_viewport_area",
-                        lambda: (SimpleNamespace(regions=[object()]), object()))
+                        lambda: (SimpleNamespace(regions=[object()]),
+                                 SimpleNamespace(region_3d=region_3d)))
+    monkeypatch.setattr(mod, "_world_bounds",
+                        lambda obj: ((3.0, 2.0, -1.0), (5.0, 4.0, 1.0)), raising=False)
+    head.region_3d = region_3d
     return mod, head, other, layer, modes, frames
 
 
@@ -66,7 +71,10 @@ class TestFocusOnObject:
         monkeypatch.setattr(bpy.context, "object", head, raising=False)
         mod.handle_focus_on_object({"object_name": "Head"})
         assert modes == [] and head.mode == "SCULPT"
-        frames.assert_called_once()
+        # view_selected in sculpt mode frames the last stroke, not the object
+        frames.assert_not_called()
+        assert tuple(head.region_3d.view_location) == (4.0, 3.0, 0.0)
+        assert head.region_3d.view_distance > 2.0
 
     def test_from_object_mode_it_selects_only_the_target(self, scene, monkeypatch):
         import bpy
