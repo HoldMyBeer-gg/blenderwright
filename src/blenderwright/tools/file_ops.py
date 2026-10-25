@@ -295,3 +295,86 @@ def manage_external_paths(action: str, directory: str | None = None) -> dict[str
             raise ValidationError("FIND_MISSING needs a directory to search")
         params["directory"] = validate_directory(directory)
     return _send_file_command("manage_external_paths", params)
+
+
+MAX_ASSET_FILE_PATH = 512
+
+
+def _library_relative_blend(file: Any) -> str:
+    """A .blend path relative to a library root that cannot climb out of it."""
+    if not isinstance(file, str) or not file or len(file) > MAX_ASSET_FILE_PATH:
+        raise ValidationError("file must be a .blend path relative to the library")
+    if "\x00" in file or "\\" in file:
+        raise ValidationError("file contains a null byte or backslash; use / separators")
+    if file.startswith("/") or (len(file) > 1 and file[1] == ":"):
+        raise ValidationError("file must be relative to the library, not absolute")
+    if ".." in file.split("/"):
+        raise ValidationError("file may not contain '..'")
+    if not file.lower().endswith(".blend"):
+        raise ValidationError("file must be a .blend file")
+    return file
+
+
+@mcp.tool()
+def list_asset_libraries() -> dict[str, Any]:
+    """List the asset libraries this Blender can use: Essentials (bundled with
+    Blender) and the local libraries set in Preferences. Online libraries are
+    never listed or fetched.
+
+    Returns:
+        Dict with each library's name and folder.
+    """
+    return _send_file_command("list_asset_libraries", {})
+
+
+@mcp.tool()
+def list_assets(library: str, asset_type: str = "") -> dict[str, Any]:
+    """List the assets in a library, by file, for place_asset.
+
+    Args:
+        library: Library name from list_asset_libraries.
+        asset_type: Only this type: OBJECT, COLLECTION, MATERIAL, NODE_GROUP,
+            WORLD or MESH. Empty for all.
+
+    Returns:
+        Dict with assets (file relative to the library, type, name), and
+        truncated if the library has more files than one call reads.
+    """
+    params: dict[str, Any] = {"library": validate_object_name(library)}
+    if asset_type:
+        params["asset_type"] = validate_enum(asset_type, ALLOWED_LINK_TYPES, name="asset_type")
+    return _send_file_command("list_assets", params)
+
+
+@mcp.tool()
+def place_asset(
+    library: str,
+    file: str,
+    asset_type: str,
+    asset_name: str,
+    link: bool = False,
+) -> dict[str, Any]:
+    """Bring an asset from a library into the scene (append, or link to keep it
+    in sync with the library). Find it with list_assets first.
+
+    Args:
+        library: Library name from list_asset_libraries.
+        file: The asset's .blend file, relative to the library, as list_assets
+            gives it.
+        asset_type: OBJECT, COLLECTION, MATERIAL, NODE_GROUP, WORLD or MESH.
+        asset_name: The asset's name.
+        link: Link instead of append. Linked assets update with the library
+            but can't be edited here.
+
+    Returns:
+        Dict with the name it got in this file, and any collection instance.
+    """
+    if not isinstance(link, bool):
+        raise ValidationError(f"link must be true or false, got {link!r}")
+    return _send_file_command("place_asset", {
+        "library": validate_object_name(library),
+        "file": _library_relative_blend(file),
+        "asset_type": validate_enum(asset_type, ALLOWED_LINK_TYPES, name="asset_type"),
+        "name": validate_object_name(asset_name),
+        "link": link,
+    })

@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 262 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 262 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 265 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 265 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 262 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 265 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>262</b> tools</span>
+    <span><b>265</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -129,7 +129,7 @@ footer a { color: var(--accent); }
 <a href="#compositor">compositor <span class="n">5</span></a>
 <a href="#curves">Curves <span class="n">10</span></a>
 <a href="#deform">deform <span class="n">12</span></a>
-<a href="#file_ops">File I/O <span class="n">10</span></a>
+<a href="#file_ops">File I/O <span class="n">13</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">6</span></a>
 <a href="#gpencil">Grease Pencil <span class="n">9</span></a>
 <a href="#lighting">Lighting <span class="n">9</span></a>
@@ -525,7 +525,7 @@ Game engines and glTF export pick it up as vertex color.</p><table class="args">
 <tr><th>gain</th><td>LEVELS gain, 0.0 to 10.0.</td></tr>
 <tr><th>max_groups</th><td>LIMIT_TOTAL groups per vertex, 1 to 32.</td></tr>
 <tr><th>steps</th><td>QUANTIZE levels, 1 to 1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the group&#x27;s vertex count and weight range afterwards.</p></article></section>
-<section class="module" id="file_ops" data-module="file i/o"><h2>File I/O <span class="n">10</span></h2><article class="tool" id="export_file" data-search="export_file export scene or selected objects to a 3d file.
+<section class="module" id="file_ops" data-module="file i/o"><h2>File I/O <span class="n">13</span></h2><article class="tool" id="export_file" data-search="export_file export scene or selected objects to a 3d file.
 
 supports fbx, obj, gltf/glb, usd, stl, ply, and alembic (abc) formats."><h3><a href="#export_file">export_file</a></h3><pre class="sig"><code>export_file(filepath: str, type: str = &#x27;&#x27;, selected_only: bool = False)</code></pre><p>Export scene or selected objects to a 3D file.
 
@@ -551,7 +551,12 @@ read-only. A linked collection is placed as an instance; appended objects
 and collections go into the scene. Scripts in the file are never run.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to an existing .blend file.</td></tr>
 <tr><th>data_type</th><td>OBJECT, COLLECTION, MATERIAL, NODE_GROUP, WORLD or MESH.</td></tr>
 <tr><th>names</th><td>Names to bring in (see list_blend_contents), at most 100.</td></tr>
-<tr><th>link</th><td>True to link instead of append.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with each requested name and the name it has here (appends may gain a .001 suffix), plus any instance created for a linked collection.</p></article><article class="tool" id="list_blend_contents" data-search="list_blend_contents list what another .blend file contains without opening it.
+<tr><th>link</th><td>True to link instead of append.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with each requested name and the name it has here (appends may gain a .001 suffix), plus any instance created for a linked collection.</p></article><article class="tool" id="list_asset_libraries" data-search="list_asset_libraries list the asset libraries this blender can use: essentials (bundled with
+blender) and the local libraries set in preferences. online libraries are
+never listed or fetched."><h3><a href="#list_asset_libraries">list_asset_libraries</a></h3><pre class="sig"><code>list_asset_libraries()</code></pre><p>List the asset libraries this Blender can use: Essentials (bundled with
+Blender) and the local libraries set in Preferences. Online libraries are
+never listed or fetched.</p><p class="ret"><span>Returns</span> Dict with each library&#x27;s name and folder.</p></article><article class="tool" id="list_assets" data-search="list_assets list the assets in a library, by file, for place_asset."><h3><a href="#list_assets">list_assets</a></h3><pre class="sig"><code>list_assets(library: str, asset_type: str = &#x27;&#x27;)</code></pre><p>List the assets in a library, by file, for place_asset.</p><table class="args"><tbody><tr><th>library</th><td>Library name from list_asset_libraries.</td></tr>
+<tr><th>asset_type</th><td>Only this type: OBJECT, COLLECTION, MATERIAL, NODE_GROUP, WORLD or MESH. Empty for all.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with assets (file relative to the library, type, name), and truncated if the library has more files than one call reads.</p></article><article class="tool" id="list_blend_contents" data-search="list_blend_contents list what another .blend file contains without opening it.
 
 use before link_or_append to find the names to bring in. scripts in the
 file are never run."><h3><a href="#list_blend_contents">list_blend_contents</a></h3><pre class="sig"><code>list_blend_contents(filepath: str)</code></pre><p>List what another .blend file contains without opening it.
@@ -564,7 +569,13 @@ makes the file self-contained so it can be moved or shared without
 missing textures."><h3><a href="#pack_resources">pack_resources</a></h3><pre class="sig"><code>pack_resources(autopack: bool | None = None)</code></pre><p>Pack every external image, sound, font and volume into the .blend file.
 
 Makes the file self-contained so it can be moved or shared without
-missing textures.</p><table class="args"><tbody><tr><th>autopack</th><td>Also pack new external files automatically on every save.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the packed items (type, name) and whether autopack is on.</p></article><article class="tool" id="save_file" data-search="save_file save the current blender file.
+missing textures.</p><table class="args"><tbody><tr><th>autopack</th><td>Also pack new external files automatically on every save.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the packed items (type, name) and whether autopack is on.</p></article><article class="tool" id="place_asset" data-search="place_asset bring an asset from a library into the scene (append, or link to keep it
+in sync with the library). find it with list_assets first."><h3><a href="#place_asset">place_asset</a></h3><pre class="sig"><code>place_asset(library: str, file: str, asset_type: str, asset_name: str, link: bool = False)</code></pre><p>Bring an asset from a library into the scene (append, or link to keep it
+in sync with the library). Find it with list_assets first.</p><table class="args"><tbody><tr><th>library</th><td>Library name from list_asset_libraries.</td></tr>
+<tr><th>file</th><td>The asset&#x27;s .blend file, relative to the library, as list_assets gives it.</td></tr>
+<tr><th>asset_type</th><td>OBJECT, COLLECTION, MATERIAL, NODE_GROUP, WORLD or MESH.</td></tr>
+<tr><th>asset_name</th><td>The asset&#x27;s name.</td></tr>
+<tr><th>link</th><td>Link instead of append. Linked assets update with the library but can&#x27;t be edited here.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the name it got in this file, and any collection instance.</p></article><article class="tool" id="save_file" data-search="save_file save the current blender file.
 
 if filepath is empty, saves to the current file path (overwrite).
 if filepath is provided, performs a &quot;save as&quot; to the given path."><h3><a href="#save_file">save_file</a></h3><pre class="sig"><code>save_file(filepath: str = &#x27;&#x27;)</code></pre><p>Save the current Blender file.

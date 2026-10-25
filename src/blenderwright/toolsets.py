@@ -81,7 +81,7 @@ TOOLSETS: dict[str, str] = {
                    "instances and making them real; view layers (holdout, overrides)",
     "file_ops": "Import and export FBX, OBJ, glTF, USD, STL; save and open .blend; "
                 "list, link and append from other .blend files; pack and unpack resources; "
-                "external paths (missing files, relative, relink)",
+                "external paths (missing files, relative, relink); asset libraries",
     "viewport": "Viewport shading, overlays, focus on object",
     "screenshot": "Capture the viewport as an image for visual checks",
     "code_exec": "Run sandboxed Python inside Blender",
