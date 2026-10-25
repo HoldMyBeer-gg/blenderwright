@@ -130,11 +130,12 @@ class TestHandleRemoveAnnotationLayer:
 
 class TestHandleAddAnnotationStroke:
     def test_handle_add_annotation_stroke(self, gpencil_handler):
-        """Handler creates stroke on frame, sets co and pressure. Does NOT set .strength."""
+        """Handler creates the stroke and sets co. 5.2 points have only co:
+        setting pressure raised AttributeError on every call."""
         import bpy
 
-        mock_point_0 = MagicMock(spec=["co", "pressure"])
-        mock_point_1 = MagicMock(spec=["co", "pressure"])
+        mock_point_0 = MagicMock(spec_set=["co"])
+        mock_point_1 = MagicMock(spec_set=["co"])
         mock_stroke = MagicMock()
 
         def getitem(i):
@@ -160,7 +161,6 @@ class TestHandleAddAnnotationStroke:
             "annotation_name": "TestAnnotation",
             "layer_name": "Layer1",
             "points": points,
-            "pressure": 0.8,
         })
 
         assert result["point_count"] == 2

@@ -644,13 +644,12 @@ opacity, and color.</p><table class="args"><tbody><tr><th>annotation_name</th><t
 <tr><th>layer_name</th><td>Name for the new layer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with annotation and layer names.</p></article><article class="tool" id="add_annotation_stroke" data-search="add_annotation_stroke add a stroke to an annotation layer.
 
 creates a new stroke with the given points on the specified layer.
-note: annotationstroke does not support per-point strength/opacity."><h3><a href="#add_annotation_stroke">add_annotation_stroke</a></h3><pre class="sig"><code>add_annotation_stroke(annotation_name: str, layer_name: str, points: list[list[float]], pressure: float = 1.0)</code></pre><p>Add a stroke to an annotation layer.
+annotation points in 5.2 are a position only: no pressure or strength."><h3><a href="#add_annotation_stroke">add_annotation_stroke</a></h3><pre class="sig"><code>add_annotation_stroke(annotation_name: str, layer_name: str, points: list[list[float]])</code></pre><p>Add a stroke to an annotation layer.
 
 Creates a new stroke with the given points on the specified layer.
-Note: AnnotationStroke does not support per-point strength/opacity.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
+Annotation points in 5.2 are a position only: no pressure or strength.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
 <tr><th>layer_name</th><td>Name of the layer to add the stroke to.</td></tr>
-<tr><th>points</th><td>List of XYZ coordinates, e.g. [[0,0,0], [1,1,0], [2,0,0]]. Maximum 10000 points.</td></tr>
-<tr><th>pressure</th><td>Pen pressure for all points. Range: 0.0-1.0.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with point count.</p></article><article class="tool" id="add_gp_stroke" data-search="add_gp_stroke draw one stroke in a grease pencil object.
+<tr><th>points</th><td>List of XYZ coordinates, e.g. [[0,0,0], [1,1,0], [2,0,0]]. Maximum 10000 points.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with point count.</p></article><article class="tool" id="add_gp_stroke" data-search="add_gp_stroke draw one stroke in a grease pencil object.
 
 points are in the object&#x27;s local space. cyclic closes the outline."><h3><a href="#add_gp_stroke">add_gp_stroke</a></h3><pre class="sig"><code>add_gp_stroke(object_name: str, points: list[list[float]], layer: str = &#x27;&#x27;, frame: int = 1, radius: float | list[float] = 0.02, cyclic: bool = False, material: str = &#x27;&#x27;)</code></pre><p>Draw one stroke in a Grease Pencil object.
 
@@ -693,8 +692,8 @@ For notes on the viewport use the annotation tools instead.</p><table class="arg
 <tr><th>layer_name</th><td>Name of the layer to remove.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="set_annotation_stroke_property" data-search="set_annotation_stroke_property set a property on an annotation stroke."><h3><a href="#set_annotation_stroke_property">set_annotation_stroke_property</a></h3><pre class="sig"><code>set_annotation_stroke_property(annotation_name: str, layer_name: str, stroke_index: int, property: str, value: Any)</code></pre><p>Set a property on an annotation stroke.</p><table class="args"><tbody><tr><th>annotation_name</th><td>Name of the annotation data block.</td></tr>
 <tr><th>layer_name</th><td>Name of the layer containing the stroke.</td></tr>
 <tr><th>stroke_index</th><td>Index of the stroke in the layer (0-based).</td></tr>
-<tr><th>property</th><td>Property to set. One of: line_width, material_index, display_mode.</td></tr>
-<tr><th>value</th><td>The value to set.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
+<tr><th>property</th><td>display_mode, the only stroke setting in 5.2.</td></tr>
+<tr><th>value</th><td>3DSPACE (in the scene), 2DSPACE (stuck to the view) or 2DIMAGE.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
 <section class="module" id="lighting" data-module="lighting"><h2>Lighting <span class="n">9</span></h2><article class="tool" id="create_light" data-search="create_light create a new light in the scene."><h3><a href="#create_light">create_light</a></h3><pre class="sig"><code>create_light(type: str, name: str = &#x27;&#x27;, location: list = [0, 0, 0], energy: float = 1000.0, color: list = [1.0, 1.0, 1.0])</code></pre><p>Create a new light in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Light type. One of: POINT, SUN, SPOT, AREA.</td></tr>
 <tr><th>name</th><td>Optional name for the light.</td></tr>
 <tr><th>location</th><td>XYZ location as [x, y, z], default [0, 0, 0].</td></tr>

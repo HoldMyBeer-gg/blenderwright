@@ -1,0 +1,76 @@
+name: Live Tests (Blender 5.2)
+
+# Every MCP tool against a real headless Blender 5.2.3: the official release,
+# checked against Blender's published SHA-256, cached per OS and version.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Live (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            archive: blender-5.2.3-linux-x64.tar.xz
+            sha256: 78486c018b4443efe5e75ab54c290ed8c15abafd249b862c2c9ce2530a918eec
+            exe: blender/blender
+          - os: windows-latest
+            archive: blender-5.2.3-windows-x64.zip
+            sha256: 723f08a4401502561eb763cdeacf8745b31e5f3f154d287d3830d97cf75dc2fb
+            exe: blender/blender.exe
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Restore Blender
+        id: blender-cache
+        uses: actions/cache@v4
+        with:
+          path: blender
+          key: ${{ runner.os }}-${{ matrix.archive }}
+
+      - name: Download and verify Blender
+        if: steps.blender-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          curl -fsSL -o "${{ matrix.archive }}" \
+            "https://download.blender.org/release/Blender5.2/${{ matrix.archive }}"
+          echo "${{ matrix.sha256 }}  ${{ matrix.archive }}" | sha256sum -c -
+          mkdir unpacked
+          if [[ "${{ matrix.archive }}" == *.zip ]]; then
+            unzip -q "${{ matrix.archive }}" -d unpacked
+          else
+            tar -xJf "${{ matrix.archive }}" -C unpacked
+          fi
+          mv unpacked/* blender
+          rm -rf unpacked "${{ matrix.archive }}"
+
+      - name: Install Blender's system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 \
+            libsm6 libice6 libgl1 libegl1 libgl1-mesa-dri
+
+      - name: Run live tests
+        env:
+          BLENDER: ${{ github.workspace }}/${{ matrix.exe }}
+          # Runners have no GPU: viewport capture and EEVEE run locally instead
+          BLENDERWRIGHT_NO_GPU: "1"
+        run: pytest tests_live -v --tb=short -p no:cacheprovider
