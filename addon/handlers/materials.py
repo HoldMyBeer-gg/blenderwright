@@ -265,9 +265,7 @@ def handle_duplicate_material(params: dict) -> dict:
 
         mat = _get_material(mat_name)
         new_mat = mat.copy()
-        new_mat.name = new_name
-        if mat.node_tree:
-            new_mat.node_tree = mat.node_tree.copy()
+        new_mat.name = new_name  # copy() brings its own node tree; node_tree is read-only
 
         return {"original": mat.name, "duplicate": new_mat.name}
     except Exception as e:

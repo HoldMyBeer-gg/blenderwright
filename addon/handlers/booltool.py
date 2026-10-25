@@ -61,7 +61,7 @@ def _setup_selection(object_name, target_name):
     return obj, target
 
 
-def _native_boolean(obj, target, operation):
+def _native_boolean_modifier(obj, target, operation):
     """Fallback: apply boolean via native modifier, then delete target."""
     mod = obj.modifiers.new(name="Boolean", type="BOOLEAN")
     mod.operation = operation
@@ -71,6 +71,31 @@ def _native_boolean(obj, target, operation):
 
     # Clean up target object (Bool Tool does this automatically)
     bpy.data.objects.remove(target, do_unlink=True)
+
+
+def _native_slice(obj, target):
+    """The native modifier has no SLICE: cut the target's shape out of obj and
+    keep that shape as a new piece. Returns the piece."""
+    piece = obj.copy()
+    piece.data = obj.data.copy()
+    for collection in obj.users_collection:
+        collection.objects.link(piece)
+    layer_objects = bpy.context.view_layer.objects
+    for owner, operation in ((obj, "DIFFERENCE"), (piece, "INTERSECT")):
+        mod = owner.modifiers.new(name="Boolean", type="BOOLEAN")
+        mod.operation = operation
+        mod.object = target
+        layer_objects.active = owner
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    layer_objects.active = obj
+    bpy.data.objects.remove(target, do_unlink=True)
+    return piece
+
+
+def _native_boolean(obj, target, operation):
+    if operation == "SLICE":
+        return _native_slice(obj, target)
+    return _native_boolean_modifier(obj, target, operation)
 
 
 def _do_boolean(params, operation, booltool_op_name):

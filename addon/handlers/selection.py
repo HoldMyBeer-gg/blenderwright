@@ -147,6 +147,11 @@ def handle_select_by_axis(params):
     return {"object_name": obj.name, "axis": axis, "sign": sign, **_counts(obj)}
 
 
+def _similar_select_mode(similar_type):
+    """FACE_* types exist only in face select mode, EDGE_* in edge mode."""
+    return {"FACE": "FACE", "EDGE": "EDGE"}.get(similar_type.split("_")[0], "VERT")
+
+
 def handle_select_similar(params):
     """Grow the selection to geometry resembling what is already selected."""
     obj = _get_mesh(params["object_name"])
@@ -164,6 +169,7 @@ def handle_select_similar(params):
 
     bpy.ops.object.mode_set(mode="EDIT")
     try:
+        bpy.ops.mesh.select_mode(type=_similar_select_mode(similar_type))
         bpy.ops.mesh.select_similar(type=similar_type, threshold=threshold)
     finally:
         bpy.ops.object.mode_set(mode="OBJECT")

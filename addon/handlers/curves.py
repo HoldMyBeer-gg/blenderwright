@@ -34,6 +34,14 @@ def handle_create_curve(params: dict) -> dict:
         raise RuntimeError(f"Failed to create curve: {e}")
 
 
+# The tool takes handle_type_set operator names; a point stores FREE/VECTOR/ALIGNED/AUTO
+POINT_HANDLE_TYPES = {"AUTOMATIC": "AUTO", "FREE_ALIGN": "FREE"}
+
+
+def _point_handle_type(handle_type):
+    return POINT_HANDLE_TYPES.get(handle_type, handle_type)
+
+
 def handle_add_curve_point(params: dict) -> dict:
     """Add a control point to an existing curve."""
     curve_name = params.get("curve_name")
@@ -57,8 +65,8 @@ def handle_add_curve_point(params: dict) -> dict:
             spline.bezier_points.add(1)
             point = spline.bezier_points[-1]
             point.co = location
-            point.handle_left_type = handle_type
-            point.handle_right_type = handle_type
+            point.handle_left_type = _point_handle_type(handle_type)
+            point.handle_right_type = _point_handle_type(handle_type)
             point_count = len(spline.bezier_points)
         elif spline.type in ("NURBS", "POLY"):
             spline.points.add(1)
