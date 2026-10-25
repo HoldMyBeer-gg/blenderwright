@@ -135,11 +135,7 @@ def handle_add_geometry_node(params: dict) -> dict:
         # GeometryNodeCube for GeometryNodeMeshCube is an easy guess to make.
         known = _known_node_types()
         if node_type not in known:
-            lowered = node_type.lower()
-            near = sorted(n for n in known
-                          if lowered in n.lower() or n.lower() in lowered)
-            hint = f" Did you mean: {', '.join(near[:5])}?" if near else ""
-            raise ValueError(f"Unknown node type '{node_type}'.{hint}")
+            raise ValueError(_unknown_node_message(node_type, known))
 
         node = node_group.nodes.new(type=node_type)
         node.location = (location[0], location[1])
@@ -428,13 +424,30 @@ INTERFACE_SOCKETS = {
 NODE_SETTING_TYPES = {"BOOLEAN", "INT", "FLOAT", "ENUM", "STRING"}
 
 
+NODE_PREFIXES = ("GeometryNode", "FunctionNode", "ShaderNode")
+
+
+def _unknown_node_message(node_type, known):
+    """Name the closest real node types: GeometryNodeCube -> GeometryNodeMeshCube."""
+    import difflib
+
+    prefix = next((p for p in NODE_PREFIXES if node_type.startswith(p)), "")
+    tail = node_type[len(prefix):].lower()
+    near = {n for n in known if tail and tail in n.lower()}
+    near.update(difflib.get_close_matches(node_type, known, n=5, cutoff=0.75))
+    ranked = sorted(near, key=lambda n: (len(n), n))[:5]
+    hint = f" Did you mean: {', '.join(ranked)}?" if ranked else ""
+    return f"Unknown node type '{node_type}'.{hint}"
+
+
 def _known_node_types():
     """Node classes this Blender has, by name. 5.2 creates bpy.types classes
     lazily, so __subclasses__() is empty and refused every node."""
-    bases = tuple(getattr(bpy.types, b) for b in ("GeometryNode", "FunctionNode", "ShaderNode"))
+    base_names = NODE_PREFIXES
+    bases = tuple(getattr(bpy.types, b) for b in base_names)
     known = set()
     for name in dir(bpy.types):
-        if name.startswith(("GeometryNode", "FunctionNode", "ShaderNode")):
+        if name.startswith(base_names) and name not in base_names:
             cls = getattr(bpy.types, name, None)
             if isinstance(cls, type) and issubclass(cls, bases):
                 known.add(name)
@@ -525,10 +538,7 @@ def _fill_group(group, spec):
     known = _known_node_types()
     for entry in spec["nodes"]:
         if entry["type"] not in known:
-            lowered = entry["type"].lower()
-            near = sorted(n for n in known if lowered in n.lower() or n.lower() in lowered)
-            hint = f" Did you mean: {', '.join(near[:5])}?" if near else ""
-            raise ValueError(f"Unknown node type '{entry['type']}'.{hint}")
+            raise ValueError(_unknown_node_message(entry["type"], known))
         node = group.nodes.new(type=entry["type"])
         node.name = entry["name"]
         node.location = tuple(entry.get("location", (0, 0)))
