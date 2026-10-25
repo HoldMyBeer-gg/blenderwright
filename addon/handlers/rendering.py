@@ -508,6 +508,39 @@ def handle_manage_aov(params):
     return {"aovs": [{"name": a.name, "type": a.type} for a in aovs]}
 
 
+FREESTYLE_EDGES = ("SILHOUETTE", "BORDER", "CREASE", "CONTOUR", "EXTERNAL_CONTOUR",
+                   "MATERIAL_BOUNDARY", "RIDGE_VALLEY", "SUGGESTIVE_CONTOUR", "EDGE_MARK")
+
+
+def handle_set_freestyle(params):
+    import math
+
+    scene, layer = bpy.context.scene, bpy.context.view_layer
+    settings = layer.freestyle_settings
+    scene.render.use_freestyle = bool(params.get("enabled", True))
+    layer.use_freestyle = scene.render.use_freestyle
+    lineset = settings.linesets[0] if len(settings.linesets) else settings.linesets.new("LineSet")
+    style = lineset.linestyle or bpy.data.linestyles.new("LineStyle")
+    lineset.linestyle = style
+    if "thickness" in params:
+        style.thickness = float(params["thickness"])
+    if "color" in params:
+        style.color = params["color"]
+    if "edges" in params:
+        lineset.select_by_edge_types = True
+        for edge in FREESTYLE_EDGES:
+            setattr(lineset, f"select_{edge.lower()}", edge in params["edges"])
+    if "crease_angle" in params:
+        settings.crease_angle = math.radians(float(params["crease_angle"]))
+    if "as_render_pass" in params:
+        settings.as_render_pass = bool(params["as_render_pass"])
+    return {"enabled": scene.render.use_freestyle, "lineset": lineset.name,
+            "thickness": style.thickness, "color": list(style.color),
+            "edges": [e for e in FREESTYLE_EDGES if getattr(lineset, f"select_{e.lower()}")],
+            "crease_angle": round(math.degrees(settings.crease_angle), 2),
+            "as_render_pass": settings.as_render_pass}
+
+
 def register():
     """Register all rendering handlers with the dispatcher."""
     dispatcher.register_handler("set_render_engine", handle_set_render_engine)
@@ -528,4 +561,5 @@ def register():
     dispatcher.register_handler("set_eevee_quality", handle_set_eevee_quality)
     dispatcher.register_handler("set_render_performance", handle_set_render_performance)
     dispatcher.register_handler("set_light_group", handle_set_light_group)
+    dispatcher.register_handler("set_freestyle", handle_set_freestyle)
     dispatcher.register_handler("manage_aov", handle_manage_aov)

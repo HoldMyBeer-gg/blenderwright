@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 275 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 275 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 276 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 276 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 275 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 276 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>275</b> tools</span>
+    <span><b>276</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -140,7 +140,7 @@ footer a { color: var(--accent); }
 <a href="#objects">Objects <span class="n">16</span></a>
 <a href="#physics">Physics <span class="n">14</span></a>
 <a href="#print3d">print3d <span class="n">1</span></a>
-<a href="#render_settings">render_settings <span class="n">12</span></a>
+<a href="#render_settings">render_settings <span class="n">13</span></a>
 <a href="#rendering">Rendering <span class="n">7</span></a>
 <a href="#scene">Scene <span class="n">7</span></a>
 <a href="#sculpting">Sculpting <span class="n">10</span></a>
@@ -1459,7 +1459,7 @@ enable it; suggest_extensions also reports whether it is on.</p><table class="ar
 <tr><th>sharp_angle</th><td>Sharp-edge threshold in RADIANS.</td></tr>
 <tr><th>nonplanar_angle</th><td>Non-flat face threshold in RADIANS.</td></tr>
 <tr><th>zero_threshold</th><td>Area below which a face counts as zero-area.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with a count (and sample indices) per check that ran, plus checks_run, issues_found, and print_blocking: the defects that stop a print, as opposed to overhangs and sharp edges which are advisory.</p></article></section>
-<section class="module" id="render_settings" data-module="render_settings"><h2>render_settings <span class="n">12</span></h2><article class="tool" id="manage_aov" data-search="manage_aov list, add or remove shader aovs: custom render passes written by materials.
+<section class="module" id="render_settings" data-module="render_settings"><h2>render_settings <span class="n">13</span></h2><article class="tool" id="manage_aov" data-search="manage_aov list, add or remove shader aovs: custom render passes written by materials.
 
 in a material, an output aov node (shadernodeoutputaov, its aov_name set to
 this name) writes a color or value into the pass. use for masks and ids
@@ -1525,7 +1525,16 @@ Leave anything unset to keep it.</p><table class="args"><tbody><tr><th>raytracin
 <tr><th>clamp_direct</th><td>Cap on direct light per sample, 0 for none.</td></tr>
 <tr><th>clamp_indirect</th><td>Cap on bounced light per sample, 0 for none.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the EEVEE settings after the change.</p></article><article class="tool" id="set_film" data-search="set_film set film options: transparent background and pixel filter."><h3><a href="#set_film">set_film</a></h3><pre class="sig"><code>set_film(transparent: bool | None = None, transparent_glass: bool | None = None, filter_width: float | None = None)</code></pre><p>Set film options: transparent background and pixel filter.</p><table class="args"><tbody><tr><th>transparent</th><td>Render the world background as transparent, for compositing or product cut-outs. Needs PNG or EXR output to keep the alpha.</td></tr>
 <tr><th>transparent_glass</th><td>Cycles only. Let the background show through glass and other transmissive surfaces when transparent is on.</td></tr>
-<tr><th>filter_width</th><td>Cycles pixel filter width in pixels, 0.01 to 10.0. 1.5 is Blender&#x27;s default; lower is sharper, higher is softer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the film settings after the change.</p></article><article class="tool" id="set_light_group" data-search="set_light_group put lights (or emissive objects, or the world) into a light group.
+<tr><th>filter_width</th><td>Cycles pixel filter width in pixels, 0.01 to 10.0. 1.5 is Blender&#x27;s default; lower is sharper, higher is softer.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the film settings after the change.</p></article><article class="tool" id="set_freestyle" data-search="set_freestyle draw ink lines over the render: outlines, toon, technical-drawing looks.
+
+applies to the active view layer&#x27;s line set (created if needed)."><h3><a href="#set_freestyle">set_freestyle</a></h3><pre class="sig"><code>set_freestyle(enabled: bool = True, thickness: float | None = None, color: list[float] | None = None, edges: list[str] | None = None, crease_angle: float | None = None, as_render_pass: bool | None = None)</code></pre><p>Draw ink lines over the render: outlines, toon, technical-drawing looks.
+
+Applies to the active view layer&#x27;s line set (created if needed).</p><table class="args"><tbody><tr><th>enabled</th><td>Turn line rendering on or off.</td></tr>
+<tr><th>thickness</th><td>Line width in pixels, 0.1 to 10000.</td></tr>
+<tr><th>color</th><td>RGB of the lines, 0.0 to 1.0.</td></tr>
+<tr><th>edges</th><td>Which edges get lines: SILHOUETTE (object outline against others), BORDER (open mesh edges), CREASE (sharp folds, see crease_angle), CONTOUR, EXTERNAL_CONTOUR (outer outline only), MATERIAL_BOUNDARY, RIDGE_VALLEY, SUGGESTIVE_CONTOUR, EDGE_MARK (edges marked for Freestyle). Replaces the current choice.</td></tr>
+<tr><th>crease_angle</th><td>Degrees, 0 to 180: edges sharper than this count as creases.</td></tr>
+<tr><th>as_render_pass</th><td>Put the lines in their own pass instead of on the image.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the Freestyle state after the change.</p></article><article class="tool" id="set_light_group" data-search="set_light_group put lights (or emissive objects, or the world) into a light group.
 
 each light group renders as its own pass (cycles), so light balance can
 be changed in the compositor without re-rendering: the render layers

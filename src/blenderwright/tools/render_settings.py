@@ -9,6 +9,7 @@ from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
+    validate_color,
     validate_enum,
     validate_int,
     validate_new_name,
@@ -471,6 +472,63 @@ def manage_aov(action: str, name: str | None = None, type: str = "COLOR") -> dic
     if action == "ADD":
         params["type"] = validate_enum(type, ALLOWED_AOV_TYPES, name="type")
     return _send_render_command("manage_aov", params)
+
+
+ALLOWED_FREESTYLE_EDGES = {
+    "SILHOUETTE", "BORDER", "CREASE", "CONTOUR", "EXTERNAL_CONTOUR", "MATERIAL_BOUNDARY",
+    "RIDGE_VALLEY", "SUGGESTIVE_CONTOUR", "EDGE_MARK",
+}
+
+
+@mcp.tool()
+def set_freestyle(
+    enabled: bool = True,
+    thickness: float | None = None,
+    color: list[float] | None = None,
+    edges: list[str] | None = None,
+    crease_angle: float | None = None,
+    as_render_pass: bool | None = None,
+) -> dict[str, Any]:
+    """Draw ink lines over the render: outlines, toon, technical-drawing looks.
+
+    Applies to the active view layer's line set (created if needed).
+
+    Args:
+        enabled: Turn line rendering on or off.
+        thickness: Line width in pixels, 0.1 to 10000.
+        color: RGB of the lines, 0.0 to 1.0.
+        edges: Which edges get lines: SILHOUETTE (object outline against
+            others), BORDER (open mesh edges), CREASE (sharp folds, see
+            crease_angle), CONTOUR, EXTERNAL_CONTOUR (outer outline only),
+            MATERIAL_BOUNDARY, RIDGE_VALLEY, SUGGESTIVE_CONTOUR, EDGE_MARK
+            (edges marked for Freestyle). Replaces the current choice.
+        crease_angle: Degrees, 0 to 180: edges sharper than this count as creases.
+        as_render_pass: Put the lines in their own pass instead of on the image.
+
+    Returns:
+        Dict with the Freestyle state after the change.
+    """
+    if not isinstance(enabled, bool):
+        raise ValidationError(f"enabled must be true or false, got {enabled!r}")
+    params: dict[str, Any] = {"enabled": enabled}
+    if thickness is not None:
+        params["thickness"] = validate_numeric_range(thickness, min_val=0.1, max_val=10000,
+                                                     name="thickness")
+    if color is not None:
+        params["color"] = list(validate_color(color))[:3]
+    if edges is not None:
+        if not isinstance(edges, list):
+            raise ValidationError("edges must be a list of edge types")
+        params["edges"] = [validate_enum(e, ALLOWED_FREESTYLE_EDGES, name="edges")
+                           for e in edges]
+    if crease_angle is not None:
+        params["crease_angle"] = validate_numeric_range(crease_angle, min_val=0, max_val=180,
+                                                        name="crease_angle")
+    if as_render_pass is not None:
+        if not isinstance(as_render_pass, bool):
+            raise ValidationError("as_render_pass must be true or false")
+        params["as_render_pass"] = as_render_pass
+    return _send_render_command("set_freestyle", params)
 
 
 ALLOWED_RAY_TRACING_METHODS = {"PROBE", "SCREEN"}
