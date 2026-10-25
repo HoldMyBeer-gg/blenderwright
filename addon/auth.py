@@ -18,7 +18,10 @@ import sys
 ENV_TOKEN_FILE = "BLENDERWRIGHT_TOKEN_FILE"
 
 
-def token_path() -> str:
+DEFAULT_PORT = 9876
+
+
+def token_path(port: int = DEFAULT_PORT) -> str:
     """Where the token lives: the env override, else the user's config dir."""
     override = os.environ.get(ENV_TOKEN_FILE)
     if override:
@@ -30,16 +33,19 @@ def token_path() -> str:
         base = os.path.join(home, "Library", "Application Support")
     else:
         base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(home, ".config")
-    return os.path.join(base, "blenderwright", "token")
+    # One file per port so two Blenders cannot overwrite each other's token;
+    # the default port keeps the plain name older setups know
+    name = "token" if port == 9876 else f"token-{int(port)}"
+    return os.path.join(base, "blenderwright", name)
 
 
 def new_token() -> str:
     return secrets.token_hex(32)
 
 
-def write_token(token: str) -> None:
+def write_token(token: str, port: int = DEFAULT_PORT) -> None:
     """Write the token readable by this user only, replacing any old file."""
-    path = token_path()
+    path = token_path(port)
     directory = os.path.dirname(path)
     os.makedirs(directory, mode=0o700, exist_ok=True)
     if sys.platform != "win32":
@@ -59,9 +65,9 @@ def write_token(token: str) -> None:
         raise
 
 
-def clear_token() -> None:
+def clear_token(port: int = DEFAULT_PORT) -> None:
     try:
-        os.remove(token_path())
+        os.remove(token_path(port))
     except FileNotFoundError:
         pass
 

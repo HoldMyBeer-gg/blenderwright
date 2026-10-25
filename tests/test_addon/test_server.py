@@ -164,8 +164,9 @@ class TestAuthToken:
 
     def test_start_writes_a_fresh_token_and_stop_clears_it(self, server_module, monkeypatch):
         written, cleared = [], []
-        monkeypatch.setattr(server_module.auth, "write_token", written.append)
-        monkeypatch.setattr(server_module.auth, "clear_token", lambda: cleared.append(True))
+        monkeypatch.setattr(server_module.auth, "write_token",
+                            lambda token, port: written.append(token))
+        monkeypatch.setattr(server_module.auth, "clear_token", lambda port: cleared.append(port))
         monkeypatch.setattr(server_module.socket, "socket", MagicMock())
         monkeypatch.setattr(server_module.threading, "Thread", MagicMock())
 
@@ -178,6 +179,27 @@ class TestAuthToken:
 
         assert written[0] == first and len(written) == 2 and written[0] != written[1]
         assert len(cleared) == 2
+
+
+class TestTakenPortKeepsTheToken:
+    """A second Blender that cannot get the port must not replace the token
+    the first one is serving with, or the MCP can no longer authenticate."""
+
+    def test_no_token_written_when_the_port_is_taken(self, server_module, monkeypatch):
+        written = []
+        monkeypatch.setattr(server_module.auth, "write_token",
+                            lambda token, port: written.append(token))
+        holder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        holder.bind(("127.0.0.1", 0))
+        holder.listen(1)
+        try:
+            server = server_module.BlenderServer(port=holder.getsockname()[1])
+            with pytest.raises(OSError):
+                server.start()
+            assert written == []
+            assert not server.is_running
+        finally:
+            holder.close()
 
 
 class TestPortIsExclusive:

@@ -87,13 +87,20 @@ class BlenderServer:
         if self._running:
             return
 
-        self._token = auth.new_token()
-        auth.write_token(self._token)
-
+        # Port first: a Blender that cannot get it must not replace the token
+        # another Blender is already serving with
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        _claim_port(self._server_socket)
-        self._server_socket.bind((self._host, self._port))
+        try:
+            _claim_port(self._server_socket)
+            self._server_socket.bind((self._host, self._port))
+        except OSError:
+            self._server_socket.close()
+            self._server_socket = None
+            raise
         self._port = self._server_socket.getsockname()[1]
+
+        self._token = auth.new_token()
+        auth.write_token(self._token, self._port)
         self._server_socket.listen(1)
         self._server_socket.settimeout(0.2)  # Notice Stop Server within a fifth of a second
         self._running = True
@@ -127,7 +134,7 @@ class BlenderServer:
             self._thread = None
 
         thread_safety.unregister_timer()
-        auth.clear_token()
+        auth.clear_token(self._port)
 
     def _accept_loop(self) -> None:
         """Accept incoming connections."""

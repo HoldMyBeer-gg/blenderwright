@@ -37,7 +37,7 @@ TOOLSETS: dict[str, str] = {
                 "merge, separate, bridge edge loops",
     "mesh_editing": "Edit-mode operations: inset, fill, seams, sharp, normals, dissolve, "
                     "knife project, spin, crease, symmetrize, bisect, make loops round, "
-                    "even or flat",
+                    "even or flat; smooth vertices, poke, edge split, wireframe, solidify",
     "selection": "Select vertices, edges or faces by index, axis, similarity or side "
                  "count; report what is selected",
     "mesh_quality": "Find and repair mesh defects; decimate",

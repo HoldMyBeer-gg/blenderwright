@@ -121,6 +121,7 @@ CASES = {
     'duplicate_object': {'object_name': 'Cube'},
     'enable_dyntopo': {'object_name': 'Cube'},
     'enter_sculpt_mode': {'object_name': 'Cube'},
+    'edit_mesh_operation': {'object_name': 'Sphere', 'operation': 'SMOOTH_VERTICES', 'factor': 0.5, 'repeat': 2},
     'execute_blender_code': {'code': '1'},
     'exit_sculpt_mode': {},
     'export_file': {'filepath': '{tmp}/out.glb'},
