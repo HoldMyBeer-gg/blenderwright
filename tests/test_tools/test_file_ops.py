@@ -189,3 +189,43 @@ class TestBlenderErrorHandling:
         mock_conn.send_command.return_value = {"status": "error", "result": "Permission denied"}
         with pytest.raises(RuntimeError, match="Blender error"):
             list_recent_files()
+
+
+class TestExportOptions:
+    """Per-format exporter settings; the add-on checks each against the operator."""
+
+    @pytest.fixture
+    def conn(self):
+        from unittest.mock import MagicMock, patch
+
+        mock = MagicMock()
+        mock.send_command.return_value = {"status": "ok", "result": {}}
+        with patch("blenderwright.tools.file_ops.get_connection", return_value=mock):
+            yield mock
+
+    def test_options_are_sent(self, conn, tmp_path):
+        from blenderwright.tools.file_ops import export_file
+
+        export_file(str(tmp_path / "a.glb"), options={
+            "export_draco_mesh_compression_enable": True,
+            "export_draco_mesh_compression_level": 6, "export_image_format": "WEBP"})
+        assert conn.send_command.call_args[0][1]["options"] == {
+            "export_draco_mesh_compression_enable": True,
+            "export_draco_mesh_compression_level": 6, "export_image_format": "WEBP"}
+
+    def test_no_options_sends_none(self, conn, tmp_path):
+        from blenderwright.tools.file_ops import export_file
+
+        export_file(str(tmp_path / "a.glb"))
+        assert "options" not in conn.send_command.call_args[0][1]
+
+    @pytest.mark.parametrize("options", [
+        "draco", {"Export Draco": True}, {"export_apply": [1]}, {"__class__": 1},
+    ])
+    def test_bad_options(self, conn, tmp_path, options):
+        from blenderwright.tools.file_ops import export_file
+        from blenderwright.validators import ValidationError
+
+        with pytest.raises(ValidationError):
+            export_file(str(tmp_path / "a.glb"), options=options)
+        conn.send_command.assert_not_called()
