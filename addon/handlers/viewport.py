@@ -1,6 +1,8 @@
 """Blender addon handlers for viewport commands."""
 
 import bpy
+from mathutils import Vector
+
 from .. import dispatcher
 
 # Allowed shading modes
@@ -29,6 +31,23 @@ def _get_3d_viewport_area():
                 if space.type == 'VIEW_3D':
                     return area, space
     return None, None
+
+
+def _world_bounds(obj):
+    """World-space bounding box corners (min, max) of obj."""
+    bpy.context.view_layer.update()  # matrix_world is stale after a transform
+    corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
+    return (tuple(min(c[i] for c in corners) for i in range(3)),
+            tuple(max(c[i] for c in corners) for i in range(3)))
+
+
+def _frame_bounds(space, obj):
+    """Aim the view at obj's bounding box. view_selected can't do this in
+    sculpt mode, where it frames the last stroke instead of the object."""
+    low, high = _world_bounds(obj)
+    space.region_3d.view_location = tuple((a + b) / 2 for a, b in zip(low, high))
+    size = max(b - a for a, b in zip(low, high))
+    space.region_3d.view_distance = max(size, 0.1) * 1.5
 
 
 def handle_set_viewport_shading(params: dict) -> dict:
@@ -98,7 +117,8 @@ def handle_focus_on_object(params: dict) -> dict:
         # select it by flags; object.select_all fails its poll outside
         # object mode.
         current = bpy.context.object
-        if current is None or current != obj or current.mode == "OBJECT":
+        stay_in_mode = current is not None and current == obj and current.mode != "OBJECT"
+        if not stay_in_mode:
             if current is not None and current.mode != "OBJECT":
                 bpy.ops.object.mode_set(mode="OBJECT")
             for other in bpy.context.selected_objects:
@@ -108,7 +128,9 @@ def handle_focus_on_object(params: dict) -> dict:
 
         # Frame selected in all 3D viewports
         area, space = _get_3d_viewport_area()
-        if area is not None:
+        if area is not None and stay_in_mode:
+            _frame_bounds(space, obj)
+        elif area is not None:
             # Override context to target the 3D viewport
             with bpy.context.temp_override(area=area, region=area.regions[-1]):
                 bpy.ops.view3d.view_selected()
