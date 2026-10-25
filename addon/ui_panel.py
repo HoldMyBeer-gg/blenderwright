@@ -32,6 +32,11 @@ class BLENDERWRIGHT_PT_MainPanel(bpy.types.Panel):
             layout.prop(context.scene, "blenderwright_port", text="Port")
             layout.operator("blenderwright.start_server", text="Start Server", icon="PLAY")
 
+        # The add-on preference, shown here because that is where people look
+        prefs = _preferences()
+        if prefs is not None:
+            layout.prop(prefs, "start_on_launch", text="Start with Blender")
+
         # Raw Python switch: per session, never saved into the .blend.
         box = layout.box()
         wm = context.window_manager
