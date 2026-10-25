@@ -6,11 +6,14 @@ Paths use {tmp} (the test's temp folder), {scene} (the open .blend) and
 {asset} (files in tests_live/assets).
 """
 
-# Built before every case, with the tools themselves. Renders stay tiny: the
-# factory scene would render 250 frames at 1920x1080.
+# Built before every case, with the tools themselves. Renders stay tiny (the
+# factory scene would render 250 frames at 1920x1080) and use Cycles on the
+# CPU, so they run on CI runners that have no GPU.
 BASE_SETUP = [
     ("set_render_resolution", {"width": 32, "height": 32}),
     ("set_frame_range", {"start": 1, "end": 3}),
+    ("set_render_engine", {"engine": "CYCLES"}),
+    ("set_render_samples", {"samples": 1}),
     ("create_object", {"type": "UV_SPHERE", "name": "Sphere", "location": [-4, 0, 0]}),
     ("create_object", {"type": "PLANE", "name": "Ground", "location": [0, 0, -2],
                        "scale": [5, 5, 1]}),
@@ -340,6 +343,12 @@ SETUP = {
     "remove_strip": [("add_sound_strip", {"filepath": "{asset}/tone.wav", "name": "Tone"})],
     "set_brush_property": [("enter_sculpt_mode", {"object_name": "Cube"}),
                            ("set_sculpt_brush", {"brush_type": "DRAW"})],
+}
+
+# Cases that draw with the GPU. They run locally; CI sets BLENDERWRIGHT_NO_GPU
+# because its runners have none (Windows crashes, Linux falls back to software).
+NEEDS_GPU = {
+    "capture_viewport": "draws the viewport with OpenGL",
 }
 
 # Cases that cannot pass headless, with the reason. Checked by hand in the UI.

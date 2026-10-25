@@ -71,4 +71,6 @@ jobs:
       - name: Run live tests
         env:
           BLENDER: ${{ github.workspace }}/${{ matrix.exe }}
+          # Runners have no GPU: viewport capture and EEVEE run locally instead
+          BLENDERWRIGHT_NO_GPU: "1"
         run: pytest tests_live -v --tb=short -p no:cacheprovider
