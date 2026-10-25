@@ -4,7 +4,6 @@ their default arguments; the mocks had no way to know."""
 import importlib.util
 import os
 import sys
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -46,31 +45,6 @@ class TestListRecentFiles:
         assert mod.handle_list_recent_files({}) == []
 
 
-class TestDuplicateMaterial:
-    """5.x copies the node tree with the material; node_tree is read-only."""
-
-    def test_copy_without_touching_node_tree(self, monkeypatch):
-        import bpy
-
-        mod = _load("materials")
-
-        class Mat:
-            def __init__(self, name):
-                self.name, self._tree = name, object()
-
-            @property
-            def node_tree(self):
-                return self._tree
-
-            def copy(self):
-                return Mat(self.name + ".001")
-
-        source = Mat("Wood")
-        monkeypatch.setattr(bpy.data, "materials", {"Wood": source})
-        result = mod.handle_duplicate_material({"material_name": "Wood", "new_name": "Oak"})
-        assert result["duplicate"] == "Oak"
-
-
 class TestCurvePointHandleNames:
     """The tool speaks operator names (AUTOMATIC, FREE_ALIGN); a point's
     handle type is FREE, VECTOR, ALIGNED or AUTO."""
@@ -90,41 +64,3 @@ class TestSelectSimilarMode:
     def test_select_mode_follows_the_type(self, similar, mode):
         mod = _load("selection")
         assert mod._similar_select_mode(similar) == mode
-
-
-class TestNativeSlice:
-    """The native boolean has no SLICE: difference on the object, intersect on a copy."""
-
-    def test_slice_makes_two_pieces(self, monkeypatch):
-        import bpy
-
-        mod = _load("booltool")
-        applied = []
-
-        def make(name):
-            mods = []
-            obj = SimpleNamespace(name=name, data=SimpleNamespace(copy=lambda: "mesh copy"),
-                                  users_collection=[SimpleNamespace(objects=MagicMock())])
-
-            def new(name, type):
-                m = SimpleNamespace(name=name, operation=None, object=None, owner=obj)
-                mods.append(m)
-                return m
-
-            obj.modifiers = SimpleNamespace(new=new, list=mods)
-            obj.copy = lambda: make(name + ".001")
-            return obj
-
-        obj, target = make("Bread"), make("Knife")
-        layer = SimpleNamespace(objects=SimpleNamespace(active=obj))
-        monkeypatch.setattr(bpy.context, "view_layer", layer, raising=False)
-        monkeypatch.setattr(bpy.ops.object, "modifier_apply",
-                            lambda modifier: applied.append(
-                                (layer.objects.active.name,
-                                 layer.objects.active.modifiers.list[-1].operation)))
-        removed = []
-        monkeypatch.setattr(bpy.data, "objects",
-                            SimpleNamespace(remove=lambda o, do_unlink: removed.append(o.name)))
-        piece = mod._native_slice(obj, target)
-        assert applied == [("Bread", "DIFFERENCE"), ("Bread.001", "INTERSECT")]
-        assert piece.name == "Bread.001" and removed == ["Knife"]

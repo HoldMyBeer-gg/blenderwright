@@ -394,8 +394,9 @@ def get_object_info(object_name: str) -> dict[str, Any]:
         object_name: Name of the object.
 
     Returns:
-        Dict with type, location, rotation, scale, modifiers, materials,
-        parent, children, and visibility info.
+        Dict with type, location (as set), world_location (where it really
+        is after parents, constraints and simulation), rotation, scale,
+        dimensions, modifiers, materials, parent, children, and visibility.
     """
     object_name = validate_object_name(object_name)
     conn = get_connection()
