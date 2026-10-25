@@ -142,11 +142,11 @@ class TestSetModifierProperty:
         )
 
     def test_empty_property_raises(self, mock_conn):
-        with pytest.raises(ValidationError, match="property must be a non-empty string"):
+        with pytest.raises(ValidationError, match="lowercase setting name"):
             set_modifier_property("Cube", "Subdivision", "", 3)
 
     def test_non_string_property_raises(self, mock_conn):
-        with pytest.raises(ValidationError, match="property must be a non-empty string"):
+        with pytest.raises(ValidationError, match="lowercase setting name"):
             set_modifier_property("Cube", "Subdivision", None, 3)
 
     def test_empty_object_name_raises(self, mock_conn):

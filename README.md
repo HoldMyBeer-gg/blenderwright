@@ -342,7 +342,7 @@ AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon
 - **Input validation**: All inputs pass through validators before reaching Blender: name sanitization, path traversal prevention, numeric range checks, enum allowlists.
 - **File safety**: Import operations disable `use_scripts_auto_execute` to prevent script injection from imported files. File extensions are checked against allowlists.
 - **Command allowlist**: The addon dispatcher only processes explicitly registered commands. Unknown commands are rejected.
-- **Shader node allowlist**: Only 64 known shader node types can be created, which prevents arbitrary type injection.
+- **Shader node allowlist**: Only 93 known shader node types can be created, which prevents arbitrary type injection.
 
 </details>
 

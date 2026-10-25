@@ -1,5 +1,6 @@
 """MCP tools for mesh modeling operations."""
 
+import re
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
@@ -25,7 +26,12 @@ ALLOWED_MODIFIER_TYPES = {
     "LATTICE", "CURVE", "CAST", "WAVE", "DISPLACE", "SCREW", "SKIN",
     "MASK", "WELD", "CORRECTIVE_SMOOTH", "LAPLACIAN_SMOOTH",
     "SURFACE_DEFORM", "MESH_DEFORM", "HOOK",
+    "NORMAL_EDIT", "DATA_TRANSFER", "UV_PROJECT", "UV_WARP", "VERTEX_WEIGHT_PROXIMITY",
+    "VERTEX_WEIGHT_EDIT", "VERTEX_WEIGHT_MIX", "WARP", "LAPLACIANDEFORM", "BUILD",
+    "MULTIRES", "OCEAN", "EXPLODE",
 }
+MODIFIER_SETTING_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+MAX_SETTING_TEXT = 64
 
 # Allowed boolean operations
 ALLOWED_BOOLEAN_OPS = {"UNION", "DIFFERENCE", "INTERSECT"}
@@ -121,6 +127,22 @@ def apply_modifier(object_name: str, modifier_name: str) -> dict[str, Any]:
     return response.get("result")
 
 
+def _modifier_value(value: Any, name: str) -> Any:
+    """A number, true/false, short text (an option or an object name) or a short vector."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return validate_numeric_range(value, name=name)
+    if isinstance(value, str):
+        if len(value) > MAX_SETTING_TEXT or not value.isprintable():
+            raise ValidationError(f"{name} text must be short and printable")
+        return value
+    if isinstance(value, (list, tuple)) and 1 <= len(value) <= 4:
+        return [validate_numeric_range(v, name=name) for v in value]
+    raise ValidationError(f"{name} must be a number, true/false, text or a list of up to "
+                          f"4 numbers")
+
+
 @mcp.tool()
 def set_modifier_property(
     object_name: str, modifier_name: str, property: str, value: Any
@@ -131,16 +153,20 @@ def set_modifier_property(
         object_name: Name of the object.
         modifier_name: Name of the modifier.
         property: The modifier property to set (e.g., 'levels', 'count', 'width',
-            'segments', 'angle', 'offset', 'ratio', 'iterations').
-        value: The value to set.
+            'segments', 'angle', 'offset', 'ratio', 'iterations', or an object
+            setting such as 'target' or 'object').
+        value: The value to set. Object, collection, texture and image settings
+            take the name of an existing one.
 
     Returns:
         Confirmation dict with updated property.
     """
     object_name = validate_object_name(object_name)
     modifier_name = validate_object_name(modifier_name)
-    if not property or not isinstance(property, str):
-        raise ValidationError("property must be a non-empty string")
+    if not isinstance(property, str) or not MODIFIER_SETTING_PATTERN.match(property):
+        raise ValidationError(f"property {property!r} must be a lowercase setting name, "
+                              f"e.g. levels, width, target")
+    value = _modifier_value(value, property)
 
     conn = get_connection()
     response = conn.send_command("set_modifier_property", {
