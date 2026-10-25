@@ -3,6 +3,7 @@
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
+from blenderwright.tools.armature import _constraint_properties
 from blenderwright.validators import (
     validate_directory,
     validate_file_path,
@@ -69,6 +70,7 @@ def export_file(
     filepath: str,
     type: str = "",
     selected_only: bool = False,
+    options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Export scene or selected objects to a 3D file.
 
@@ -78,6 +80,18 @@ def export_file(
         filepath: Absolute path for the export file.
         type: Optional format override. Auto-detected from extension if empty.
         selected_only: If True, export only selected objects. Defaults to False.
+        options: The exporter's own settings by name (true/false, numbers or
+            choices; never text or paths). Common ones:
+            glTF: export_draco_mesh_compression_enable, ..._level (0-10),
+                export_image_format (AUTO, JPEG, WEBP, NONE), export_apply
+                (apply modifiers), export_animations, export_yup.
+            FBX: apply_unit_scale, global_scale, axis_forward, axis_up,
+                use_mesh_modifiers, add_leaf_bones, bake_anim.
+            OBJ: export_triangulated_mesh, apply_modifiers, export_materials,
+                forward_axis, up_axis, global_scale.
+            USD: export_materials, export_textures_mode, export_animation.
+            STL: ascii_format, global_scale, apply_modifiers.
+            An unknown name is refused with the exporter's full list.
 
     Returns:
         Dict with exported file path and format.
@@ -85,13 +99,13 @@ def export_file(
     filepath = validate_file_path(filepath, ALLOWED_EXPORT_EXTENSIONS, must_exist=False)
     if type:
         validate_enum(type, ALLOWED_EXPORT_TYPES, name="type")
+    params: dict[str, Any] = {"filepath": filepath, "type": type,
+                              "selected_only": selected_only}
+    if options is not None:
+        params["options"] = _constraint_properties(options)
 
     conn = get_connection()
-    response = conn.send_command("export_file", {
-        "filepath": filepath,
-        "type": type,
-        "selected_only": selected_only,
-    })
+    response = conn.send_command("export_file", params)
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")

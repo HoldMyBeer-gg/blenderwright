@@ -116,6 +116,33 @@ def handle_import_file(params: dict) -> dict:
         raise RuntimeError(f"Failed to import '{filepath}': {e}")
 
 
+EXPORT_OPERATOR_RNA = {
+    ".fbx": lambda: bpy.ops.export_scene.fbx, ".gltf": lambda: bpy.ops.export_scene.gltf,
+    ".glb": lambda: bpy.ops.export_scene.gltf, ".obj": lambda: bpy.ops.wm.obj_export,
+    ".usd": lambda: bpy.ops.wm.usd_export, ".usda": lambda: bpy.ops.wm.usd_export,
+    ".usdc": lambda: bpy.ops.wm.usd_export, ".usdz": lambda: bpy.ops.wm.usd_export,
+    ".stl": lambda: bpy.ops.wm.stl_export, ".ply": lambda: bpy.ops.wm.ply_export,
+    ".abc": lambda: bpy.ops.wm.alembic_export,
+}
+# Text settings are never passed: they include paths (filepath, export_texture_dir)
+EXPORT_OPTION_TYPES = {"BOOLEAN", "INT", "FLOAT", "ENUM"}
+
+
+def _export_options(ext, options):
+    props = EXPORT_OPERATOR_RNA[ext]().get_rna_type().properties
+    allowed = sorted(k for k, p in props.items() if p.type in EXPORT_OPTION_TYPES
+                     and not getattr(p, "is_array", False) and k != "rna_type")
+    for key in options:
+        rna = props.get(key)
+        if rna is not None and rna.type == "STRING":
+            raise ValueError(f"'{key}' is a text setting; exporter text settings (paths "
+                             f"and names) are never passed")
+        if key not in allowed:
+            raise ValueError(f"'{key}' is not a {ext} export setting. Settings: "
+                             f"{', '.join(allowed)}")
+    return dict(options)
+
+
 def handle_export_file(params: dict) -> dict:
     """Export to a file from Blender."""
     filepath = params.get("filepath")
@@ -128,7 +155,7 @@ def handle_export_file(params: dict) -> dict:
         if export_op is None:
             raise ValueError(f"Unsupported export format: '{ext}'")
 
-        kwargs = {}
+        kwargs = _export_options(ext, params.get("options") or {})
         if selected_only:
             kwargs[EXPORT_SELECTION_KEYWORDS[ext]] = True
 
