@@ -226,10 +226,14 @@ def handle_create_threaded_shaft(params: dict) -> dict:
         # rotation step, creating internal divider faces that break manifoldness.
         # With edges only, the sweep produces just the 3 outer walls of a
         # triangular tube, which fill_holes then caps to close the volume.
+        # The inner corners sink slightly into the core. Sitting exactly on its
+        # surface, the union met touching (not overlapping) solids and left
+        # edges shared by four faces: a non-manifold, unprintable result.
+        inner_r = minor_r - thread_depth * 0.05
         ridge_verts = [
-            (minor_r, 0.0, pitch / 2.0 - half_base),  # lower minor corner
+            (inner_r, 0.0, pitch / 2.0 - half_base),  # lower minor corner
             (major_r, 0.0, pitch / 2.0),              # V peak
-            (minor_r, 0.0, pitch / 2.0 + half_base),  # upper minor corner
+            (inner_r, 0.0, pitch / 2.0 + half_base),  # upper minor corner
         ]
         ridge_edges = [(0, 1), (1, 2), (2, 0)]
         ridge_mesh = bpy.data.meshes.new(name + "_ridge_mesh")

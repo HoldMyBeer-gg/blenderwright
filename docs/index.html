@@ -458,12 +458,14 @@ over. Effects then stack between the render and the output.</p><table class="arg
 shape keys store alternative vertex positions blended by a 0-1 value:
 facial expressions, morphs, corrective shapes. shape it with
 move_shape_key_vertices, blend with set_shape_key, animate with
-keyframe_shape_key."><h3><a href="#add_shape_key">add_shape_key</a></h3><pre class="sig"><code>add_shape_key(object_name: str, key_name: str, from_mix: bool = False)</code></pre><p>Add a shape key (blend shape). The first call also creates the Basis.
+keyframe_shape_key. a new key starts at value 1.0 (fully on), so edits
+show straight away; set it to 0 to hide it."><h3><a href="#add_shape_key">add_shape_key</a></h3><pre class="sig"><code>add_shape_key(object_name: str, key_name: str, from_mix: bool = False)</code></pre><p>Add a shape key (blend shape). The first call also creates the Basis.
 
 Shape keys store alternative vertex positions blended by a 0-1 value:
 facial expressions, morphs, corrective shapes. Shape it with
 move_shape_key_vertices, blend with set_shape_key, animate with
-keyframe_shape_key.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+keyframe_shape_key. A new key starts at value 1.0 (fully on), so edits
+show straight away; set it to 0 to hide it.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
 <tr><th>key_name</th><td>Name for the new shape key.</td></tr>
 <tr><th>from_mix</th><td>Start from the current blend of all keys instead of the Basis.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the new key and every key on the object.</p></article><article class="tool" id="assign_vertex_group" data-search="assign_vertex_group put vertices into a vertex group with a weight, creating the group if needed.
 
