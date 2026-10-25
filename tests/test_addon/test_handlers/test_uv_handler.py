@@ -131,3 +131,145 @@ def test_world_matrix_is_refreshed_before_measuring(monkeypatch):
         update=lambda: setattr(obj.matrix_world, "applied", pending["scale"])))
     result = mod.handle_get_texel_density({"object_name": "Tile", "texture_size": 1024})
     assert result["density"] == pytest.approx(128.0)
+
+
+class UVLayers(list):
+    """Mimics mesh.uv_layers: at most 8, fresh-wrapper safe (compared by ==)."""
+
+    def __init__(self, names):
+        super().__init__(SimpleNamespace(name=n, active_render=(i == 0)) for i, n in enumerate(names))
+        self.active_index = 0
+
+    @property
+    def active(self):
+        return self[self.active_index]
+
+    @active.setter
+    def active(self, layer):
+        self.active_index = self.index(layer)
+
+    def new(self, name, do_init=True):
+        if len(self) >= 8:
+            return None
+        layer = SimpleNamespace(name=name, active_render=False, copied=do_init)
+        self.append(layer)
+        return layer
+
+    def get(self, name):
+        return next((layer for layer in self if layer.name == name), None)
+
+    def remove(self, layer):
+        super().remove(layer)
+        self.active_index = min(self.active_index, len(self) - 1)
+
+
+@pytest.fixture
+def maps(monkeypatch):
+    import bpy
+
+    mod = _load_handler()
+    obj = SimpleNamespace(name="Crate", type="MESH", mode="OBJECT",
+                          data=SimpleNamespace(uv_layers=UVLayers(["UVMap"])))
+    monkeypatch.setattr(bpy.data, "objects", SimpleNamespace(get={"Crate": obj}.get))
+    return mod, obj.data.uv_layers
+
+
+def _uv(mod, action, **extra):
+    return mod.handle_manage_uv_map({"object_name": "Crate", "action": action} | extra)
+
+
+class TestManageUVMap:
+    def test_list(self, maps):
+        mod, _ = maps
+        assert _uv(mod, "LIST")["uv_maps"] == [
+            {"name": "UVMap", "active": True, "render": True}]
+
+    def test_add_becomes_active_for_editing(self, maps):
+        mod, layers = maps
+        result = _uv(mod, "ADD", uv_map="Lightmap", copy_active=False)
+        assert layers.active.name == "Lightmap" and layers[1].copied is False
+        assert result["uv_maps"][0]["render"] is True
+
+    def test_add_existing_name_refused(self, maps):
+        mod, _ = maps
+        with pytest.raises(ValueError, match="already"):
+            _uv(mod, "ADD", uv_map="UVMap")
+
+    def test_add_past_eight_refused(self, maps):
+        mod, layers = maps
+        for i in range(7):
+            layers.new(f"m{i}")
+        with pytest.raises(ValueError, match="8"):
+            _uv(mod, "ADD", uv_map="Ninth")
+
+    def test_set_render(self, maps):
+        mod, layers = maps
+        layers.new("Lightmap")
+        _uv(mod, "SET_RENDER", uv_map="Lightmap")
+        assert layers[1].active_render is True
+
+    def test_set_active(self, maps):
+        mod, layers = maps
+        layers.new("Lightmap")
+        _uv(mod, "SET_ACTIVE", uv_map="Lightmap")
+        assert layers.active_index == 1
+
+    def test_rename(self, maps):
+        mod, layers = maps
+        _uv(mod, "RENAME", uv_map="UVMap", new_name="Base")
+        assert layers[0].name == "Base"
+
+    def test_remove(self, maps):
+        mod, layers = maps
+        layers.new("Lightmap")
+        result = _uv(mod, "REMOVE", uv_map="UVMap")
+        assert [m["name"] for m in result["uv_maps"]] == ["Lightmap"]
+
+    def test_missing_map_lists_the_real_ones(self, maps):
+        mod, _ = maps
+        with pytest.raises(ValueError, match="UVMap"):
+            _uv(mod, "REMOVE", uv_map="Nope")
+
+    def test_unknown_action(self, maps):
+        mod, _ = maps
+        with pytest.raises(ValueError):
+            _uv(mod, "EXPLODE", uv_map="UVMap")
+
+    def test_registered(self, maps):
+        mod, _ = maps
+        mod.register()
+        calls = {c.args[0] for c in mod.dispatcher.register_handler.call_args_list}
+        assert "manage_uv_map" in calls
+
+
+class TestStartingInEditMode:
+    """object.select_all cannot run in edit mode; 5.2.3 fails its poll."""
+
+    @pytest.fixture
+    def editing(self, monkeypatch):
+        import bpy
+
+        mod = _load_handler()
+        obj = SimpleNamespace(name="Crate", type="MESH", mode="EDIT", select_set=MagicMock())
+
+        def select_all(action):
+            if obj.mode == "EDIT":
+                raise RuntimeError("Operator bpy.ops.object.select_all.poll() failed")
+
+        def mode_set(mode):
+            obj.mode = mode
+
+        monkeypatch.setattr(bpy.ops.object, "select_all", select_all)
+        monkeypatch.setattr(bpy.ops.object, "mode_set", mode_set)
+        monkeypatch.setattr(bpy.context, "object", obj, raising=False)
+        return mod, obj
+
+    def test_full_mesh_tools(self, editing):
+        mod, obj = editing
+        assert mod._ensure_edit_mode_all_selected(obj) == "EDIT"
+        assert obj.mode == "EDIT"
+
+    def test_island_tools(self, editing):
+        mod, obj = editing
+        mod._enter_uv_edit(obj, "CURRENT")
+        assert obj.mode == "EDIT"

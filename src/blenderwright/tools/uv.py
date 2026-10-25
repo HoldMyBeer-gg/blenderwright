@@ -21,6 +21,7 @@ ALLOWED_UV_ISLAND_OPERATIONS = {
     "SEAMS_FROM_ISLANDS", "ARRANGE", "WELD",
 }
 ALLOWED_SELECTION_MODES = {"ALL", "CURRENT"}
+ALLOWED_UV_MAP_ACTIONS = {"LIST", "ADD", "REMOVE", "SET_ACTIVE", "SET_RENDER", "RENAME"}
 ALLOWED_TEXTURE_SIZES = {64, 128, 256, 512, 1024, 2048, 4096, 8192}
 
 
@@ -227,6 +228,50 @@ def uv_island_operation(
         params["threshold"] = validate_numeric_range(threshold, min_val=0.0, max_val=1.0,
                                                      name="threshold")
     return _send_uv("uv_island_operation", params)
+
+
+@mcp.tool()
+def manage_uv_map(
+    object_name: str,
+    action: str,
+    uv_map: str = "UVMap",
+    new_name: str | None = None,
+    copy_active: bool = True,
+) -> dict[str, Any]:
+    """List, add, remove, rename UV maps, or choose which one is edited or rendered.
+
+    A mesh holds up to 8 UV maps. Common use: ADD a "Lightmap" map, then
+    smart_uv_project or pack_uv_islands on it for non-overlapping bake UVs,
+    while textures keep using the first map. UV tools work on the active map;
+    materials and export use the render map unless a UV Map node picks one.
+
+    Args:
+        object_name: Mesh object.
+        action: LIST, ADD (becomes the active map), REMOVE, SET_ACTIVE (the
+            map UV tools edit), SET_RENDER (the map renders and exports), RENAME.
+        uv_map: The map to act on, or the new map's name for ADD.
+        new_name: RENAME only: the new name.
+        copy_active: ADD only: start from a copy of the active map's UVs
+            instead of blank ones.
+
+    Returns:
+        Dict with every UV map (name, active, render).
+    """
+    params: dict[str, Any] = {
+        "object_name": validate_object_name(object_name),
+        "action": validate_enum(action, ALLOWED_UV_MAP_ACTIONS, name="action"),
+    }
+    if action != "LIST":
+        params["uv_map"] = validate_object_name(uv_map)
+    if action == "ADD":
+        if not isinstance(copy_active, bool):
+            raise ValidationError(f"copy_active must be true or false, got {copy_active!r}")
+        params["copy_active"] = copy_active
+    elif action == "RENAME":
+        if new_name is None:
+            raise ValidationError("RENAME needs new_name")
+        params["new_name"] = validate_object_name(new_name)
+    return _send_uv("manage_uv_map", params)
 
 
 def _texture_size(texture_size: Any) -> int:
