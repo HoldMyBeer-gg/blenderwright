@@ -1395,7 +1395,7 @@ in compositing. The Render Layers node gets an output with the AOV name.</p><tab
 
 agx (the default) handles bright highlights gracefully; standard is for
 flat graphics and ui shots; khronos pbr neutral keeps product colours
-true. a look adds contrast on top. leave anything unset to keep it."><h3><a href="#set_color_management">set_color_management</a></h3><pre class="sig"><code>set_color_management(view_transform: str = &#x27;&#x27;, look: str = &#x27;&#x27;, exposure: float | None = None, gamma: float | None = None, display_device: str = &#x27;&#x27;, white_balance_temperature: float | None = None)</code></pre><p>Set how the scene&#x27;s light becomes final pixel colours.
+true. a look adds contrast on top. leave anything unset to keep it."><h3><a href="#set_color_management">set_color_management</a></h3><pre class="sig"><code>set_color_management(view_transform: str = &#x27;&#x27;, look: str = &#x27;&#x27;, exposure: float | None = None, gamma: float | None = None, display_device: str = &#x27;&#x27;, white_balance_temperature: float | None = None, working_space: str = &#x27;&#x27;, convert_colors: bool = True)</code></pre><p>Set how the scene&#x27;s light becomes final pixel colours.
 
 AgX (the default) handles bright highlights gracefully; Standard is for
 flat graphics and UI shots; Khronos PBR Neutral keeps product colours
@@ -1404,7 +1404,9 @@ true. A look adds contrast on top. Leave anything unset to keep it.</p><table cl
 <tr><th>exposure</th><td>Brightness in stops. Range -10.0 to 10.0; 0 is unchanged.</td></tr>
 <tr><th>gamma</th><td>Extra gamma. Range 0.0 to 5.0; 1.0 is unchanged.</td></tr>
 <tr><th>display_device</th><td>One of: sRGB, Display P3, Rec.1886, Rec.2020, Rec.2100-PQ, Rec.2100-HLG.</td></tr>
-<tr><th>white_balance_temperature</th><td>Kelvin, 1800 to 100000. Lower warms the image, higher cools it. Setting it turns white balance on.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the full colour management state after the change.</p></article><article class="tool" id="set_cycles_sampling" data-search="set_cycles_sampling tune how cycles spends samples. set the sample count with set_render_samples.
+<tr><th>white_balance_temperature</th><td>Kelvin, 1800 to 100000. Lower warms the image, higher cools it. Setting it turns white balance on.</td></tr>
+<tr><th>working_space</th><td>Color space the file renders and mixes colours in: Linear Rec.709 (default), Linear Rec.2020 or ACEScg (wide gamut, for VFX pipelines).</td></tr>
+<tr><th>convert_colors</th><td>With working_space: convert existing colours so they look the same; false keeps the raw numbers.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the full colour management state after the change.</p></article><article class="tool" id="set_cycles_sampling" data-search="set_cycles_sampling tune how cycles spends samples. set the sample count with set_render_samples.
 
 leave anything unset to keep it."><h3><a href="#set_cycles_sampling">set_cycles_sampling</a></h3><pre class="sig"><code>set_cycles_sampling(adaptive: bool | None = None, noise_threshold: float | None = None, min_samples: int | None = None, time_limit: float | None = None, clamp_direct: float | None = None, clamp_indirect: float | None = None, path_guiding: bool | None = None, seed: int | None = None, animated_seed: bool | None = None)</code></pre><p>Tune how Cycles spends samples. Set the sample count with set_render_samples.
 

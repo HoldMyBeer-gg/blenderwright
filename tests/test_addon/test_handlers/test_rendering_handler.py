@@ -207,17 +207,41 @@ class TestHandleSetColorManagement:
             rendering_handler.handle_set_color_management(
                 {"view_transform": "Standard", "look": "Punchy"})
 
+    def test_working_space_goes_through_the_operator(self, rendering_handler, view_settings,
+                                                      monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        colorspace = SimpleNamespace(working_space="Linear Rec.709")
+        monkeypatch.setattr(bpy.data, "colorspace", colorspace, raising=False)
+        calls = []
+
+        def op(working_space, convert_colors):
+            calls.append((working_space, convert_colors))
+            colorspace.working_space = working_space
+
+        monkeypatch.setattr(bpy.ops.wm, "set_working_color_space", op)
+        result = rendering_handler.handle_set_color_management(
+            {"working_space": "ACEScg", "convert_colors": False})
+        assert calls == [("ACEScg", False)]
+        assert result["working_space"] == "ACEScg"
+
     def test_white_balance_switches_it_on(self, rendering_handler, view_settings):
         rendering_handler.handle_set_color_management({"white_balance_temperature": 5000.0})
         assert view_settings.use_white_balance is True
         assert view_settings.white_balance_temperature == 5000.0
 
-    def test_result_reports_full_state(self, rendering_handler, view_settings):
+    def test_result_reports_full_state(self, rendering_handler, view_settings, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        monkeypatch.setattr(bpy.data, "colorspace",
+                            SimpleNamespace(working_space="Linear Rec.709"), raising=False)
         result = rendering_handler.handle_set_color_management({"exposure": 1.0})
         assert result == {
             "view_transform": "AgX", "look": "None", "exposure": 1.0, "gamma": 1.0,
             "display_device": "sRGB", "use_white_balance": False,
-            "white_balance_temperature": 6500.0,
+            "white_balance_temperature": 6500.0, "working_space": "Linear Rec.709",
         }
 
 

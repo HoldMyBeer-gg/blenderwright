@@ -25,6 +25,8 @@ ALLOWED_VIEW_TRANSFORMS = {
 ALLOWED_DISPLAY_DEVICES = {
     "sRGB", "Display P3", "Rec.1886", "Rec.2020", "Rec.2100-PQ", "Rec.2100-HLG",
 }
+# bpy.ops.wm.set_working_color_space in 5.2 (the RNA property is read-only)
+ALLOWED_WORKING_SPACES = {"Linear Rec.709", "Linear Rec.2020", "ACEScg"}
 ALLOWED_DENOISERS = {"OPENIMAGEDENOISE", "OPTIX"}
 ALLOWED_DENOISE_QUALITY = {"HIGH", "BALANCED", "FAST"}
 ALLOWED_DENOISE_PREFILTER = {"NONE", "FAST", "ACCURATE"}
@@ -70,6 +72,8 @@ def set_color_management(
     gamma: float | None = None,
     display_device: str = "",
     white_balance_temperature: float | None = None,
+    working_space: str = "",
+    convert_colors: bool = True,
 ) -> dict[str, Any]:
     """Set how the scene's light becomes final pixel colours.
 
@@ -91,6 +95,11 @@ def set_color_management(
             Rec.2100-PQ, Rec.2100-HLG.
         white_balance_temperature: Kelvin, 1800 to 100000. Lower warms the
             image, higher cools it. Setting it turns white balance on.
+        working_space: Color space the file renders and mixes colours in:
+            Linear Rec.709 (default), Linear Rec.2020 or ACEScg (wide gamut,
+            for VFX pipelines).
+        convert_colors: With working_space: convert existing colours so they
+            look the same; false keeps the raw numbers.
 
     Returns:
         Dict with the full colour management state after the change.
@@ -113,6 +122,12 @@ def set_color_management(
         params["white_balance_temperature"] = float(validate_numeric_range(
             white_balance_temperature, min_val=1800.0, max_val=100000.0,
             name="white_balance_temperature"))
+    if working_space:
+        params["working_space"] = validate_enum(
+            working_space, ALLOWED_WORKING_SPACES, name="working_space")
+        if not isinstance(convert_colors, bool):
+            raise ValidationError(f"convert_colors must be true or false, got {convert_colors!r}")
+        params["convert_colors"] = convert_colors
 
     return _send_render_command("set_color_management", params)
 

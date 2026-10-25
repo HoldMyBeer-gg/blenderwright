@@ -187,9 +187,15 @@ def _set_look(view_settings, look):
 
 
 def handle_set_color_management(params):
-    """Set view transform, look, exposure, gamma, display and white balance."""
+    """Set view transform, look, exposure, gamma, display, white balance and
+    the file's working colour space."""
     scene = bpy.context.scene
     vs = scene.view_settings
+
+    if "working_space" in params:
+        bpy.ops.wm.set_working_color_space(
+            working_space=params["working_space"],
+            convert_colors=bool(params.get("convert_colors", True)))
 
     # The transform first: changing it resets the look
     if "view_transform" in params:
@@ -214,6 +220,7 @@ def handle_set_color_management(params):
         "display_device": scene.display_settings.display_device,
         "use_white_balance": vs.use_white_balance,
         "white_balance_temperature": vs.white_balance_temperature,
+        "working_space": bpy.data.colorspace.working_space,
     }
 
 
