@@ -203,10 +203,89 @@ def handle_render_video(params):
     }
 
 
+STRIP_SETTING_TYPES = {"BOOLEAN", "INT", "FLOAT", "ENUM", "STRING"}
+STRIP_TRANSFORM_KEYS = {"offset_x", "offset_y", "scale_x", "scale_y", "rotation"}
+STRIP_CROP_KEYS = {"min_x", "max_x", "min_y", "max_y"}
+
+
+def handle_add_sequencer_strip(params):
+    editor = _editor()
+    kind = params.get("kind")
+    channel, start = int(params.get("channel", 1)), int(params.get("frame_start", 1))
+    if kind in ("TEXT", "COLOR"):
+        strip = editor.strips.new_effect(name=params.get("name", kind.capitalize()), type=kind,
+                                         channel=channel, frame_start=start,
+                                         length=int(params.get("length", 25)))
+        if kind == "TEXT":
+            strip.text = params["text"]
+            strip.font_size = float(params.get("font_size", 60.0))
+        if "color" in params:
+            strip.color = params["color"]
+    elif kind == "MOVIE":
+        path = params["filepath"]
+        strip = editor.strips.new_movie(name=params.get("name", os.path.basename(path)),
+                                        filepath=path, channel=channel, frame_start=start)
+    else:
+        raise ValueError(f"Unknown strip kind {kind!r}")
+    return _describe(strip)
+
+
+def handle_set_strip_property(params):
+    strip = _get_strip(params["strip_name"])
+    props = strip.bl_rna.properties
+    for key, value in (params.get("settings") or {}).items():
+        rna = props.get(key)
+        if rna is None or rna.is_readonly or rna.type not in STRIP_SETTING_TYPES \
+                or getattr(rna, "is_array", False) or key == "name":
+            settable = sorted(k for k, p in props.items() if not p.is_readonly
+                              and p.type in STRIP_SETTING_TYPES
+                              and not getattr(p, "is_array", False) and k != "name")
+            raise ValueError(f"'{key}' is not a {strip.type.lower()} strip setting. "
+                             f"Settings: {', '.join(settable)}")
+        try:
+            setattr(strip, key, value)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Cannot set {key} to {value!r}: {e}") from None
+    for group, keys in (("transform", STRIP_TRANSFORM_KEYS), ("crop", STRIP_CROP_KEYS)):
+        for key, value in (params.get(group) or {}).items():
+            if key not in keys:
+                raise ValueError(f"{group} has no {key!r}")
+            target = getattr(strip, group)
+            setattr(target, key, int(value) if group == "crop" else float(value))
+    return _describe(strip)
+
+
+def handle_add_strip_fade(params):
+    """Key opacity (volume for sound) from 0 up at the start and down to 0 at the end."""
+    strip = _get_strip(params["strip_name"])
+    prop = "volume" if strip.type == "SOUND" else "blend_alpha"
+    full = getattr(strip, prop)
+    first, last = strip.left_handle, strip.right_handle - 1
+    keyed = []
+    fade_in, fade_out = int(params.get("fade_in", 0)), int(params.get("fade_out", 0))
+    if fade_in + fade_out > last - first + 1:
+        raise ValueError(f"The fades ({fade_in}+{fade_out} frames) are longer than the "
+                         f"strip ({last - first + 1} frames)")
+    keys = []
+    if fade_in:
+        keys += [(first, 0.0), (first + fade_in, full)]
+    if fade_out:
+        keys += [(last - fade_out, full), (last, 0.0)]
+    for frame, value in keys:
+        setattr(strip, prop, value)
+        strip.keyframe_insert(prop, frame=frame)
+        keyed.append(frame)
+    setattr(strip, prop, full)
+    return {"strip": strip.name, "property": prop, "keyed_frames": keyed}
+
+
 def register():
     """Register sequencer handlers with the dispatcher."""
     dispatcher.register_handler("add_image_sequence_strip", handle_add_image_sequence_strip)
     dispatcher.register_handler("add_sound_strip", handle_add_sound_strip)
+    dispatcher.register_handler("add_sequencer_strip", handle_add_sequencer_strip)
+    dispatcher.register_handler("set_strip_property", handle_set_strip_property)
+    dispatcher.register_handler("add_strip_fade", handle_add_strip_fade)
     dispatcher.register_handler("list_strips", handle_list_strips)
     dispatcher.register_handler("remove_strip", handle_remove_strip)
     dispatcher.register_handler("render_video", handle_render_video)

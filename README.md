@@ -26,7 +26,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ## Key Features
 
-- **[272 tools](https://blenderwright.holdmybeer.gg/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **[275 tools](https://blenderwright.holdmybeer.gg/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **13 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -239,7 +239,7 @@ blenderwright includes 13 MCP prompts that guide the LLM toward professional-qua
 ## Tool Domains
 
 <details>
-<summary><strong>All 272 tools across 32 modules</strong></summary>
+<summary><strong>All 275 tools across 32 modules</strong></summary>
 
 Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://blenderwright.holdmybeer.gg/)**
 
@@ -265,7 +265,7 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 | Curves | 10 | Bezier/NURBS/path, 3D text, convert, reverse, handle types, cyclic, subdivide |
 | Sweep | 2 | Sweep a profile along a 3D path for tubes, hoses, cables and rails, with flip-free framing; check a path for bends too tight for the profile |
 | 3D Printing | 1 | Reversed normals, self-intersection, thin walls, shells and overhangs via Blender's 3D Print Toolbox |
-| Sequencer | 5 | Image-sequence strips, sound strips, list and remove strips, render to MP4, MKV or WebM with audio |
+| Sequencer | 8 | Image-sequence, sound, movie, text and colour strips, position, crop, blend, fades, list and remove strips, render to MP4, MKV or WebM with audio |
 | Sculpting | 10 | Brushes, remesh, multires, symmetry, dynamic topology, stroke_method, masks, face sets |
 | UV Mapping | 8 | Smart project, unwrap (ANGLE_BASED, CONFORMAL, MINIMUM_STRETCH), projection, pack islands, island operations (average scale, minimize stretch, randomize, arrange, weld), texel density, multiple UV maps (lightmaps) |
 | Physics | 14 | Rigid body (constraints: hinge, slider, spring, motor, breakable; world substeps), cloth, fluid, particles (velocity, rendering, delete), bake, force fields, colliders, soft body |
@@ -393,7 +393,7 @@ blenderwright/
 │   ├── server.py           # FastMCP entry point
 │   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
-│   ├── tools/              # 32 tool modules (272 tools)
+│   ├── tools/              # 32 tool modules (275 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 13 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)

@@ -4,7 +4,9 @@ from typing import Any
 
 from blenderwright.connection import BlenderConnection
 from blenderwright.server import mcp, get_connection
+from blenderwright.tools.armature import _constraint_properties
 from blenderwright.validators import (
+    validate_color,
     validate_object_name,
     validate_new_name,
     validate_enum,
@@ -219,3 +221,145 @@ def render_video(
         "quality": quality,
         "audio_codec": audio_codec,
     }, timeout=BlenderConnection.ANIMATION_TIMEOUT)
+
+
+ALLOWED_STRIP_KINDS = {"TEXT", "COLOR", "MOVIE"}
+ALLOWED_MOVIE_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
+STRIP_TRANSFORM_KEYS = {"offset_x", "offset_y", "scale_x", "scale_y", "rotation"}
+STRIP_CROP_KEYS = {"min_x", "max_x", "min_y", "max_y"}
+MAX_STRIP_TEXT = 2000
+MAX_STRIP_OFFSET = 100_000.0
+
+
+@mcp.tool()
+def add_sequencer_strip(
+    kind: str,
+    name: str = "",
+    channel: int = 1,
+    frame_start: int = 1,
+    length: int = 25,
+    text: str = "",
+    font_size: float = 60.0,
+    color: list[float] | None = None,
+    filepath: str = "",
+) -> dict[str, Any]:
+    """Add a text, solid colour or movie strip to the video sequencer.
+
+    Higher channels draw on top. Style text or move any strip afterwards with
+    set_strip_property; fade it with add_strip_fade.
+
+    Args:
+        kind: TEXT (a title), COLOR (a solid background) or MOVIE (a video file).
+        name: Strip name; defaults to the kind or the file name.
+        channel: 1 to 128.
+        frame_start: First frame.
+        length: Frames, for TEXT and COLOR (a MOVIE takes the file's length).
+        text: TEXT only: the words, up to 2000 characters.
+        font_size: TEXT only, 1 to 2000.
+        color: TEXT: RGB(A) of the letters; COLOR: RGB of the fill. 0.0 to 1.0.
+        filepath: MOVIE only: absolute path to .mp4, .mov, .mkv, .webm, .avi or .m4v.
+
+    Returns:
+        Dict with the strip's name, type, channel and frame range.
+    """
+    kind = validate_enum(kind, ALLOWED_STRIP_KINDS, name="kind")
+    params: dict[str, Any] = {
+        "kind": kind,
+        "name": validate_new_name(name) if name else kind.capitalize(),
+        "channel": int(validate_numeric_range(channel, min_val=1, max_val=MAX_SEQUENCER_CHANNEL,
+                                              name="channel")),
+        "frame_start": int(validate_numeric_range(frame_start, min_val=-MAX_FRAME,
+                                                  max_val=MAX_FRAME, name="frame_start")),
+    }
+    if kind != "MOVIE":
+        params["length"] = int(validate_numeric_range(length, min_val=1, max_val=MAX_FRAME,
+                                                      name="length"))
+    if kind == "TEXT":
+        if not isinstance(text, str) or not text or len(text) > MAX_STRIP_TEXT:
+            raise ValidationError(f"TEXT needs text, 1 to {MAX_STRIP_TEXT} characters")
+        params["text"] = text
+        params["font_size"] = validate_numeric_range(font_size, min_val=1, max_val=2000,
+                                                     name="font_size")
+        if color is not None:
+            rgba = list(validate_color(color))
+            params["color"] = rgba + [1.0] if len(rgba) == 3 else rgba
+    elif kind == "COLOR":
+        rgb = list(validate_color(color if color is not None else [0.5, 0.5, 0.5]))
+        params["color"] = rgb[:3]
+    else:
+        if not filepath:
+            raise ValidationError("MOVIE needs filepath")
+        params["filepath"] = validate_file_path(filepath, ALLOWED_MOVIE_EXTENSIONS,
+                                                must_exist=True)
+        if not name:
+            params.pop("name")
+    return _send("add_sequencer_strip", params)
+
+
+def _numbers(values: Any, allowed: set[str], what: str) -> dict[str, float]:
+    if not isinstance(values, dict):
+        raise ValidationError(f"{what} must be an object")
+    clean = {}
+    for key, value in values.items():
+        if key not in allowed:
+            raise ValidationError(f"{what} takes {', '.join(sorted(allowed))}; not {key!r}")
+        clean[key] = validate_numeric_range(value, min_val=-MAX_STRIP_OFFSET,
+                                            max_val=MAX_STRIP_OFFSET, name=f"{what}.{key}")
+    return clean
+
+
+@mcp.tool()
+def set_strip_property(
+    strip_name: str,
+    settings: dict[str, Any] | None = None,
+    transform: dict[str, float] | None = None,
+    crop: dict[str, float] | None = None,
+) -> dict[str, Any]:
+    """Change a sequencer strip: its own settings, position and crop.
+
+    Args:
+        strip_name: The strip.
+        settings: The strip's settings by name, e.g. {"blend_alpha": 0.5,
+            "channel": 3, "frame_start": 10, "blend_type": "ADD"}; text strips
+            also take text, font_size, use_shadow, use_outline, use_box,
+            wrap_width and alignment_x (LEFT, CENTER, RIGHT).
+        transform: offset_x / offset_y (pixels), scale_x / scale_y, rotation (radians).
+        crop: min_x, max_x, min_y, max_y in pixels.
+
+    Returns:
+        Dict with the strip's name, type, channel and frame range.
+    """
+    params: dict[str, Any] = {"strip_name": validate_object_name(strip_name)}
+    if settings:
+        params["settings"] = _constraint_properties(settings)
+    if transform:
+        params["transform"] = _numbers(transform, STRIP_TRANSFORM_KEYS, "transform")
+    if crop:
+        params["crop"] = _numbers(crop, STRIP_CROP_KEYS, "crop")
+    if len(params) == 1:
+        raise ValidationError("Give settings, transform or crop")
+    return _send("set_strip_property", params)
+
+
+@mcp.tool()
+def add_strip_fade(strip_name: str, fade_in: int = 0, fade_out: int = 0) -> dict[str, Any]:
+    """Fade a strip in from black and/or out to black (sound strips fade their volume).
+
+    Args:
+        strip_name: The strip.
+        fade_in: Frames to fade in over, from the strip's start.
+        fade_out: Frames to fade out over, ending at the strip's end.
+
+    Returns:
+        Dict with the strip and the frames keyed.
+    """
+    params: dict[str, Any] = {
+        "strip_name": validate_object_name(strip_name),
+        "fade_in": int(validate_numeric_range(fade_in, min_val=0, max_val=MAX_FRAME,
+                                              name="fade_in")),
+        "fade_out": int(validate_numeric_range(fade_out, min_val=0, max_val=MAX_FRAME,
+                                               name="fade_out")),
+    }
+    if not params["fade_in"] and not params["fade_out"]:
+        raise ValidationError("Give fade_in, fade_out or both")
+    return _send("add_strip_fade", params)
