@@ -380,6 +380,31 @@ def handle_loop_tools(params):
     return {"object": obj.name, "operation": operation}
 
 
+EDIT_OPERATIONS = {
+    "SMOOTH_VERTICES": lambda p: bpy.ops.mesh.vertices_smooth(
+        factor=float(p.get("factor", 0.5)), repeat=int(p.get("repeat", 1))),
+    "POKE": lambda p: bpy.ops.mesh.poke(offset=float(p.get("offset", 0.0))),
+    "EDGE_SPLIT": lambda p: bpy.ops.mesh.edge_split(type="EDGE"),
+    "WIREFRAME": lambda p: bpy.ops.mesh.wireframe(thickness=float(p.get("thickness", 0.02))),
+    "SOLIDIFY": lambda p: bpy.ops.mesh.solidify(thickness=float(p.get("thickness", 0.02))),
+}
+
+
+def handle_edit_mesh_operation(params):
+    operation = EDIT_OPERATIONS.get(params.get("operation"))
+    if operation is None:
+        raise ValueError(f"Unknown operation {params.get('operation')!r}")
+    _ensure_object_mode()
+    obj = _get_mesh_object(params["object_name"])
+    _enter_edit(obj, params.get("selection", "ALL"))
+    try:
+        operation(params)
+    finally:
+        bpy.ops.object.mode_set(mode="OBJECT")
+    return {"object": obj.name, "operation": params["operation"],
+            "vertices": len(obj.data.vertices), "faces": len(obj.data.polygons)}
+
+
 def register():
     """Register all mesh editing handlers with the dispatcher."""
     dispatcher.register_handler("symmetrize_mesh", handle_symmetrize_mesh)
@@ -401,3 +426,4 @@ def register():
     dispatcher.register_handler("spin_mesh", handle_spin_mesh)
     dispatcher.register_handler("set_edge_crease", handle_set_edge_crease)
     dispatcher.register_handler("select_linked", handle_select_linked)
+    dispatcher.register_handler("edit_mesh_operation", handle_edit_mesh_operation)

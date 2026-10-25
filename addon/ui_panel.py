@@ -73,7 +73,41 @@ class BLENDERWRIGHT_OT_StopServer(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BLENDERWRIGHT_AddonPreferences(bpy.types.AddonPreferences):
+    bl_idname = __package__
+
+    start_on_launch: bpy.props.BoolProperty(
+        name="Start server when Blender opens",
+        description=(
+            "Start the blenderwright server on launch, as if Start Server were "
+            "clicked. It listens on 127.0.0.1 only and needs the token. Allow "
+            "raw Python stays off until ticked in the panel"
+        ),
+        default=False,
+    )
+
+    def draw(self, context):
+        self.layout.prop(self, "start_on_launch")
+
+
+def _preferences():
+    addon = bpy.context.preferences.addons.get(__package__)
+    return addon.preferences if addon is not None else None
+
+
+def _auto_start():
+    """Timer callback: start the server once the startup file is loaded."""
+    if addon_server._server is None or not addon_server._server.is_running:
+        port = getattr(bpy.context.scene, "blenderwright_port", 9876)
+        try:
+            addon_server.start_server(port=port)
+        except OSError as e:  # another Blender already serves this port
+            print(f"blenderwright: not started on launch, port {port} is taken ({e})")
+    return None  # run once
+
+
 classes = (
+    BLENDERWRIGHT_AddonPreferences,
     BLENDERWRIGHT_PT_MainPanel,
     BLENDERWRIGHT_OT_StartServer,
     BLENDERWRIGHT_OT_StopServer,
@@ -106,8 +140,14 @@ def register():
         default=False,
     ))
 
+    prefs = _preferences()
+    if prefs is not None and prefs.start_on_launch:
+        bpy.app.timers.register(_auto_start, first_interval=1.0)
+
 
 def unregister():
+    if bpy.app.timers.is_registered(_auto_start):
+        bpy.app.timers.unregister(_auto_start)
     if hasattr(bpy.types.Scene, "blenderwright_port"):
         del bpy.types.Scene.blenderwright_port
     if hasattr(bpy.types.WindowManager, code_exec.SWITCH_PROP):

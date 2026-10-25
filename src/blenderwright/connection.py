@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 ENV_TOKEN_FILE = "BLENDERWRIGHT_TOKEN_FILE"
+ENV_PORT = "BLENDERWRIGHT_PORT"
 
 
 class BlenderConnectionError(Exception):
@@ -28,7 +29,7 @@ class BlenderAuthError(BlenderConnectionError):
     """The handshake or a signature failed, or there is no token to prove with."""
 
 
-def token_path() -> str:
+def token_path(port: int = 9876) -> str:
     """Where the addon writes its auth token. Mirrors addon/auth.py."""
     override = os.environ.get(ENV_TOKEN_FILE)
     if override:
@@ -40,12 +41,26 @@ def token_path() -> str:
         base = os.path.join(home, "Library", "Application Support")
     else:
         base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(home, ".config")
-    return os.path.join(base, "blenderwright", "token")
+    # One file per port so two Blenders cannot overwrite each other's token;
+    # the default port keeps the plain name older setups know
+    name = "token" if port == 9876 else f"token-{int(port)}"
+    return os.path.join(base, "blenderwright", name)
 
 
-def read_token() -> str:
-    """Read the token the addon wrote when its server started."""
-    path = token_path()
+def configured_port() -> int:
+    """The Blender port this MCP server talks to: BLENDERWRIGHT_PORT, else 9876."""
+    raw = os.environ.get(ENV_PORT)
+    if raw is None:
+        return 9876
+    if not raw.strip().isdigit() or not 1024 <= int(raw) <= 65535:
+        raise BlenderConnectionError(f"{ENV_PORT} must be a port from 1024 to 65535, "
+                                     f"got {raw!r}")
+    return int(raw)
+
+
+def read_token(port: int = 9876) -> str:
+    """Read the token the addon wrote when its server started on that port."""
+    path = token_path(port)
     try:
         with open(path, encoding="utf-8") as f:
             token = f.read().strip()
@@ -141,7 +156,7 @@ class BlenderConnection:
         for attempt in range(2):
             if self._token is None or attempt:
                 stale = self._token
-                self._token = read_token()
+                self._token = read_token(self._port)
                 if attempt and self._token == stale:
                     break
             self._open_socket()
@@ -154,7 +169,7 @@ class BlenderConnection:
             self.disconnect()
         raise BlenderAuthError(
             f"The process on {self._host}:{self._port} could not prove it is Blender "
-            f"running blenderwright (it does not know the token in {token_path()}). "
+            f"running blenderwright (it does not know the token in {token_path(self._port)}). "
             f"Nothing was sent to it. Restart the server from Blender's blenderwright "
             f"panel; if this keeps happening, another program may be using the port."
         )

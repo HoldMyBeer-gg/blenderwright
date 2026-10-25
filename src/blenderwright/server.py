@@ -2,7 +2,7 @@
 
 from mcp.server.fastmcp import FastMCP
 
-from blenderwright.connection import BlenderConnection
+from blenderwright.connection import BlenderConnection, configured_port
 
 # Create the MCP server
 mcp = FastMCP(
@@ -18,7 +18,7 @@ def get_connection() -> BlenderConnection:
     """Get or create the global Blender connection."""
     global _connection
     if _connection is None:
-        _connection = BlenderConnection()
+        _connection = BlenderConnection(port=configured_port())
     return _connection
 
 

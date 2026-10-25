@@ -6,6 +6,7 @@ from typing import Any
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_enum,
+    validate_int,
     ValidationError,
     validate_object_name,
     validate_numeric_range,
@@ -23,6 +24,8 @@ ALLOWED_SYMMETRIZE_DIRECTIONS = {
     "NEGATIVE_X", "POSITIVE_X", "NEGATIVE_Y", "POSITIVE_Y", "NEGATIVE_Z", "POSITIVE_Z",
 }
 ALLOWED_LOOP_OPERATIONS = {"CIRCLE", "SPACE", "FLATTEN"}
+ALLOWED_EDIT_OPERATIONS = {"SMOOTH_VERTICES", "POKE", "EDGE_SPLIT", "WIREFRAME", "SOLIDIFY"}
+MAX_EDIT_THICKNESS = 1000.0
 MAX_COORDINATE = 1_000_000.0
 
 @mcp.tool()
@@ -712,3 +715,52 @@ def loop_tools(
         params["radius"] = validate_numeric_range(radius, min_val=1e-6, max_val=MAX_COORDINATE,
                                                   name="radius")
     return _send_mesh_command("loop_tools", params)
+
+
+@mcp.tool()
+def edit_mesh_operation(
+    object_name: str,
+    operation: str,
+    selection: str = "ALL",
+    factor: float = 0.5,
+    repeat: int = 1,
+    offset: float = 0.0,
+    thickness: float = 0.02,
+) -> dict[str, Any]:
+    """Run one of the common edit-mode operations on a mesh.
+
+    Args:
+        object_name: Mesh object.
+        operation: One of:
+            SMOOTH_VERTICES (relax lumpy geometry: factor, repeat),
+            POKE (a new vertex in the middle of each face, fanned into
+                triangles: offset pushes it along the normal),
+            EDGE_SPLIT (separate faces along their edges, for hard edges),
+            WIREFRAME (turn every edge into a strut: thickness),
+            SOLIDIFY (give faces thickness, e.g. a plane into a slab: thickness).
+        selection: ALL, or CURRENT for the part chosen with the select_* tools.
+        factor: SMOOTH_VERTICES strength, 0.0 to 1.0.
+        repeat: SMOOTH_VERTICES passes, 1 to 100.
+        offset: POKE distance along the face normal, -100 to 100.
+        thickness: WIREFRAME and SOLIDIFY thickness, 0.0001 to 1000.
+
+    Returns:
+        Dict with the operation and the mesh's vertex and face counts after it.
+    """
+    params: dict[str, Any] = {
+        "object_name": validate_object_name(object_name),
+        "operation": validate_enum(operation, ALLOWED_EDIT_OPERATIONS, name="operation"),
+        "selection": validate_enum(selection, ALLOWED_SELECTION_MODES, name="selection"),
+    }
+    if operation == "SMOOTH_VERTICES":
+        params["factor"] = validate_numeric_range(factor, min_val=0.0, max_val=1.0,
+                                                  name="factor")
+        params["repeat"] = validate_int(repeat, 1, 100, name="repeat")
+    elif operation == "POKE":
+        params["offset"] = validate_numeric_range(offset, min_val=-100.0, max_val=100.0,
+                                                  name="offset")
+    elif operation in ("WIREFRAME", "SOLIDIFY"):
+        params["thickness"] = validate_numeric_range(thickness, min_val=0.0001,
+                                                     max_val=MAX_EDIT_THICKNESS,
+                                                     name="thickness")
+    return _send_mesh_command("edit_mesh_operation", params)

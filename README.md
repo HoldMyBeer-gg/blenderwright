@@ -26,7 +26,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ## Key Features
 
-- **[271 tools](https://blenderwright.holdmybeer.gg/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **[272 tools](https://blenderwright.holdmybeer.gg/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **13 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -91,7 +91,7 @@ Then enable the extension in Blender preferences under **Get Extensions > User**
 
 ### 3. Start the server in Blender
 
-In Blender's 3D Viewport, open the **N-panel** (press `N`), find the **blenderwright** tab. Set your preferred port (default: 9876), then click **Start Server**.
+In Blender's 3D Viewport, open the **N-panel** (press `N`), find the **blenderwright** tab. Set your preferred port (default: 9876), then click **Start Server**. To skip this every time, tick **Start server when Blender opens** in Edit > Preferences > Add-ons > blenderwright (off by default).
 
 ### 4. Connect your AI assistant
 
@@ -239,7 +239,7 @@ blenderwright includes 13 MCP prompts that guide the LLM toward professional-qua
 ## Tool Domains
 
 <details>
-<summary><strong>All 271 tools across 32 modules</strong></summary>
+<summary><strong>All 272 tools across 32 modules</strong></summary>
 
 Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://blenderwright.holdmybeer.gg/)**
 
@@ -249,7 +249,7 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 | Objects | 16 | Create primitives and metaballs, duplicate, parent, join, visibility, origin, convert, auto-smooth |
 | Transforms | 6 | Position, rotation (euler/quat), scale, apply, snap |
 | Modeling | 13 | Modifiers, booleans, subdivide, extrude, bevel, loop cut, bridge edge loops |
-| Mesh Editing | 19 | Inset, fill, grid fill, mark seam/sharp, normals, dissolve, knife project, spin, crease, symmetrize, bisect, loop tools (circle, space evenly, flatten) |
+| Mesh Editing | 20 | Inset, fill, grid fill, mark seam/sharp, normals, dissolve, knife project, spin, crease, symmetrize, bisect, loop tools (circle, space evenly, flatten), smooth vertices, poke, edge split, wireframe, solidify |
 | Selection | 6 | Select by index, by axis, by face sides, by similarity; invert; report what is selected |
 | Mesh Quality | 3 | Analyze mesh defects: non-manifold, loose verts, zero-area faces, duplicates and repair them; decimate to reduce polycount |
 | Bool Tool | 4 | Auto union, difference, intersect, slice (via Blender's Bool Tool addon) |
@@ -336,7 +336,7 @@ AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon
 <summary><strong>Security</strong></summary>
 
 - **Localhost only**: The TCP socket binds to `127.0.0.1`, never exposed to the network.
-- **Authenticated socket**: any local program can reach `127.0.0.1`, so the connection is authenticated. Start Server writes a fresh random token to a file only your user can read (`~/Library/Application Support/blenderwright/token` on macOS, `%APPDATA%\blenderwright\token` on Windows, `~/.config/blenderwright/token` on Linux) and deletes it on Stop. The token never crosses the socket: Blender and the MCP server each prove they know it by signing fresh random nonces (HMAC-SHA256), and every command and reply after that is signed with a per-connection key and numbered, so commands cannot be injected, altered or replayed. The MCP server refuses to send anything to a process on the port that cannot prove itself. A failed check closes the connection and the N-panel shows the count. On Windows the port is claimed exclusively. If the MCP server runs where it can't see the token file (WSL, Docker), set `BLENDERWRIGHT_TOKEN_FILE` to its path.
+- **Authenticated socket**: any local program can reach `127.0.0.1`, so the connection is authenticated. Start Server writes a fresh random token to a file only your user can read (`~/Library/Application Support/blenderwright/token` on macOS, `%APPDATA%\blenderwright\token` on Windows, `~/.config/blenderwright/token` on Linux) and deletes it on Stop. The token never crosses the socket: Blender and the MCP server each prove they know it by signing fresh random nonces (HMAC-SHA256), and every command and reply after that is signed with a per-connection key and numbered, so commands cannot be injected, altered or replayed. The MCP server refuses to send anything to a process on the port that cannot prove itself. A failed check closes the connection and the N-panel shows the count. On Windows the port is claimed exclusively. If the MCP server runs where it can't see the token file (WSL, Docker), set `BLENDERWRIGHT_TOKEN_FILE` to its path. Each port has its own token file (`token` for 9876, `token-<port>` otherwise), so two Blenders on two ports never overwrite each other's; point an MCP server at the second one with `BLENDERWRIGHT_PORT`.
 - **Raw Python is off by default**: `execute_blender_code` refuses to run until you tick "Allow raw Python" in the blenderwright N-panel. The switch is a `WindowManager` property, so it is per Blender session and is never written into a `.blend` file. Every run is echoed to the system console and the panel shows a count and the last snippet. The 191 structured tools do not need it.
 - **The restricted namespace is not a sandbox**: when raw Python is on, the import hook refuses 25 imports (`os`, `subprocess`, `socket`, `shutil`, `sys`, `ctypes`, `importlib`, `pathlib`, `signal`, `multiprocessing`, `pickle`, `shelve`, `tempfile`, `http`, `urllib`, `ftplib`, `smtplib`, `xmlrpc`, `code`, `codeop`, `compileall`, `webbrowser`, `antigravity`, `turtle`, `tkinter`) and the builtins `__import__`, `exec`, `eval`, `compile`, `open`, `globals`, `locals`, `vars`, `input`, `breakpoint`, `exit`, `quit`, `help` and `memoryview` are removed. That catches a model making a mistake. It does not contain an adversary: the code runs in-process with full `bpy`, and `bpy` alone can save files anywhere and run any operator. Treat "Allow raw Python" the way you would treat running a script someone else wrote: read what the model is about to run, and turn it off when you are done.
 - **Input validation**: All inputs pass through validators before reaching Blender: name sanitization, path traversal prevention, numeric range checks, enum allowlists.
@@ -393,7 +393,7 @@ blenderwright/
 │   ├── server.py           # FastMCP entry point
 │   ├── connection.py       # TCP client to Blender (with busy-retry)
 │   ├── validators.py       # Input validation
-│   ├── tools/              # 32 tool modules (271 tools)
+│   ├── tools/              # 32 tool modules (272 tools)
 │   ├── resources/          # MCP resources (scene, objects, materials)
 │   └── prompts/            # 13 expert prompt templates
 ├── addon/                  # Blender addon (zero external deps)
