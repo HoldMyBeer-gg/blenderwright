@@ -4,6 +4,7 @@ from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
+    validate_directory,
     validate_file_path,
     validate_object_name,
     validate_enum,
@@ -19,6 +20,8 @@ ALLOWED_IMPORT_TYPES = {
 ALLOWED_EXPORT_TYPES = {
     "", "FBX", "OBJ", "GLTF", "USD", "STL", "PLY", "ABC",
 }
+
+ALLOWED_PATH_ACTIONS = {"LIST", "MAKE_RELATIVE", "MAKE_ABSOLUTE", "FIND_MISSING"}
 
 # .blend file extension for save/open
 BLEND_EXTENSIONS = {".blend"}
@@ -267,3 +270,28 @@ def unpack_resources(overwrite: bool = False) -> dict[str, Any]:
     return _send_file_command("unpack_resources", {
         "overwrite": _bool(overwrite, "overwrite"),
     })
+
+
+@mcp.tool()
+def manage_external_paths(action: str, directory: str | None = None) -> dict[str, Any]:
+    """Check and fix the external files (textures, sounds, libraries) a .blend uses.
+
+    Args:
+        action: LIST every external path and whether the file exists;
+            MAKE_RELATIVE or MAKE_ABSOLUTE to rewrite them (relative paths
+            survive moving the project folder; the .blend must be saved);
+            FIND_MISSING to search a folder and relink files that moved.
+        directory: FIND_MISSING only: absolute folder to search, recursively.
+
+    Returns:
+        Dict with each external file (type, name, path, exists) and the
+        missing count, after the action.
+    """
+    params: dict[str, Any] = {
+        "action": validate_enum(action, ALLOWED_PATH_ACTIONS, name="action"),
+    }
+    if action == "FIND_MISSING":
+        if directory is None:
+            raise ValidationError("FIND_MISSING needs a directory to search")
+        params["directory"] = validate_directory(directory)
+    return _send_file_command("manage_external_paths", params)
