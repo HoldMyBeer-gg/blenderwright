@@ -518,6 +518,90 @@ def handle_add_soft_body(params: dict) -> dict:
     return {"object_name": obj.name, "goal": sb.use_goal, "mass": sb.mass}
 
 
+RBC_TYPES = {"FIXED", "POINT", "HINGE", "SLIDER", "PISTON", "GENERIC", "GENERIC_SPRING",
+             "MOTOR"}
+RBC_SETTABLE_TYPES = {"BOOLEAN", "INT", "FLOAT", "ENUM"}
+RBC_RESERVED = {"type", "object1", "object2"}
+RIGID_BODY_WORLD_SETTINGS = ("enabled", "time_scale", "substeps_per_frame",
+                             "solver_iterations", "use_split_impulse")
+
+
+def _select_only(obj):
+    current = bpy.context.object
+    if current is not None and current.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    for other in bpy.context.selected_objects:
+        other.select_set(False)
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+
+
+def _rigid_body(name):
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        raise ValueError(f"Object '{name}' not found")
+    if obj.rigid_body is None:
+        raise ValueError(f"'{name}' has no rigid body; call add_rigid_body on it first")
+    return obj
+
+
+def _apply_rbc_settings(constraint, settings):
+    """Plain writable settings the constraint declares in RNA; never the
+    joined objects, which are set from object1/object2 only."""
+    props = constraint.bl_rna.properties
+    for key, value in settings.items():
+        rna = props.get(key)
+        if (rna is None or rna.is_readonly or rna.type not in RBC_SETTABLE_TYPES
+                or key in RBC_RESERVED):
+            settable = sorted(k for k, p in props.items() if not p.is_readonly
+                              and p.type in RBC_SETTABLE_TYPES and k not in RBC_RESERVED)
+            raise ValueError(f"'{key}' is not a rigid body constraint setting. "
+                             f"Settings: {', '.join(settable)}")
+        setattr(constraint, key, value)
+
+
+def handle_add_rigid_body_constraint(params):
+    first = _rigid_body(params.get("object1"))
+    second = _rigid_body(params.get("object2"))
+    rbc_type = params.get("type", "FIXED")
+    if rbc_type not in RBC_TYPES:
+        raise ValueError(f"Unknown constraint type {rbc_type!r}")
+    scene = bpy.context.scene
+    if scene.rigidbody_world is None:
+        bpy.ops.rigidbody.world_add()
+
+    empty = bpy.data.objects.new(params.get("name", "Constraint"), None)
+    empty.empty_display_type = "ARROWS"
+    empty.location = params.get("location") or [
+        (a + b) / 2 for a, b in zip(first.location, second.location)]
+    empty.rotation_euler = params.get("rotation") or (0.0, 0.0, 0.0)
+    scene.collection.objects.link(empty)
+    _select_only(empty)
+    bpy.ops.rigidbody.constraint_add(type=rbc_type)
+
+    constraint = empty.rigid_body_constraint
+    constraint.object1 = first
+    constraint.object2 = second
+    constraint.disable_collisions = bool(params.get("disable_collisions", True))
+    if params.get("breaking_threshold") is not None:
+        constraint.use_breaking = True
+        constraint.breaking_threshold = float(params["breaking_threshold"])
+    _apply_rbc_settings(constraint, params.get("settings") or {})
+    return {"empty": empty.name, "type": constraint.type,
+            "object1": first.name, "object2": second.name}
+
+
+def handle_set_rigid_body_world(params):
+    scene = bpy.context.scene
+    if scene.rigidbody_world is None:
+        bpy.ops.rigidbody.world_add()
+    world = scene.rigidbody_world
+    for key in RIGID_BODY_WORLD_SETTINGS:
+        if key in params:
+            setattr(world, key, params[key])
+    return {key: getattr(world, key) for key in RIGID_BODY_WORLD_SETTINGS}
+
+
 def register():
     """Register physics handlers with the dispatcher."""
     dispatcher.register_handler("add_rigid_body", handle_add_rigid_body)
@@ -532,3 +616,5 @@ def register():
     dispatcher.register_handler("add_force_field", handle_add_force_field)
     dispatcher.register_handler("add_collision", handle_add_collision)
     dispatcher.register_handler("add_soft_body", handle_add_soft_body)
+    dispatcher.register_handler("add_rigid_body_constraint", handle_add_rigid_body_constraint)
+    dispatcher.register_handler("set_rigid_body_world", handle_set_rigid_body_world)
