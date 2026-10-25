@@ -21,6 +21,7 @@ ALLOWED_EXPORT_TYPES = {
     "", "FBX", "OBJ", "GLTF", "USD", "STL", "PLY", "ABC",
 }
 
+ALLOWED_LINKED_ACTIONS = {"LIST", "MAKE_LOCAL", "OVERRIDE", "RELOAD"}
 ALLOWED_PATH_ACTIONS = {"LIST", "MAKE_RELATIVE", "MAKE_ABSOLUTE", "FIND_MISSING"}
 
 # .blend file extension for save/open
@@ -378,3 +379,44 @@ def place_asset(
         "name": validate_object_name(asset_name),
         "link": link,
     })
+
+
+@mcp.tool()
+def manage_linked_data(
+    action: str,
+    data_name: str | None = None,
+    data_type: str = "OBJECT",
+    library: str | None = None,
+) -> dict[str, Any]:
+    """Work with data linked from other .blend files (link_or_append, place_asset).
+
+    Linked data is read-only here. MAKE_LOCAL copies it into this file and
+    cuts the link; OVERRIDE keeps the link but makes it editable, so library
+    updates still come through for anything not changed here.
+
+    Args:
+        action: LIST libraries, linked data and overrides; MAKE_LOCAL;
+            OVERRIDE (OBJECT or COLLECTION); RELOAD a library from disk.
+        data_name: MAKE_LOCAL and OVERRIDE: the linked data-block's name.
+        data_type: OBJECT, COLLECTION, MATERIAL, NODE_GROUP, WORLD or MESH.
+        library: Library name from LIST: required for RELOAD, and picks the
+            library when two linked data-blocks share a name.
+
+    Returns:
+        Dict with what changed, or for LIST the libraries, linked data and overrides.
+    """
+    params: dict[str, Any] = {
+        "action": validate_enum(action, ALLOWED_LINKED_ACTIONS, name="action"),
+    }
+    if action in ("MAKE_LOCAL", "OVERRIDE"):
+        if data_name is None:
+            raise ValidationError(f"{action} needs data_name")
+        params["data_name"] = validate_object_name(data_name)
+        params["data_type"] = validate_enum(
+            data_type, {"OBJECT", "COLLECTION"} if action == "OVERRIDE" else ALLOWED_LINK_TYPES,
+            name="data_type")
+    if action == "RELOAD" and library is None:
+        raise ValidationError("RELOAD needs library")
+    if library is not None and action != "LIST":
+        params["library"] = validate_object_name(library)
+    return _send_file_command("manage_linked_data", params)

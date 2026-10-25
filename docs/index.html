@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 265 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 265 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 266 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 266 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 265 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 266 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>265</b> tools</span>
+    <span><b>266</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -129,7 +129,7 @@ footer a { color: var(--accent); }
 <a href="#compositor">compositor <span class="n">5</span></a>
 <a href="#curves">Curves <span class="n">10</span></a>
 <a href="#deform">deform <span class="n">12</span></a>
-<a href="#file_ops">File I/O <span class="n">13</span></a>
+<a href="#file_ops">File I/O <span class="n">14</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">6</span></a>
 <a href="#gpencil">Grease Pencil <span class="n">9</span></a>
 <a href="#lighting">Lighting <span class="n">9</span></a>
@@ -525,7 +525,7 @@ Game engines and glTF export pick it up as vertex color.</p><table class="args">
 <tr><th>gain</th><td>LEVELS gain, 0.0 to 10.0.</td></tr>
 <tr><th>max_groups</th><td>LIMIT_TOTAL groups per vertex, 1 to 32.</td></tr>
 <tr><th>steps</th><td>QUANTIZE levels, 1 to 1000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the group&#x27;s vertex count and weight range afterwards.</p></article></section>
-<section class="module" id="file_ops" data-module="file i/o"><h2>File I/O <span class="n">13</span></h2><article class="tool" id="export_file" data-search="export_file export scene or selected objects to a 3d file.
+<section class="module" id="file_ops" data-module="file i/o"><h2>File I/O <span class="n">14</span></h2><article class="tool" id="export_file" data-search="export_file export scene or selected objects to a 3d file.
 
 supports fbx, obj, gltf/glb, usd, stl, ply, and alembic (abc) formats."><h3><a href="#export_file">export_file</a></h3><pre class="sig"><code>export_file(filepath: str, type: str = &#x27;&#x27;, selected_only: bool = False)</code></pre><p>Export scene or selected objects to a 3D file.
 
@@ -563,7 +563,18 @@ file are never run."><h3><a href="#list_blend_contents">list_blend_contents</a><
 
 Use before link_or_append to find the names to bring in. Scripts in the
 file are never run.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to an existing .blend file.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict of data type (objects, collections, materials, node_groups, worlds, meshes) to the names in the file.</p></article><article class="tool" id="list_recent_files" data-search="list_recent_files list recently opened files from blender preferences."><h3><a href="#list_recent_files">list_recent_files</a></h3><pre class="sig"><code>list_recent_files()</code></pre><p>List recently opened files from Blender preferences.</p><p class="ret"><span>Returns</span> List of file path strings.</p></article><article class="tool" id="manage_external_paths" data-search="manage_external_paths check and fix the external files (textures, sounds, libraries) a .blend uses."><h3><a href="#manage_external_paths">manage_external_paths</a></h3><pre class="sig"><code>manage_external_paths(action: str, directory: str | None = None)</code></pre><p>Check and fix the external files (textures, sounds, libraries) a .blend uses.</p><table class="args"><tbody><tr><th>action</th><td>LIST every external path and whether the file exists; MAKE_RELATIVE or MAKE_ABSOLUTE to rewrite them (relative paths survive moving the project folder; the .blend must be saved); FIND_MISSING to search a folder and relink files that moved.</td></tr>
-<tr><th>directory</th><td>FIND_MISSING only: absolute folder to search, recursively.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with each external file (type, name, path, exists) and the missing count, after the action.</p></article><article class="tool" id="open_file" data-search="open_file open a .blend file."><h3><a href="#open_file">open_file</a></h3><pre class="sig"><code>open_file(filepath: str)</code></pre><p>Open a .blend file.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to the .blend file. Must exist.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the opened file path.</p></article><article class="tool" id="pack_resources" data-search="pack_resources pack every external image, sound, font and volume into the .blend file.
+<tr><th>directory</th><td>FIND_MISSING only: absolute folder to search, recursively.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with each external file (type, name, path, exists) and the missing count, after the action.</p></article><article class="tool" id="manage_linked_data" data-search="manage_linked_data work with data linked from other .blend files (link_or_append, place_asset).
+
+linked data is read-only here. make_local copies it into this file and
+cuts the link; override keeps the link but makes it editable, so library
+updates still come through for anything not changed here."><h3><a href="#manage_linked_data">manage_linked_data</a></h3><pre class="sig"><code>manage_linked_data(action: str, data_name: str | None = None, data_type: str = &#x27;OBJECT&#x27;, library: str | None = None)</code></pre><p>Work with data linked from other .blend files (link_or_append, place_asset).
+
+Linked data is read-only here. MAKE_LOCAL copies it into this file and
+cuts the link; OVERRIDE keeps the link but makes it editable, so library
+updates still come through for anything not changed here.</p><table class="args"><tbody><tr><th>action</th><td>LIST libraries, linked data and overrides; MAKE_LOCAL; OVERRIDE (OBJECT or COLLECTION); RELOAD a library from disk.</td></tr>
+<tr><th>data_name</th><td>MAKE_LOCAL and OVERRIDE: the linked data-block&#x27;s name.</td></tr>
+<tr><th>data_type</th><td>OBJECT, COLLECTION, MATERIAL, NODE_GROUP, WORLD or MESH.</td></tr>
+<tr><th>library</th><td>Library name from LIST: required for RELOAD, and picks the library when two linked data-blocks share a name.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with what changed, or for LIST the libraries, linked data and overrides.</p></article><article class="tool" id="open_file" data-search="open_file open a .blend file."><h3><a href="#open_file">open_file</a></h3><pre class="sig"><code>open_file(filepath: str)</code></pre><p>Open a .blend file.</p><table class="args"><tbody><tr><th>filepath</th><td>Absolute path to the .blend file. Must exist.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the opened file path.</p></article><article class="tool" id="pack_resources" data-search="pack_resources pack every external image, sound, font and volume into the .blend file.
 
 makes the file self-contained so it can be moved or shared without
 missing textures."><h3><a href="#pack_resources">pack_resources</a></h3><pre class="sig"><code>pack_resources(autopack: bool | None = None)</code></pre><p>Pack every external image, sound, font and volume into the .blend file.
