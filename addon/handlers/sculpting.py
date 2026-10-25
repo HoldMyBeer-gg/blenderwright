@@ -332,6 +332,136 @@ def handle_enable_dyntopo(params: dict) -> dict:
         raise RuntimeError(f"Failed to enable dyntopo: {e}")
 
 
+MASK_ATTRIBUTE = ".sculpt_mask"
+FACE_SET_ATTRIBUTE = ".sculpt_face_set"
+
+
+def _get_mesh(name):
+    obj = bpy.data.objects.get(name)
+    if obj is None:
+        raise ValueError(f"Object '{name}' not found")
+    if obj.type != "MESH":
+        raise ValueError(f"Object '{name}' is not a mesh (type: {obj.type})")
+    return obj
+
+
+def _select_only(obj):
+    bpy.context.view_layer.objects.active = obj
+
+
+def _check_range(indices, count, what):
+    bad = [i for i in indices if not 0 <= i < count]
+    if bad:
+        raise ValueError(f"{what} index {bad[0]} is out of range (0 to {count - 1})")
+
+
+def _in_object_mode(obj, write):
+    """Sculpt mode caches mesh data, so leave it, write the attributes, and
+    go back. Plain attribute writes: the mask operators crash headless 5.2.3."""
+    mode = obj.mode
+    if mode != "OBJECT":
+        _select_only(obj)
+        bpy.ops.object.mode_set(mode="OBJECT")
+    try:
+        return write()
+    finally:
+        if mode != "OBJECT":
+            bpy.ops.object.mode_set(mode=mode)
+
+
+def _attribute(mesh, name, data_type, domain):
+    attr = mesh.attributes.get(name)
+    return attr if attr is not None else mesh.attributes.new(name, data_type, domain)
+
+
+def handle_set_sculpt_mask(params):
+    obj = _get_mesh(params.get("object_name"))
+    mesh = obj.data
+
+    def write():
+        if params.get("clear"):
+            attr = mesh.attributes.get(MASK_ATTRIBUTE)
+            if attr is not None:
+                mesh.attributes.remove(attr)
+            return {"object": obj.name, "masked": 0, "vertex_count": len(mesh.vertices)}
+        attr = _attribute(mesh, MASK_ATTRIBUTE, "FLOAT", "POINT")
+        data = attr.data
+        if params.get("invert"):
+            for item in data:
+                item.value = 1.0 - item.value
+        else:
+            value = float(params.get("value", 1.0))
+            if params.get("vertex_group"):
+                vg = obj.vertex_groups.get(params["vertex_group"])
+                if vg is None:
+                    raise ValueError(f"'{obj.name}' has no vertex group "
+                                     f"'{params['vertex_group']}'")
+                for v in mesh.vertices:
+                    weight = next((g.weight for g in v.groups if g.group == vg.index), 0.0)
+                    data[v.index].value = value * weight
+            elif params.get("vertex_indices") is not None:
+                indices = list(params["vertex_indices"])
+                _check_range(indices, len(mesh.vertices), "Vertex")
+                for i in indices:
+                    data[i].value = value
+            else:
+                for item in data:
+                    item.value = value
+        return {"object": obj.name, "masked": sum(1 for item in data if item.value > 0.0),
+                "vertex_count": len(mesh.vertices)}
+
+    return _in_object_mode(obj, write)
+
+
+def _loose_parts(mesh):
+    parent = {}
+
+    def find(v):
+        while parent.setdefault(v, v) != v:
+            parent[v] = parent[parent[v]]
+            v = parent[v]
+        return v
+
+    for poly in mesh.polygons:
+        first = find(poly.vertices[0])
+        for v in poly.vertices[1:]:
+            parent[find(v)] = first
+    ids = {}
+    return [ids.setdefault(find(poly.vertices[0]), len(ids) + 1) for poly in mesh.polygons]
+
+
+def handle_set_face_sets(params):
+    obj = _get_mesh(params.get("object_name"))
+    mesh = obj.data
+    mode = params.get("mode")
+    if mode not in {"LOOSE_PARTS", "MATERIALS", "ASSIGN", "CLEAR"}:
+        raise ValueError(f"Unknown mode {mode!r}")
+
+    def write():
+        if mode == "CLEAR":
+            attr = mesh.attributes.get(FACE_SET_ATTRIBUTE)
+            if attr is not None:
+                mesh.attributes.remove(attr)
+            return {"object": obj.name, "face_sets": 0}
+        attr = _attribute(mesh, FACE_SET_ATTRIBUTE, "INT", "FACE")
+        if mode == "ASSIGN":
+            indices = list(params.get("face_indices") or [])
+            _check_range(indices, len(mesh.polygons), "Face")
+            if not any(item.value for item in attr.data):
+                for item in attr.data:
+                    item.value = 1
+            for i in indices:
+                attr.data[i].value = int(params.get("face_set", 1))
+        else:
+            values = (_loose_parts(mesh) if mode == "LOOSE_PARTS"
+                      else [poly.material_index + 1 for poly in mesh.polygons])
+            for item, value in zip(attr.data, values):
+                item.value = value
+        return {"object": obj.name, "face_sets": len({item.value for item in attr.data})}
+
+    return _in_object_mode(obj, write)
+
+
 def register():
     """Register sculpting handlers with the dispatcher."""
     dispatcher.register_handler("enter_sculpt_mode", handle_enter_sculpt_mode)
@@ -342,3 +472,5 @@ def register():
     dispatcher.register_handler("add_multires_modifier", handle_add_multires_modifier)
     dispatcher.register_handler("set_sculpt_symmetry", handle_set_sculpt_symmetry)
     dispatcher.register_handler("enable_dyntopo", handle_enable_dyntopo)
+    dispatcher.register_handler("set_sculpt_mask", handle_set_sculpt_mask)
+    dispatcher.register_handler("set_face_sets", handle_set_face_sets)

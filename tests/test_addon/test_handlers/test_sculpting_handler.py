@@ -215,3 +215,144 @@ class TestHandleSetSculptBrush:
         bpy.ops.brush.asset_activate.return_value = {"CANCELLED"}
         with pytest.raises(RuntimeError):
             sculpting_handler.handle_set_sculpt_brush({"brush_type": "DRAW"})
+
+
+from types import SimpleNamespace  # noqa: E402
+
+
+class _Attributes(dict):
+    def __init__(self, mesh):
+        super().__init__()
+        self._mesh = mesh
+
+    def new(self, name, type, domain):
+        size = len(self._mesh.vertices) if domain == "POINT" else len(self._mesh.polygons)
+        attr = SimpleNamespace(name=name, data_type=type, domain=domain,
+                               data=[SimpleNamespace(value=0.0 if type == "FLOAT" else 0)
+                                     for _ in range(size)])
+        self[name] = attr
+        return attr
+
+    def remove(self, attr):
+        del self[attr.name]
+
+
+def _two_part_mesh():
+    """Faces 0-1 share vertices (one part); face 2 stands alone."""
+    groups = {0: [SimpleNamespace(group=0, weight=0.25)], 1: [], 2: [],
+              3: [SimpleNamespace(group=0, weight=1.0)], 4: [], 5: [], 6: []}
+    verts = [SimpleNamespace(index=i, groups=groups.get(i, [])) for i in range(7)]
+    polys = [SimpleNamespace(index=0, vertices=[0, 1, 2], material_index=0),
+             SimpleNamespace(index=1, vertices=[1, 2, 3], material_index=1),
+             SimpleNamespace(index=2, vertices=[4, 5, 6], material_index=1)]
+    mesh = SimpleNamespace(vertices=verts, polygons=polys)
+    mesh.attributes = _Attributes(mesh)
+    vgroups = {"Ears": SimpleNamespace(name="Ears", index=0)}
+    return SimpleNamespace(name="Head", type="MESH", mode="OBJECT", data=mesh,
+                           vertex_groups=vgroups)
+
+
+@pytest.fixture
+def head(sculpting_handler, monkeypatch):
+    import bpy
+
+    obj = _two_part_mesh()
+    monkeypatch.setattr(bpy.data, "objects", {"Head": obj})
+    return sculpting_handler, obj
+
+
+def _mask(obj):
+    return [round(d.value, 3) for d in obj.data.attributes[".sculpt_mask"].data]
+
+
+def _sets(obj):
+    return [d.value for d in obj.data.attributes[".sculpt_face_set"].data]
+
+
+class TestSculptMaskHandler:
+    def test_mask_all(self, head):
+        h, obj = head
+        result = h.handle_set_sculpt_mask({"object_name": "Head", "value": 1.0})
+        assert _mask(obj) == [1.0] * 7 and result["masked"] == 7
+
+    def test_vertices_keep_the_rest(self, head):
+        h, obj = head
+        h.handle_set_sculpt_mask({"object_name": "Head", "value": 1.0})
+        h.handle_set_sculpt_mask({"object_name": "Head", "value": 0.0, "vertex_indices": [1]})
+        assert _mask(obj) == [1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    def test_vertex_group_weights_scale_the_value(self, head):
+        h, obj = head
+        h.handle_set_sculpt_mask({"object_name": "Head", "value": 1.0, "vertex_group": "Ears"})
+        assert _mask(obj) == [0.25, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+
+    def test_invert(self, head):
+        h, obj = head
+        h.handle_set_sculpt_mask({"object_name": "Head", "value": 1.0, "vertex_indices": [0]})
+        h.handle_set_sculpt_mask({"object_name": "Head", "invert": True})
+        assert _mask(obj) == [0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    def test_clear_removes_the_mask(self, head):
+        h, obj = head
+        h.handle_set_sculpt_mask({"object_name": "Head", "value": 1.0})
+        h.handle_set_sculpt_mask({"object_name": "Head", "clear": True})
+        assert ".sculpt_mask" not in obj.data.attributes
+
+    def test_bad_vertex(self, head):
+        h, _ = head
+        with pytest.raises(ValueError, match="out of range"):
+            h.handle_set_sculpt_mask({"object_name": "Head", "value": 1.0,
+                                      "vertex_indices": [7]})
+
+    def test_missing_group(self, head):
+        h, _ = head
+        with pytest.raises(ValueError, match="Nose"):
+            h.handle_set_sculpt_mask({"object_name": "Head", "value": 1.0,
+                                      "vertex_group": "Nose"})
+
+    def test_sculpt_mode_is_left_and_restored(self, head, monkeypatch):
+        import bpy
+
+        h, obj = head
+        obj.mode = "SCULPT"
+        modes = []
+
+        def mode_set(mode):
+            modes.append(mode)
+            obj.mode = mode
+
+        monkeypatch.setattr(bpy.ops.object, "mode_set", mode_set)
+        monkeypatch.setattr(h, "_select_only", lambda o: None, raising=False)
+        h.handle_set_sculpt_mask({"object_name": "Head", "value": 1.0})
+        assert modes == ["OBJECT", "SCULPT"]
+
+
+class TestFaceSetsHandler:
+    def test_loose_parts(self, head):
+        h, obj = head
+        result = h.handle_set_face_sets({"object_name": "Head", "mode": "LOOSE_PARTS"})
+        assert _sets(obj) == [1, 1, 2] and result["face_sets"] == 2
+
+    def test_materials(self, head):
+        h, obj = head
+        h.handle_set_face_sets({"object_name": "Head", "mode": "MATERIALS"})
+        assert _sets(obj) == [1, 2, 2]
+
+    def test_assign_keeps_others(self, head):
+        h, obj = head
+        h.handle_set_face_sets({"object_name": "Head", "mode": "LOOSE_PARTS"})
+        h.handle_set_face_sets({"object_name": "Head", "mode": "ASSIGN",
+                                "face_indices": [0], "face_set": 7})
+        assert _sets(obj) == [7, 1, 2]
+
+    def test_bad_face(self, head):
+        h, _ = head
+        with pytest.raises(ValueError, match="out of range"):
+            h.handle_set_face_sets({"object_name": "Head", "mode": "ASSIGN",
+                                    "face_indices": [3], "face_set": 1})
+
+    def test_clear(self, head):
+        h, obj = head
+        h.handle_set_face_sets({"object_name": "Head", "mode": "LOOSE_PARTS"})
+        h.handle_set_face_sets({"object_name": "Head", "mode": "CLEAR"})
+        assert ".sculpt_face_set" not in obj.data.attributes

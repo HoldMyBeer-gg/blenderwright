@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 260 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 260 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 262 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 262 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 260 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 262 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>260</b> tools</span>
+    <span><b>262</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -143,7 +143,7 @@ footer a { color: var(--accent); }
 <a href="#render_settings">render_settings <span class="n">12</span></a>
 <a href="#rendering">Rendering <span class="n">7</span></a>
 <a href="#scene">Scene <span class="n">7</span></a>
-<a href="#sculpting">Sculpting <span class="n">8</span></a>
+<a href="#sculpting">Sculpting <span class="n">10</span></a>
 <a href="#selection">Selection <span class="n">6</span></a>
 <a href="#sequencer">sequencer <span class="n">5</span></a>
 <a href="#sweep">sweep <span class="n">2</span></a>
@@ -1557,7 +1557,7 @@ that could improve the workflow. already-installed extensions are excluded."><h3
 
 Analyzes the task description and recommends free Blender extensions
 that could improve the workflow. Already-installed extensions are excluded.</p><table class="args"><tbody><tr><th>task_description</th><td>Description of the planned task. If empty, returns all extensions not currently installed.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with &#x27;suggestions&#x27; list of recommended extensions and &#x27;installed&#x27; list of already-installed extension IDs.</p></article></section>
-<section class="module" id="sculpting" data-module="sculpting"><h2>Sculpting <span class="n">8</span></h2><article class="tool" id="add_multires_modifier" data-search="add_multires_modifier add a multiresolution modifier for sculpting detail."><h3><a href="#add_multires_modifier">add_multires_modifier</a></h3><pre class="sig"><code>add_multires_modifier(object_name: str, levels: int = 2)</code></pre><p>Add a Multiresolution modifier for sculpting detail.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
+<section class="module" id="sculpting" data-module="sculpting"><h2>Sculpting <span class="n">10</span></h2><article class="tool" id="add_multires_modifier" data-search="add_multires_modifier add a multiresolution modifier for sculpting detail."><h3><a href="#add_multires_modifier">add_multires_modifier</a></h3><pre class="sig"><code>add_multires_modifier(object_name: str, levels: int = 2)</code></pre><p>Add a Multiresolution modifier for sculpting detail.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object.</td></tr>
 <tr><th>levels</th><td>Number of subdivision levels to add (1-6).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with object name and modifier info.</p></article><article class="tool" id="enable_dyntopo" data-search="enable_dyntopo enable dynamic topology (dyntopo) for adaptive sculpting resolution.
 
 dyntopo adds and removes mesh detail dynamically as you sculpt,
@@ -1569,7 +1569,25 @@ allowing unlimited detail where needed without uniform subdivision.</p><table cl
 <tr><th>detail_mode</th><td>Detail mode. One of: RELATIVE, CONSTANT, BRUSH, MANUAL.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with dyntopo settings.</p></article><article class="tool" id="enter_sculpt_mode" data-search="enter_sculpt_mode enter sculpt mode for a mesh object."><h3><a href="#enter_sculpt_mode">enter_sculpt_mode</a></h3><pre class="sig"><code>enter_sculpt_mode(object_name: str)</code></pre><p>Enter sculpt mode for a mesh object.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to sculpt.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with object name and mode.</p></article><article class="tool" id="exit_sculpt_mode" data-search="exit_sculpt_mode exit sculpt mode and return to object mode."><h3><a href="#exit_sculpt_mode">exit_sculpt_mode</a></h3><pre class="sig"><code>exit_sculpt_mode()</code></pre><p>Exit sculpt mode and return to object mode.</p><p class="ret"><span>Returns</span> Confirmation dict with current mode.</p></article><article class="tool" id="remesh" data-search="remesh remesh an object to create a clean topology."><h3><a href="#remesh">remesh</a></h3><pre class="sig"><code>remesh(object_name: str, voxel_size: float = 0.1, mode: str = &#x27;VOXEL&#x27;)</code></pre><p>Remesh an object to create a clean topology.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to remesh.</td></tr>
 <tr><th>voxel_size</th><td>Voxel size for remeshing (smaller = more detail). Only used in VOXEL mode.</td></tr>
 <tr><th>mode</th><td>Remesh mode - VOXEL, SHARP, SMOOTH, or BLOCKS.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with object name and new vertex count.</p></article><article class="tool" id="set_brush_property" data-search="set_brush_property set a property on the active sculpt brush."><h3><a href="#set_brush_property">set_brush_property</a></h3><pre class="sig"><code>set_brush_property(property: str, value: Any)</code></pre><p>Set a property on the active sculpt brush.</p><table class="args"><tbody><tr><th>property</th><td>Property to set - size, strength, auto_smooth_factor, or use_frontface.</td></tr>
-<tr><th>value</th><td>Value to set. size is int (1-500), strength is float (0.0-1.0), auto_smooth_factor is float (0.0-1.0), use_frontface is bool.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with property name and new value.</p></article><article class="tool" id="set_sculpt_brush" data-search="set_sculpt_brush set the active sculpt brush."><h3><a href="#set_sculpt_brush">set_sculpt_brush</a></h3><pre class="sig"><code>set_sculpt_brush(brush_type: str)</code></pre><p>Set the active sculpt brush.</p><table class="args"><tbody><tr><th>brush_type</th><td>Brush type - DRAW, CLAY, CLAY_STRIPS, INFLATE, GRAB, SMOOTH, FLATTEN, FILL, SCRAPE, PINCH, CREASE, BLOB, MASK, MULTIRES_DISPLACEMENT_SMEAR.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with active brush type.</p></article><article class="tool" id="set_sculpt_symmetry" data-search="set_sculpt_symmetry set sculpt symmetry axes.
+<tr><th>value</th><td>Value to set. size is int (1-500), strength is float (0.0-1.0), auto_smooth_factor is float (0.0-1.0), use_frontface is bool.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with property name and new value.</p></article><article class="tool" id="set_face_sets" data-search="set_face_sets split a mesh into face sets: colored regions for sculpting one part at a time.
+
+in sculpt mode, face sets can be hidden or isolated, and brushes and
+automasking can stay within one set."><h3><a href="#set_face_sets">set_face_sets</a></h3><pre class="sig"><code>set_face_sets(object_name: str, mode: str, face_indices: list[int] | None = None, face_set: int = 1)</code></pre><p>Split a mesh into face sets: colored regions for sculpting one part at a time.
+
+In sculpt mode, face sets can be hidden or isolated, and brushes and
+automasking can stay within one set.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>mode</th><td>LOOSE_PARTS (one set per separate piece), MATERIALS (one set per material slot), ASSIGN (face_indices into face_set), CLEAR.</td></tr>
+<tr><th>face_indices</th><td>ASSIGN only: the faces to change.</td></tr>
+<tr><th>face_set</th><td>ASSIGN only: set number, 1 or more.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the number of distinct face sets.</p></article><article class="tool" id="set_sculpt_brush" data-search="set_sculpt_brush set the active sculpt brush."><h3><a href="#set_sculpt_brush">set_sculpt_brush</a></h3><pre class="sig"><code>set_sculpt_brush(brush_type: str)</code></pre><p>Set the active sculpt brush.</p><table class="args"><tbody><tr><th>brush_type</th><td>Brush type - DRAW, CLAY, CLAY_STRIPS, INFLATE, GRAB, SMOOTH, FLATTEN, FILL, SCRAPE, PINCH, CREASE, BLOB, MASK, MULTIRES_DISPLACEMENT_SMEAR.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with active brush type.</p></article><article class="tool" id="set_sculpt_mask" data-search="set_sculpt_mask mask part of a mesh so sculpt brushes and filters leave it alone.
+
+1.0 is fully protected, 0.0 is free to sculpt. works in any mode."><h3><a href="#set_sculpt_mask">set_sculpt_mask</a></h3><pre class="sig"><code>set_sculpt_mask(object_name: str, value: float = 1.0, vertex_indices: list[int] | None = None, vertex_group: str | None = None, invert: bool = False, clear: bool = False)</code></pre><p>Mask part of a mesh so sculpt brushes and filters leave it alone.
+
+1.0 is fully protected, 0.0 is free to sculpt. Works in any mode.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>value</th><td>Mask strength, 0.0 to 1.0.</td></tr>
+<tr><th>vertex_indices</th><td>Vertices to set; the rest keep their mask. Omit (and vertex_group) to set the whole mesh.</td></tr>
+<tr><th>vertex_group</th><td>Mask from a vertex group: each member gets value times its weight, other vertices are unmasked.</td></tr>
+<tr><th>invert</th><td>Flip the current mask (other arguments ignored).</td></tr>
+<tr><th>clear</th><td>Remove the mask entirely.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many vertices are masked (above 0) and the vertex count.</p></article><article class="tool" id="set_sculpt_symmetry" data-search="set_sculpt_symmetry set sculpt symmetry axes.
 
 enables symmetrical sculpting across the specified axes. x-axis symmetry
 is the most common for character modeling."><h3><a href="#set_sculpt_symmetry">set_sculpt_symmetry</a></h3><pre class="sig"><code>set_sculpt_symmetry(use_x: bool = True, use_y: bool = False, use_z: bool = False)</code></pre><p>Set sculpt symmetry axes.

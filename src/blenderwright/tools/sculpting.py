@@ -3,9 +3,11 @@
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
+from blenderwright.tools.deform import _validate_indices
 from blenderwright.validators import (
     validate_object_name,
     validate_enum,
+    validate_int,
     validate_numeric_range,
     ValidationError,
 )
@@ -18,6 +20,8 @@ ALLOWED_BRUSH_TYPES = {
 ALLOWED_BRUSH_PROPERTIES = {"size", "strength", "auto_smooth_factor", "use_frontface", "stroke_method"}
 ALLOWED_REMESH_MODES = {"VOXEL", "SHARP", "SMOOTH", "BLOCKS"}
 ALLOWED_DYNTOPO_DETAIL_MODES = {"RELATIVE", "CONSTANT", "BRUSH", "MANUAL"}
+ALLOWED_FACE_SET_MODES = {"LOOSE_PARTS", "MATERIALS", "ASSIGN", "CLEAR"}
+MAX_FACE_SET = 2_147_483_647
 
 
 @mcp.tool()
@@ -232,3 +236,93 @@ def enable_dyntopo(
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
+
+
+def _send_sculpt(command: str, params: dict[str, Any]) -> Any:
+    conn = get_connection()
+    response = conn.send_command(command, params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def set_sculpt_mask(
+    object_name: str,
+    value: float = 1.0,
+    vertex_indices: list[int] | None = None,
+    vertex_group: str | None = None,
+    invert: bool = False,
+    clear: bool = False,
+) -> dict[str, Any]:
+    """Mask part of a mesh so sculpt brushes and filters leave it alone.
+
+    1.0 is fully protected, 0.0 is free to sculpt. Works in any mode.
+
+    Args:
+        object_name: Mesh object.
+        value: Mask strength, 0.0 to 1.0.
+        vertex_indices: Vertices to set; the rest keep their mask. Omit (and
+            vertex_group) to set the whole mesh.
+        vertex_group: Mask from a vertex group: each member gets value times
+            its weight, other vertices are unmasked.
+        invert: Flip the current mask (other arguments ignored).
+        clear: Remove the mask entirely.
+
+    Returns:
+        Dict with how many vertices are masked (above 0) and the vertex count.
+    """
+    if not isinstance(invert, bool) or not isinstance(clear, bool):
+        raise ValidationError("invert and clear must be true or false")
+    params: dict[str, Any] = {"object_name": validate_object_name(object_name)}
+    if invert or clear:
+        if invert and clear:
+            raise ValidationError("Use invert or clear, not both")
+        if vertex_indices is not None or vertex_group is not None:
+            raise ValidationError("invert and clear act on the whole mask; "
+                                  "leave vertex_indices and vertex_group out")
+        params["invert" if invert else "clear"] = True
+        return _send_sculpt("set_sculpt_mask", params)
+    if vertex_indices is not None and vertex_group is not None:
+        raise ValidationError("Give vertex_indices or vertex_group, not both")
+    params["value"] = float(validate_numeric_range(value, min_val=0.0, max_val=1.0,
+                                                   name="value"))
+    if vertex_indices is not None:
+        params["vertex_indices"] = _validate_indices(vertex_indices)
+    if vertex_group is not None:
+        params["vertex_group"] = validate_object_name(vertex_group)
+    return _send_sculpt("set_sculpt_mask", params)
+
+
+@mcp.tool()
+def set_face_sets(
+    object_name: str,
+    mode: str,
+    face_indices: list[int] | None = None,
+    face_set: int = 1,
+) -> dict[str, Any]:
+    """Split a mesh into face sets: colored regions for sculpting one part at a time.
+
+    In sculpt mode, face sets can be hidden or isolated, and brushes and
+    automasking can stay within one set.
+
+    Args:
+        object_name: Mesh object.
+        mode: LOOSE_PARTS (one set per separate piece), MATERIALS (one set per
+            material slot), ASSIGN (face_indices into face_set), CLEAR.
+        face_indices: ASSIGN only: the faces to change.
+        face_set: ASSIGN only: set number, 1 or more.
+
+    Returns:
+        Dict with the number of distinct face sets.
+    """
+    params: dict[str, Any] = {
+        "object_name": validate_object_name(object_name),
+        "mode": validate_enum(mode, ALLOWED_FACE_SET_MODES, name="mode"),
+    }
+    if mode == "ASSIGN":
+        if face_indices is None:
+            raise ValidationError("ASSIGN needs face_indices")
+        params["face_indices"] = _validate_indices(face_indices)
+        params["face_set"] = validate_int(face_set, 1, MAX_FACE_SET, name="face_set")
+    return _send_sculpt("set_face_sets", params)
