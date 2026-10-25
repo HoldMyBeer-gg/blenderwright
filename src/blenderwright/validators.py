@@ -242,6 +242,28 @@ def validate_int(value: int | float | str, min_val: int | None = None, max_val: 
     return int(number)
 
 
+MAX_INDICES = 1_000_000
+
+
+def validate_indices(indices: Any, name: str = "vertex_indices",
+                     element: str = "vertex") -> list[int]:
+    """A non-empty list of element indices, duplicates dropped, order kept."""
+    if not isinstance(indices, list) or not indices:
+        raise ValidationError(f"{name} must be a non-empty list of {element} numbers")
+    if len(indices) > MAX_INDICES:
+        raise ValidationError(f"{name} may hold at most {MAX_INDICES} entries")
+    clean: list[int] = []
+    seen: set[int] = set()
+    for i in indices:
+        if isinstance(i, float) and not i.is_integer():
+            raise ValidationError(f"{element} index {i} is not a whole number")
+        index = validate_int(i, 0, None, name=f"{element} index")
+        if index not in seen:
+            seen.add(index)
+            clean.append(index)
+    return clean
+
+
 def validate_color(color: list | tuple) -> tuple:
     """Validate an RGBA or RGB color value."""
     if not isinstance(color, (list, tuple)):

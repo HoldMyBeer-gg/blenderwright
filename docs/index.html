@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 268 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 268 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 270 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 270 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 268 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 270 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>268</b> tools</span>
+    <span><b>270</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -128,7 +128,7 @@ footer a { color: var(--accent); }
 <a href="#collections">Collections <span class="n">8</span></a>
 <a href="#compositor">compositor <span class="n">5</span></a>
 <a href="#curves">Curves <span class="n">10</span></a>
-<a href="#deform">deform <span class="n">12</span></a>
+<a href="#deform">deform <span class="n">14</span></a>
 <a href="#file_ops">File I/O <span class="n">14</span></a>
 <a href="#geometry_nodes">Geometry Nodes <span class="n">8</span></a>
 <a href="#gpencil">Grease Pencil <span class="n">9</span></a>
@@ -453,7 +453,7 @@ over. Effects then stack between the render and the output.</p><table class="arg
 <tr><th>value</th><td>Value to set. Type depends on property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with property name and new value.</p></article><article class="tool" id="set_handle_type" data-search="set_handle_type set the handle type for all control points of a curve."><h3><a href="#set_handle_type">set_handle_type</a></h3><pre class="sig"><code>set_handle_type(curve_name: str, handle_type: str = &#x27;AUTOMATIC&#x27;)</code></pre><p>Set the handle type for all control points of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr>
 <tr><th>handle_type</th><td>Handle type - AUTO, VECTOR, ALIGNED, or FREE_ALIGN.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of handle type change.</p></article><article class="tool" id="smooth_curve" data-search="smooth_curve smooth the control points of a curve."><h3><a href="#smooth_curve">smooth_curve</a></h3><pre class="sig"><code>smooth_curve(curve_name: str)</code></pre><p>Smooth the control points of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of smoothing.</p></article><article class="tool" id="subdivide_curve" data-search="subdivide_curve subdivide a curve by adding control points between existing ones."><h3><a href="#subdivide_curve">subdivide_curve</a></h3><pre class="sig"><code>subdivide_curve(curve_name: str, number_cuts: int = 1)</code></pre><p>Subdivide a curve by adding control points between existing ones.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr>
 <tr><th>number_cuts</th><td>Number of cuts to make (1-100).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of subdivision.</p></article><article class="tool" id="switch_curve_direction" data-search="switch_curve_direction switch the direction of a curve&#x27;s splines."><h3><a href="#switch_curve_direction">switch_curve_direction</a></h3><pre class="sig"><code>switch_curve_direction(curve_name: str)</code></pre><p>Switch the direction of a curve&#x27;s splines.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of direction switch.</p></article><article class="tool" id="toggle_cyclic" data-search="toggle_cyclic toggle the cyclic (closed loop) state of a curve."><h3><a href="#toggle_cyclic">toggle_cyclic</a></h3><pre class="sig"><code>toggle_cyclic(curve_name: str)</code></pre><p>Toggle the cyclic (closed loop) state of a curve.</p><table class="args"><tbody><tr><th>curve_name</th><td>Name of the curve object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with confirmation of cyclic toggle.</p></article></section>
-<section class="module" id="deform" data-module="deform"><h2>deform <span class="n">12</span></h2><article class="tool" id="add_shape_key" data-search="add_shape_key add a shape key (blend shape). the first call also creates the basis.
+<section class="module" id="deform" data-module="deform"><h2>deform <span class="n">14</span></h2><article class="tool" id="add_shape_key" data-search="add_shape_key add a shape key (blend shape). the first call also creates the basis.
 
 shape keys store alternative vertex positions blended by a 0-1 value:
 facial expressions, morphs, corrective shapes. shape it with
@@ -476,10 +476,35 @@ Solidify, Mask) and shape keys to part of a mesh.</p><table class="args"><tbody>
 <tr><th>vertex_indices</th><td>Vertices to change. Omit to use the whole mesh, or the edit-mode selection with selection=&quot;CURRENT&quot;.</td></tr>
 <tr><th>weight</th><td>0.0 to 1.0.</td></tr>
 <tr><th>mode</th><td>REPLACE sets the weight, ADD and SUBTRACT change it, REMOVE takes the vertices out of the group.</td></tr>
-<tr><th>selection</th><td>When vertex_indices is omitted: ALL vertices, or CURRENT for the ones selected in edit mode (use the select_* tools first).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the group name, its index and how many vertices changed.</p></article><article class="tool" id="keyframe_shape_key" data-search="keyframe_shape_key keyframe a shape key&#x27;s value so the blend shape animates."><h3><a href="#keyframe_shape_key">keyframe_shape_key</a></h3><pre class="sig"><code>keyframe_shape_key(object_name: str, key_name: str, frame: int, value: float | None = None)</code></pre><p>Keyframe a shape key&#x27;s value so the blend shape animates.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
+<tr><th>selection</th><td>When vertex_indices is omitted: ALL vertices, or CURRENT for the ones selected in edit mode (use the select_* tools first).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the group name, its index and how many vertices changed.</p></article><article class="tool" id="create_lattice" data-search="create_lattice wrap an object in a lattice cage and deform it through the cage.
+
+the lattice is fitted to the object&#x27;s bounding box and a lattice modifier
+is added. then bend, taper or bulge the whole shape with
+move_lattice_points instead of editing vertices."><h3><a href="#create_lattice">create_lattice</a></h3><pre class="sig"><code>create_lattice(object_name: str, resolution: list[int] | None = None, interpolation: str = &#x27;KEY_LINEAR&#x27;, lattice_name: str = &#x27;&#x27;)</code></pre><p>Wrap an object in a lattice cage and deform it through the cage.
+
+The lattice is fitted to the object&#x27;s bounding box and a Lattice modifier
+is added. Then bend, taper or bulge the whole shape with
+move_lattice_points instead of editing vertices.</p><table class="args"><tbody><tr><th>object_name</th><td>Object to deform (mesh, curve, text...).</td></tr>
+<tr><th>resolution</th><td>Points along [u, v, w] (the object&#x27;s X, Y, Z), 2 to 64 each. More points give more local control. Default [2, 2, 2].</td></tr>
+<tr><th>interpolation</th><td>KEY_LINEAR (default) follows the points exactly: scale them to 0.5 and the shape halves. KEY_BSPLINE is smoother but only approximates the points (the same move gives about 0.67). KEY_CATMULL_ROM and KEY_CARDINAL sit between.</td></tr>
+<tr><th>lattice_name</th><td>Name for the lattice object; defaults to &quot;&lt;object&gt; Lattice&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the lattice name, its point count and the modifier name.</p></article><article class="tool" id="keyframe_shape_key" data-search="keyframe_shape_key keyframe a shape key&#x27;s value so the blend shape animates."><h3><a href="#keyframe_shape_key">keyframe_shape_key</a></h3><pre class="sig"><code>keyframe_shape_key(object_name: str, key_name: str, frame: int, value: float | None = None)</code></pre><p>Keyframe a shape key&#x27;s value so the blend shape animates.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr>
 <tr><th>key_name</th><td>Shape key.</td></tr>
 <tr><th>frame</th><td>Frame number.</td></tr>
-<tr><th>value</th><td>Value to set before keying; omit to key the current value.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the key, frame and keyed value.</p></article><article class="tool" id="list_shape_keys" data-search="list_shape_keys list an object&#x27;s shape keys with values, ranges and options."><h3><a href="#list_shape_keys">list_shape_keys</a></h3><pre class="sig"><code>list_shape_keys(object_name: str)</code></pre><p>List an object&#x27;s shape keys with values, ranges and options.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the reference key and each key&#x27;s settings.</p></article><article class="tool" id="list_vertex_groups" data-search="list_vertex_groups list an object&#x27;s vertex groups with vertex counts and weight ranges."><h3><a href="#list_vertex_groups">list_vertex_groups</a></h3><pre class="sig"><code>list_vertex_groups(object_name: str)</code></pre><p>List an object&#x27;s vertex groups with vertex counts and weight ranges.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with each group&#x27;s name, index, vertex count, min and max weight.</p></article><article class="tool" id="move_shape_key_vertices" data-search="move_shape_key_vertices move vertices inside a shape key, building the blend shape.
+<tr><th>value</th><td>Value to set before keying; omit to key the current value.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the key, frame and keyed value.</p></article><article class="tool" id="list_shape_keys" data-search="list_shape_keys list an object&#x27;s shape keys with values, ranges and options."><h3><a href="#list_shape_keys">list_shape_keys</a></h3><pre class="sig"><code>list_shape_keys(object_name: str)</code></pre><p>List an object&#x27;s shape keys with values, ranges and options.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the reference key and each key&#x27;s settings.</p></article><article class="tool" id="list_vertex_groups" data-search="list_vertex_groups list an object&#x27;s vertex groups with vertex counts and weight ranges."><h3><a href="#list_vertex_groups">list_vertex_groups</a></h3><pre class="sig"><code>list_vertex_groups(object_name: str)</code></pre><p>List an object&#x27;s vertex groups with vertex counts and weight ranges.</p><table class="args"><tbody><tr><th>object_name</th><td>Mesh object.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with each group&#x27;s name, index, vertex count, min and max weight.</p></article><article class="tool" id="move_lattice_points" data-search="move_lattice_points move or scale lattice points to deform everything the lattice is bound to.
+
+pick points by side (axis and sign, split at the middle of the lattice) or
+by index; with neither, every point moves. scaling is about the lattice
+centre, per axis: scale [0.2, 0.2, 1] on the top tapers it to a point."><h3><a href="#move_lattice_points">move_lattice_points</a></h3><pre class="sig"><code>move_lattice_points(lattice_name: str, offset: list[float] | None = None, scale: list[float] | None = None, axis: str | None = None, sign: str = &#x27;POS&#x27;, point_indices: list[int] | None = None, reset: bool = False)</code></pre><p>Move or scale lattice points to deform everything the lattice is bound to.
+
+Pick points by side (axis and sign, split at the middle of the lattice) or
+by index; with neither, every point moves. Scaling is about the lattice
+centre, per axis: scale [0.2, 0.2, 1] on the top tapers it to a point.</p><table class="args"><tbody><tr><th>lattice_name</th><td>Lattice object from create_lattice.</td></tr>
+<tr><th>offset</th><td>[x, y, z] in world units added to the chosen points.</td></tr>
+<tr><th>scale</th><td>[x, y, z] factors, 0.01 to 100, about the lattice centre.</td></tr>
+<tr><th>axis</th><td>X, Y or Z: choose the points on one side of the lattice.</td></tr>
+<tr><th>sign</th><td>POS, NEG, or ALIGN (the middle plane) with axis.</td></tr>
+<tr><th>point_indices</th><td>Choose points by index instead (u fastest, then v, then w).</td></tr>
+<tr><th>reset</th><td>Put every point back where it started (others ignored).</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with how many points moved and the lattice&#x27;s point count.</p></article><article class="tool" id="move_shape_key_vertices" data-search="move_shape_key_vertices move vertices inside a shape key, building the blend shape.
 
 the offset is in the object&#x27;s local space. with a vertex group, each
 vertex moves by offset times its weight, which gives soft falloff:

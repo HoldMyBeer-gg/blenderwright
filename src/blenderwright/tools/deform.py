@@ -6,7 +6,9 @@ from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
     validate_color,
     validate_enum,
+    validate_indices,
     validate_int,
+    validate_new_name,
     validate_numeric_range,
     validate_object_name,
     ValidationError,
@@ -20,7 +22,13 @@ ALLOWED_GROUP_OPERATIONS = {
 }
 ALLOWED_COLOR_DOMAINS = {"POINT", "CORNER"}
 ALLOWED_COLOR_TYPES = {"BYTE_COLOR", "FLOAT_COLOR"}
-MAX_VERTEX_INDICES = 1_000_000
+ALLOWED_LATTICE_INTERPOLATIONS = {"KEY_LINEAR", "KEY_CARDINAL", "KEY_CATMULL_ROM",
+                                  "KEY_BSPLINE"}
+ALLOWED_AXES = {"X", "Y", "Z"}
+ALLOWED_SIDES = {"POS", "NEG", "ALIGN"}
+MAX_LATTICE_POINTS_PER_AXIS = 64
+MAX_LATTICE_OFFSET = 10_000.0
+MAX_LATTICE_SCALE = 100.0
 MAX_SHAPE_OFFSET = 1000.0
 SLIDER_LIMIT = 10.0
 MAX_FRAME = 1_048_574
@@ -32,23 +40,6 @@ def _send(command: str, params: dict[str, Any]) -> Any:
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
-
-
-def _validate_indices(indices: Any) -> list[int]:
-    if not isinstance(indices, list) or not indices:
-        raise ValidationError("vertex_indices must be a non-empty list of vertex numbers")
-    if len(indices) > MAX_VERTEX_INDICES:
-        raise ValidationError(f"vertex_indices may hold at most {MAX_VERTEX_INDICES} entries")
-    clean: list[int] = []
-    seen: set[int] = set()
-    for i in indices:
-        if isinstance(i, float) and not i.is_integer():
-            raise ValidationError(f"vertex index {i} is not a whole number")
-        index = validate_int(i, 0, None, name="vertex index")
-        if index not in seen:
-            seen.add(index)
-            clean.append(index)
-    return clean
 
 
 @mcp.tool()
@@ -87,7 +78,7 @@ def assign_vertex_group(
         "selection": validate_enum(selection, ALLOWED_SELECTION_MODES, name="selection"),
     }
     if vertex_indices is not None:
-        params["vertex_indices"] = _validate_indices(vertex_indices)
+        params["vertex_indices"] = validate_indices(vertex_indices)
     return _send("assign_vertex_group", params)
 
 
@@ -289,7 +280,7 @@ def move_shape_key_vertices(
     if vertex_indices is not None and vertex_group:
         raise ValidationError("Give vertex_indices or vertex_group, not both")
     if vertex_indices is not None:
-        params["vertex_indices"] = _validate_indices(vertex_indices)
+        params["vertex_indices"] = validate_indices(vertex_indices)
     if vertex_group:
         params["vertex_group"] = validate_object_name(vertex_group)
     return _send("move_shape_key_vertices", params)
@@ -398,7 +389,7 @@ def paint_color_attribute(
         "selection": validate_enum(selection, ALLOWED_SELECTION_MODES, name="selection"),
     }
     if vertex_indices is not None:
-        params["vertex_indices"] = _validate_indices(vertex_indices)
+        params["vertex_indices"] = validate_indices(vertex_indices)
     return _send("paint_color_attribute", params)
 
 
@@ -417,3 +408,109 @@ def remove_color_attribute(object_name: str, attribute_name: str) -> dict[str, A
         "object_name": validate_object_name(object_name),
         "attribute_name": validate_object_name(attribute_name),
     })
+
+
+@mcp.tool()
+def create_lattice(
+    object_name: str,
+    resolution: list[int] | None = None,
+    interpolation: str = "KEY_LINEAR",
+    lattice_name: str = "",
+) -> dict[str, Any]:
+    """Wrap an object in a lattice cage and deform it through the cage.
+
+    The lattice is fitted to the object's bounding box and a Lattice modifier
+    is added. Then bend, taper or bulge the whole shape with
+    move_lattice_points instead of editing vertices.
+
+    Args:
+        object_name: Object to deform (mesh, curve, text...).
+        resolution: Points along [u, v, w] (the object's X, Y, Z), 2 to 64 each.
+            More points give more local control. Default [2, 2, 2].
+        interpolation: KEY_LINEAR (default) follows the points exactly: scale
+            them to 0.5 and the shape halves. KEY_BSPLINE is smoother but only
+            approximates the points (the same move gives about 0.67).
+            KEY_CATMULL_ROM and KEY_CARDINAL sit between.
+        lattice_name: Name for the lattice object; defaults to "<object> Lattice".
+
+    Returns:
+        Dict with the lattice name, its point count and the modifier name.
+    """
+    resolution = [2, 2, 2] if resolution is None else resolution
+    if not isinstance(resolution, list) or len(resolution) != 3:
+        raise ValidationError("resolution must be [u, v, w]")
+    params: dict[str, Any] = {
+        "object_name": validate_object_name(object_name),
+        "resolution": [validate_int(r, 2, MAX_LATTICE_POINTS_PER_AXIS, name="resolution")
+                       for r in resolution],
+        "interpolation": validate_enum(interpolation, ALLOWED_LATTICE_INTERPOLATIONS,
+                                       name="interpolation"),
+    }
+    if any(isinstance(r, float) and not r.is_integer() for r in resolution):
+        raise ValidationError("resolution must be whole numbers")
+    if lattice_name:
+        params["lattice_name"] = validate_new_name(lattice_name)
+    return _send("create_lattice", params)
+
+
+@mcp.tool()
+def move_lattice_points(
+    lattice_name: str,
+    offset: list[float] | None = None,
+    scale: list[float] | None = None,
+    axis: str | None = None,
+    sign: str = "POS",
+    point_indices: list[int] | None = None,
+    reset: bool = False,
+) -> dict[str, Any]:
+    """Move or scale lattice points to deform everything the lattice is bound to.
+
+    Pick points by side (axis and sign, split at the middle of the lattice) or
+    by index; with neither, every point moves. Scaling is about the lattice
+    centre, per axis: scale [0.2, 0.2, 1] on the top tapers it to a point.
+
+    Args:
+        lattice_name: Lattice object from create_lattice.
+        offset: [x, y, z] in world units added to the chosen points.
+        scale: [x, y, z] factors, 0.01 to 100, about the lattice centre.
+        axis: X, Y or Z: choose the points on one side of the lattice.
+        sign: POS, NEG, or ALIGN (the middle plane) with axis.
+        point_indices: Choose points by index instead (u fastest, then v, then w).
+        reset: Put every point back where it started (others ignored).
+
+    Returns:
+        Dict with how many points moved and the lattice's point count.
+    """
+    if not isinstance(reset, bool):
+        raise ValidationError(f"reset must be true or false, got {reset!r}")
+    params: dict[str, Any] = {"lattice_name": validate_object_name(lattice_name)}
+    if reset:
+        if offset is not None or scale is not None or axis is not None \
+                or point_indices is not None:
+            raise ValidationError("reset puts every point back; give nothing else")
+        params["reset"] = True
+        return _send("move_lattice_points", params)
+    if offset is None and scale is None:
+        raise ValidationError("Give offset, scale, or reset")
+    if offset is not None:
+        params["offset"] = [validate_numeric_range(v, min_val=-MAX_LATTICE_OFFSET,
+                                                   max_val=MAX_LATTICE_OFFSET, name="offset")
+                            for v in _triple(offset, "offset")]
+    if scale is not None:
+        params["scale"] = [validate_numeric_range(v, min_val=0.01, max_val=MAX_LATTICE_SCALE,
+                                                  name="scale")
+                           for v in _triple(scale, "scale")]
+    if axis is not None and point_indices is not None:
+        raise ValidationError("Choose points by axis or by point_indices, not both")
+    if axis is not None:
+        params["axis"] = validate_enum(axis, ALLOWED_AXES, name="axis")
+        params["sign"] = validate_enum(sign, ALLOWED_SIDES, name="sign")
+    if point_indices is not None:
+        params["point_indices"] = validate_indices(point_indices, "point_indices", "point")
+    return _send("move_lattice_points", params)
+
+
+def _triple(value: Any, name: str) -> list:
+    if not isinstance(value, list) or len(value) != 3:
+        raise ValidationError(f"{name} must be [x, y, z]")
+    return value
