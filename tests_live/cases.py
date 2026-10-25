@@ -96,6 +96,7 @@ CASES = {
     'create_light': {'type': 'POINT'},
     'create_light_rig': {'type': 'THREE_POINT'},
     'create_material': {'name': 'Smoke'},
+    'create_metaball': {'name': 'Blob', 'elements': [{'type': 'BALL'}, {'type': 'CAPSULE', 'location': [1, 0, 0], 'size': [1, 0.3, 0.3]}]},
     'create_object': {'type': 'CUBE'},
     'create_polygon_prism': {'sides': 6},
     'create_principled_material': {'name': 'Smoke'},

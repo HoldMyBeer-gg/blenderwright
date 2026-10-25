@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 270 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 270 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 271 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 271 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 270 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 271 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>270</b> tools</span>
+    <span><b>271</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -137,7 +137,7 @@ footer a { color: var(--accent); }
 <a href="#mesh_editing">Mesh Editing <span class="n">19</span></a>
 <a href="#mesh_quality">Mesh Quality <span class="n">3</span></a>
 <a href="#modeling">Modeling <span class="n">13</span></a>
-<a href="#objects">Objects <span class="n">15</span></a>
+<a href="#objects">Objects <span class="n">16</span></a>
 <a href="#physics">Physics <span class="n">14</span></a>
 <a href="#print3d">print3d <span class="n">1</span></a>
 <a href="#render_settings">render_settings <span class="n">12</span></a>
@@ -1231,8 +1231,18 @@ smoothing faces within the angle threshold.</p><table class="args"><tbody><tr><t
 <tr><th>smooth</th><td>True for smooth shading, False for flat shading.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="subdivide_mesh" data-search="subdivide_mesh subdivide a mesh."><h3><a href="#subdivide_mesh">subdivide_mesh</a></h3><pre class="sig"><code>subdivide_mesh(object_name: str, cuts: int = 1, selection: str = &#x27;ALL&#x27;)</code></pre><p>Subdivide a mesh.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the mesh object to subdivide.</td></tr>
 <tr><th>cuts</th><td>Number of cuts per edge. Range: 1-100.</td></tr>
 <tr><th>selection</th><td>&quot;ALL&quot; to act on the whole mesh, or &quot;CURRENT&quot; to act only on what is already selected. Use the select_* tools to choose first. Defaults to &quot;ALL&quot;.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article></section>
-<section class="module" id="objects" data-module="objects"><h2>Objects <span class="n">15</span></h2><article class="tool" id="convert_object" data-search="convert_object convert an object to a different type."><h3><a href="#convert_object">convert_object</a></h3><pre class="sig"><code>convert_object(object_name: str, target: str = &#x27;MESH&#x27;)</code></pre><p>Convert an object to a different type.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to convert.</td></tr>
-<tr><th>target</th><td>Target type. One of: MESH, CURVE, SURFACE, META, FONT, CURVES, POINTCLOUD, GPENCIL.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="create_object" data-search="create_object create a primitive object in the scene."><h3><a href="#create_object">create_object</a></h3><pre class="sig"><code>create_object(type: str, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), rotation: list[float] | tuple[float, ...] = (0, 0, 0), scale: list[float] | tuple[float, ...] = (1, 1, 1))</code></pre><p>Create a primitive object in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Primitive type. One of: CUBE, SPHERE, UV_SPHERE, ICO_SPHERE, CYLINDER, CONE, TORUS, PLANE, CIRCLE, MONKEY, EMPTY.</td></tr>
+<section class="module" id="objects" data-module="objects"><h2>Objects <span class="n">16</span></h2><article class="tool" id="convert_object" data-search="convert_object convert an object to a different type."><h3><a href="#convert_object">convert_object</a></h3><pre class="sig"><code>convert_object(object_name: str, target: str = &#x27;MESH&#x27;)</code></pre><p>Convert an object to a different type.</p><table class="args"><tbody><tr><th>object_name</th><td>Name of the object to convert.</td></tr>
+<tr><th>target</th><td>Target type. One of: MESH, CURVE, SURFACE, META, FONT, CURVES, POINTCLOUD, GPENCIL.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="create_metaball" data-search="create_metaball create a metaball: soft elements that melt into one smooth surface.
+
+good for organic blobs, liquid drops and quick character blocking. turn
+it into an editable mesh with convert_object(target=&quot;mesh&quot;)."><h3><a href="#create_metaball">create_metaball</a></h3><pre class="sig"><code>create_metaball(name: str = &#x27;Metaball&#x27;, elements: list[dict[str, Any]] | None = None, location: list[float] | None = None, resolution: float = 0.2, threshold: float = 0.6)</code></pre><p>Create a metaball: soft elements that melt into one smooth surface.
+
+Good for organic blobs, liquid drops and quick character blocking. Turn
+it into an editable mesh with convert_object(target=&quot;MESH&quot;).</p><table class="args"><tbody><tr><th>name</th><td>Object name.</td></tr>
+<tr><th>elements</th><td>Up to 500 of {&quot;type&quot;: BALL | CAPSULE | ELLIPSOID | CUBE | PLANE, &quot;location&quot;: [x, y, z] (relative to the object), &quot;radius&quot;: influence (default 1), &quot;stiffness&quot;: 0-10 how firm (default 2), &quot;size&quot;: [x, y, z] half-extents for the non-BALL types, &quot;negative&quot;: true to carve the shape away instead}. Elements closer than their radii merge. Default: one ball.</td></tr>
+<tr><th>location</th><td>Object position, [x, y, z].</td></tr>
+<tr><th>resolution</th><td>Surface detail in the viewport, 0.05 (fine) to 2 (coarse).</td></tr>
+<tr><th>threshold</th><td>Where the surface sits in the field, 0.01 to 5. Lower is fatter.</td></tr></tbody></table><p class="ret"><span>Returns</span> Dict with the object name and element count.</p></article><article class="tool" id="create_object" data-search="create_object create a primitive object in the scene."><h3><a href="#create_object">create_object</a></h3><pre class="sig"><code>create_object(type: str, name: str = &#x27;&#x27;, location: list[float] | tuple[float, ...] = (0, 0, 0), rotation: list[float] | tuple[float, ...] = (0, 0, 0), scale: list[float] | tuple[float, ...] = (1, 1, 1))</code></pre><p>Create a primitive object in the scene.</p><table class="args"><tbody><tr><th>type</th><td>Primitive type. One of: CUBE, SPHERE, UV_SPHERE, ICO_SPHERE, CYLINDER, CONE, TORUS, PLANE, CIRCLE, MONKEY, EMPTY.</td></tr>
 <tr><th>name</th><td>Optional name for the object. Auto-generated if empty.</td></tr>
 <tr><th>location</th><td>XYZ position as a 3-element list/tuple. Defaults to origin.</td></tr>
 <tr><th>rotation</th><td>XYZ Euler rotation in radians as a 3-element list/tuple.</td></tr>

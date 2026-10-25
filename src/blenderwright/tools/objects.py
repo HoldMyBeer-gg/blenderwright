@@ -580,3 +580,86 @@ def make_single_user(object_name: str, object: bool = True, data: bool = True) -
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
+
+
+ALLOWED_METABALL_TYPES = {"BALL", "CAPSULE", "PLANE", "ELLIPSOID", "CUBE"}
+METABALL_ELEMENT_KEYS = {"type", "location", "radius", "stiffness", "size", "negative"}
+MAX_METABALL_ELEMENTS = 500
+MAX_METABALL_EXTENT = 10_000.0
+
+
+def _metaball_element(element: Any) -> dict[str, Any]:
+    if not isinstance(element, dict) or not set(element) <= METABALL_ELEMENT_KEYS:
+        raise ValidationError("Each element is {type, location?, radius?, stiffness?, "
+                              "size?, negative?}")
+    kind = validate_enum(element.get("type", "BALL"), ALLOWED_METABALL_TYPES, name="type")
+    location = element.get("location", [0, 0, 0])
+    clean: dict[str, Any] = {
+        "type": kind,
+        "location": [validate_numeric_range(v, min_val=-MAX_METABALL_EXTENT,
+                                            max_val=MAX_METABALL_EXTENT, name="location")
+                     for v in validate_vector(location, size=3, name="location")],
+        "radius": float(validate_numeric_range(element.get("radius", 1.0), min_val=0.001,
+                                               max_val=MAX_METABALL_EXTENT, name="radius")),
+        "stiffness": float(validate_numeric_range(element.get("stiffness", 2.0), min_val=0.0,
+                                                  max_val=10.0, name="stiffness")),
+        "negative": element.get("negative", False),
+    }
+    if not isinstance(clean["negative"], bool):
+        raise ValidationError("negative must be true or false")
+    if "size" in element:
+        if kind == "BALL":
+            raise ValidationError("A BALL has only a radius; size is for the other types")
+        clean["size"] = [validate_numeric_range(v, min_val=0.001, max_val=MAX_METABALL_EXTENT,
+                                                name="size")
+                         for v in validate_vector(element["size"], size=3, name="size")]
+    return clean
+
+
+@mcp.tool()
+def create_metaball(
+    name: str = "Metaball",
+    elements: list[dict[str, Any]] | None = None,
+    location: list[float] | None = None,
+    resolution: float = 0.2,
+    threshold: float = 0.6,
+) -> dict[str, Any]:
+    """Create a metaball: soft elements that melt into one smooth surface.
+
+    Good for organic blobs, liquid drops and quick character blocking. Turn
+    it into an editable mesh with convert_object(target="MESH").
+
+    Args:
+        name: Object name.
+        elements: Up to 500 of {"type": BALL | CAPSULE | ELLIPSOID | CUBE | PLANE,
+            "location": [x, y, z] (relative to the object), "radius": influence
+            (default 1), "stiffness": 0-10 how firm (default 2), "size": [x, y, z]
+            half-extents for the non-BALL types, "negative": true to carve the
+            shape away instead}. Elements closer than their radii merge.
+            Default: one ball.
+        location: Object position, [x, y, z].
+        resolution: Surface detail in the viewport, 0.05 (fine) to 2 (coarse).
+        threshold: Where the surface sits in the field, 0.01 to 5. Lower is fatter.
+
+    Returns:
+        Dict with the object name and element count.
+    """
+    elements = [{"type": "BALL"}] if elements is None else elements
+    if not isinstance(elements, list) or not elements:
+        raise ValidationError("elements must be a non-empty list")
+    if len(elements) > MAX_METABALL_ELEMENTS:
+        raise ValidationError(f"At most {MAX_METABALL_ELEMENTS} elements")
+    params = {
+        "name": validate_new_name(name),
+        "location": list(validate_vector(location or [0, 0, 0], size=3, name="location")),
+        "resolution": float(validate_numeric_range(resolution, min_val=0.05, max_val=2.0,
+                                                   name="resolution")),
+        "threshold": float(validate_numeric_range(threshold, min_val=0.01, max_val=5.0,
+                                                  name="threshold")),
+        "elements": [_metaball_element(e) for e in elements],
+    }
+    conn = get_connection()
+    response = conn.send_command("create_metaball", params)
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
