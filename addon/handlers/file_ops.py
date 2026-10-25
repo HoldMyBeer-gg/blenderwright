@@ -270,6 +270,45 @@ def handle_link_or_append(params):
             "instances": instances}
 
 
+PACKABLE = (("image", "images"), ("sound", "sounds"), ("font", "fonts"), ("volume", "volumes"))
+
+
+def _packed_items():
+    return [
+        (kind, block)
+        for kind, collection in PACKABLE
+        for block in getattr(bpy.data, collection)
+        if block.packed_file is not None
+    ]
+
+
+def handle_pack_resources(params):
+    """Pack all external files; optionally turn autopack on or off."""
+    bpy.ops.file.pack_all()
+    if "autopack" in params:
+        bpy.data.use_autopack = bool(params["autopack"])
+    return {
+        "packed": [{"type": kind, "name": block.name} for kind, block in _packed_items()],
+        "autopack": bpy.data.use_autopack,
+    }
+
+
+def handle_unpack_resources(params):
+    """Unpack beside the .blend only. The *_ORIGINAL methods would write to
+    whatever paths a downloaded file carries, so they are never used."""
+    if not bpy.data.filepath:
+        raise ValueError("Save the .blend first; packed files are written next to it")
+    items = _packed_items()
+    method = "WRITE_LOCAL" if params.get("overwrite") else "USE_LOCAL"
+    bpy.ops.file.unpack_all(method=method)
+    return {
+        "unpacked": [
+            {"type": kind, "name": block.name, "filepath": block.filepath}
+            for kind, block in items
+        ],
+    }
+
+
 def register():
     """Register file operations handlers with the dispatcher."""
     dispatcher.register_handler("import_file", handle_import_file)
@@ -279,3 +318,5 @@ def register():
     dispatcher.register_handler("list_recent_files", handle_list_recent_files)
     dispatcher.register_handler("list_blend_contents", handle_list_blend_contents)
     dispatcher.register_handler("link_or_append", handle_link_or_append)
+    dispatcher.register_handler("pack_resources", handle_pack_resources)
+    dispatcher.register_handler("unpack_resources", handle_unpack_resources)

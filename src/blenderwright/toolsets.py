@@ -80,7 +80,7 @@ TOOLSETS: dict[str, str] = {
     "collections": "Collections: create, move objects, visibility, delete; collection "
                    "instances and making them real",
     "file_ops": "Import and export FBX, OBJ, glTF, USD, STL; save and open .blend; "
-                "list, link and append from other .blend files",
+                "list, link and append from other .blend files; pack and unpack resources",
     "viewport": "Viewport shading, overlays, focus on object",
     "screenshot": "Capture the viewport as an image for visual checks",
     "code_exec": "Run sandboxed Python inside Blender",

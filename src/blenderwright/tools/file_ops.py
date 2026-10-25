@@ -224,3 +224,46 @@ def link_or_append(
         "names": clean,
         "link": bool(link),
     })
+
+
+def _bool(value: Any, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValidationError(f"{name} must be true or false, got {value!r}")
+    return value
+
+
+@mcp.tool()
+def pack_resources(autopack: bool | None = None) -> dict[str, Any]:
+    """Pack every external image, sound, font and volume into the .blend file.
+
+    Makes the file self-contained so it can be moved or shared without
+    missing textures.
+
+    Args:
+        autopack: Also pack new external files automatically on every save.
+
+    Returns:
+        Dict with the packed items (type, name) and whether autopack is on.
+    """
+    params: dict[str, Any] = {}
+    if autopack is not None:
+        params["autopack"] = _bool(autopack, "autopack")
+    return _send_file_command("pack_resources", params)
+
+
+@mcp.tool()
+def unpack_resources(overwrite: bool = False) -> dict[str, Any]:
+    """Write packed files out to folders next to the saved .blend (textures/, sounds/, ...).
+
+    Files only ever go beside the .blend, never to paths stored in the file.
+    The .blend must be saved first.
+
+    Args:
+        overwrite: Replace files already there; by default an existing file is reused.
+
+    Returns:
+        Dict with each unpacked item (type, name, filepath relative to the .blend).
+    """
+    return _send_file_command("unpack_resources", {
+        "overwrite": _bool(overwrite, "overwrite"),
+    })
