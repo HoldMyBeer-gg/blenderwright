@@ -120,3 +120,21 @@ class TestDispatchWithoutParams:
         register_handler("track", track_handler)
         dispatch("track", None)
         assert received_params == [{}]
+
+
+class TestUnencodableResult:
+    """A handler that returned a Blender object made the reply unencodable;
+    the client thread died and the MCP saw "Connection to Blender lost"."""
+
+    def test_becomes_an_error_reply(self):
+        class BlenderThing:
+            pass
+
+        register_handler("leaky", lambda params: {"value": BlenderThing()})
+        result = dispatch("leaky")
+        assert result["status"] == "error"
+        assert "leaky" in result["result"] and "BlenderThing" in result["result"]
+
+    def test_normal_results_untouched(self):
+        register_handler("fine", lambda params: {"a": [1, 2.5, "x", None, True]})
+        assert dispatch("fine") == {"status": "ok", "result": {"a": [1, 2.5, "x", None, True]}}

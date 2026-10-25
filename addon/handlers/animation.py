@@ -440,7 +440,7 @@ def handle_keyframe_property(params):
         raise ValueError(f"'{path}' cannot be animated; Blender does not allow keyframes "
                          f"on it")
     return {"owner": owner.name, "data_path": owner_path, "frame": frame, "index": index,
-            "value": _plain(owner.path_resolve(owner_path, False))}
+            "value": _plain(owner.path_resolve(owner_path))}
 
 
 ACTION_OPERATIONS = {"LIST", "NEW", "ASSIGN", "UNASSIGN", "PUSH_DOWN"}
