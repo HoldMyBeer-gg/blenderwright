@@ -10,6 +10,7 @@ import pytest
 
 from blenderwright.tools.render_settings import (
     ALLOWED_DISPLAY_DEVICES,
+    ALLOWED_WORKING_SPACES,
     ALLOWED_LOOKS,
     ALLOWED_VIEW_TRANSFORMS,
     set_color_management,
@@ -85,6 +86,27 @@ class TestSetColorManagement:
         mock_conn.send_command.return_value = {"status": "error", "result": "nope"}
         with pytest.raises(RuntimeError, match="nope"):
             set_color_management(view_transform="AgX")
+
+
+class TestWorkingSpace:
+    def test_spaces_match_blender52(self):
+        assert ALLOWED_WORKING_SPACES == {"Linear Rec.709", "Linear Rec.2020", "ACEScg"}
+
+    def test_converts_colors_by_default(self, mock_conn):
+        set_color_management(working_space="ACEScg")
+        assert _sent(mock_conn) == {"working_space": "ACEScg", "convert_colors": True}
+
+    def test_keep_raw_values(self, mock_conn):
+        set_color_management(working_space="Linear Rec.2020", convert_colors=False)
+        assert _sent(mock_conn)["convert_colors"] is False
+
+    def test_unknown_space(self, mock_conn):
+        with pytest.raises(ValidationError):
+            set_color_management(working_space="sRGB")
+
+    def test_convert_must_be_bool(self, mock_conn):
+        with pytest.raises(ValidationError):
+            set_color_management(working_space="ACEScg", convert_colors="yes")
 
 
 class TestSetFilm:
