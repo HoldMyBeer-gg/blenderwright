@@ -275,6 +275,60 @@ def handle_keyframe_shape_key(params):
     return {"key": kb.name, "frame": frame, "value": kb.value}
 
 
+COLOR_DOMAINS = {"POINT", "CORNER"}
+COLOR_TYPES = {"BYTE_COLOR", "FLOAT_COLOR"}
+
+
+def handle_paint_color_attribute(params):
+    obj = _get_mesh(params.get("object_name"))
+    if obj.mode != "OBJECT":
+        _activate(obj)  # edit-mode data would overwrite the paint on exit
+    mesh = obj.data
+    if params.get("vertex_indices") is not None:
+        chosen = set(_check_indices(obj, list(params["vertex_indices"])))
+    elif params.get("selection", "ALL") == "CURRENT":
+        chosen = {v.index for v in mesh.vertices if v.select}
+    else:
+        chosen = None
+
+    attrs = mesh.color_attributes
+    name = params.get("attribute_name", "Color")
+    attr = attrs.get(name)
+    created = attr is None
+    if created:
+        domain = params.get("domain", "CORNER")
+        data_type = params.get("data_type", "BYTE_COLOR")
+        if domain not in COLOR_DOMAINS or data_type not in COLOR_TYPES:
+            raise ValueError(f"Unknown domain {domain!r} or data_type {data_type!r}")
+        attr = attrs.new(name, data_type, domain)
+
+    if attr.domain == "POINT":
+        targets = range(len(attr.data)) if chosen is None else sorted(chosen)
+    else:
+        targets = [lp.index for lp in mesh.loops if chosen is None or lp.vertex_index in chosen]
+    color = tuple(float(c) for c in params["color"])
+    for i in targets:
+        attr.data[i].color = color
+
+    attrs.active_color = attr
+    attrs.render_color_index = attrs.active_color_index
+    return {"attribute": attr.name, "domain": attr.domain, "data_type": attr.data_type,
+            "created": created, "painted": len(targets),
+            "color_attributes": [a.name for a in attrs]}
+
+
+def handle_remove_color_attribute(params):
+    obj = _get_mesh(params.get("object_name"))
+    name = params.get("attribute_name")
+    attrs = obj.data.color_attributes
+    attr = attrs.get(name)
+    if attr is None:
+        raise ValueError(f"'{obj.name}' has no color attribute '{name}'; "
+                         f"it has {[a.name for a in attrs]}")
+    attrs.remove(attr)
+    return {"removed": name, "color_attributes": [a.name for a in attrs]}
+
+
 def register():
     dispatcher.register_handler("assign_vertex_group", handle_assign_vertex_group)
     dispatcher.register_handler("list_vertex_groups", handle_list_vertex_groups)
@@ -286,3 +340,5 @@ def register():
     dispatcher.register_handler("list_shape_keys", handle_list_shape_keys)
     dispatcher.register_handler("remove_shape_key", handle_remove_shape_key)
     dispatcher.register_handler("keyframe_shape_key", handle_keyframe_shape_key)
+    dispatcher.register_handler("paint_color_attribute", handle_paint_color_attribute)
+    dispatcher.register_handler("remove_color_attribute", handle_remove_color_attribute)

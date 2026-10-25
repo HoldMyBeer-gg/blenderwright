@@ -1,9 +1,10 @@
-"""MCP tools for vertex groups (weights) and shape keys (blend shapes)."""
+"""MCP tools for vertex groups (weights), shape keys (blend shapes) and color attributes."""
 
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
 from blenderwright.validators import (
+    validate_color,
     validate_enum,
     validate_int,
     validate_numeric_range,
@@ -17,6 +18,8 @@ ALLOWED_GROUP_OPERATIONS = {
     "NORMALIZE", "NORMALIZE_ALL", "INVERT", "CLEAN", "SMOOTH", "LEVELS",
     "LIMIT_TOTAL", "MIRROR", "QUANTIZE",
 }
+ALLOWED_COLOR_DOMAINS = {"POINT", "CORNER"}
+ALLOWED_COLOR_TYPES = {"BYTE_COLOR", "FLOAT_COLOR"}
 MAX_VERTEX_INDICES = 1_000_000
 MAX_SHAPE_OFFSET = 1000.0
 SLIDER_LIMIT = 10.0
@@ -349,3 +352,68 @@ def keyframe_shape_key(
         params["value"] = validate_numeric_range(value, min_val=-SLIDER_LIMIT,
                                                  max_val=SLIDER_LIMIT, name="value")
     return _send("keyframe_shape_key", params)
+
+
+@mcp.tool()
+def paint_color_attribute(
+    object_name: str,
+    color: list[float],
+    attribute_name: str = "Color",
+    domain: str = "CORNER",
+    data_type: str = "BYTE_COLOR",
+    vertex_indices: list[int] | None = None,
+    selection: str = "ALL",
+) -> dict[str, Any]:
+    """Fill a color attribute (vertex colors) on a mesh, creating it if needed.
+
+    The attribute becomes the active and render color. Read it in a material
+    with a ShaderNodeVertexColor node whose layer_name is the attribute name.
+    Game engines and glTF export pick it up as vertex color.
+
+    Args:
+        object_name: Mesh object.
+        color: Linear RGB or RGBA, each 0.0 to 1.0.
+        attribute_name: Color attribute; created if it does not exist.
+        domain: CORNER (per face corner, allows hard color edges) or POINT
+            (per vertex). Used only when creating the attribute.
+        data_type: BYTE_COLOR (8-bit) or FLOAT_COLOR. Used only when creating.
+        vertex_indices: Vertices to paint. Omit to paint the whole mesh, or
+            the edit-mode selection with selection="CURRENT".
+        selection: When vertex_indices is omitted: ALL, or CURRENT for the
+            vertices selected in edit mode (use the select_* tools first).
+
+    Returns:
+        Dict with the attribute, its domain and type, whether it was created,
+        how many elements were painted, and all color attribute names.
+    """
+    rgba = list(validate_color(color))
+    if len(rgba) == 3:
+        rgba.append(1.0)
+    params: dict[str, Any] = {
+        "object_name": validate_object_name(object_name),
+        "color": rgba,
+        "attribute_name": validate_object_name(attribute_name),
+        "domain": validate_enum(domain, ALLOWED_COLOR_DOMAINS, name="domain"),
+        "data_type": validate_enum(data_type, ALLOWED_COLOR_TYPES, name="data_type"),
+        "selection": validate_enum(selection, ALLOWED_SELECTION_MODES, name="selection"),
+    }
+    if vertex_indices is not None:
+        params["vertex_indices"] = _validate_indices(vertex_indices)
+    return _send("paint_color_attribute", params)
+
+
+@mcp.tool()
+def remove_color_attribute(object_name: str, attribute_name: str) -> dict[str, Any]:
+    """Delete a color attribute from a mesh.
+
+    Args:
+        object_name: Mesh object.
+        attribute_name: Color attribute to remove.
+
+    Returns:
+        Dict with the removed name and the color attributes left.
+    """
+    return _send("remove_color_attribute", {
+        "object_name": validate_object_name(object_name),
+        "attribute_name": validate_object_name(attribute_name),
+    })
