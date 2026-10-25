@@ -1,6 +1,7 @@
 """Blender handlers for vertex groups (weights) and shape keys (blend shapes)."""
 
 import bpy
+from mathutils import Vector
 from .. import dispatcher
 
 ASSIGN_MODES = {"REPLACE", "ADD", "SUBTRACT", "REMOVE"}
@@ -329,6 +330,90 @@ def handle_remove_color_attribute(params):
     return {"removed": name, "color_attributes": [a.name for a in attrs]}
 
 
+LATTICE_INTERPOLATIONS = {"KEY_LINEAR", "KEY_CARDINAL", "KEY_CATMULL_ROM", "KEY_BSPLINE"}
+
+
+def _world_bounds(obj):
+    bpy.context.view_layer.update()  # matrix_world is stale after a transform
+    corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
+    return ([min(c[i] for c in corners) for i in range(3)],
+            [max(c[i] for c in corners) for i in range(3)])
+
+
+def _span(values):
+    return max(values) - min(values)
+
+
+def handle_create_lattice(params):
+    obj = bpy.data.objects.get(params.get("object_name"))
+    if obj is None:
+        raise ValueError(f"Object '{params.get('object_name')}' not found")
+    if not hasattr(obj, "modifiers") or obj.type == "LATTICE":
+        raise ValueError(f"'{obj.name}' cannot be deformed by a lattice")
+    interpolation = params.get("interpolation", "KEY_LINEAR")
+    if interpolation not in LATTICE_INTERPOLATIONS:
+        raise ValueError(f"Unknown interpolation {interpolation!r}")
+    u, v, w = (int(n) for n in params.get("resolution", (2, 2, 2)))
+    name = params.get("lattice_name") or f"{obj.name} Lattice"
+
+    low, high = _world_bounds(obj)
+    data = bpy.data.lattices.new(name)
+    data.points_u, data.points_v, data.points_w = u, v, w
+    data.interpolation_type_u = data.interpolation_type_v = interpolation
+    data.interpolation_type_w = interpolation
+    cage = bpy.data.objects.new(name, data)
+    (obj.users_collection[0] if obj.users_collection
+     else bpy.context.scene.collection).objects.link(cage)
+    # Points sit in lattice space; size the object so they land on the bounds
+    cage.location = [(a + b) / 2 for a, b in zip(low, high)]
+    cage.scale = [max(b - a, 1e-4) / (_span([p.co[i] for p in data.points]) or 1.0)
+                  for i, (a, b) in enumerate(zip(low, high))]
+    modifier = obj.modifiers.new(name="Lattice", type="LATTICE")
+    modifier.object = cage
+    bpy.context.view_layer.update()
+    return {"lattice": cage.name, "points": len(data.points), "modifier": modifier.name,
+            "object": obj.name}
+
+
+def handle_move_lattice_points(params):
+    from .selection import _on_side
+
+    cage = bpy.data.objects.get(params.get("lattice_name"))
+    if cage is None or cage.type != "LATTICE":
+        raise ValueError(f"No lattice object '{params.get('lattice_name')}'")
+    points = cage.data.points
+    if params.get("reset"):
+        for point in points:
+            point.co_deform = point.co
+        bpy.context.view_layer.update()
+        return {"lattice": cage.name, "moved": len(points), "points": len(points)}
+
+    if params.get("point_indices") is not None:
+        indices = list(params["point_indices"])
+        bad = [i for i in indices if not 0 <= i < len(points)]
+        if bad:
+            raise ValueError(f"Point index {bad[0]} is out of range (0 to {len(points) - 1})")
+    elif params.get("axis"):
+        component = "XYZ".index(params["axis"])
+        chosen = _on_side([p.co[component] for p in points], params.get("sign", "POS"))
+        indices = [i for i, picked in enumerate(chosen) if picked]
+    else:
+        indices = list(range(len(points)))
+
+    centre = [(min(p.co[i] for p in points) + max(p.co[i] for p in points)) / 2
+              for i in range(3)]
+    scale = params.get("scale") or (1.0, 1.0, 1.0)
+    # The offset is in world units; points live in lattice space
+    bpy.context.view_layer.update()
+    offset = cage.matrix_world.inverted().to_3x3() @ Vector(params.get("offset") or (0, 0, 0))
+    for i in indices:
+        current = points[i].co_deform
+        points[i].co_deform = [centre[a] + (current[a] - centre[a]) * scale[a] + offset[a]
+                               for a in range(3)]
+    bpy.context.view_layer.update()
+    return {"lattice": cage.name, "moved": len(indices), "points": len(points)}
+
+
 def register():
     dispatcher.register_handler("assign_vertex_group", handle_assign_vertex_group)
     dispatcher.register_handler("list_vertex_groups", handle_list_vertex_groups)
@@ -341,4 +426,6 @@ def register():
     dispatcher.register_handler("remove_shape_key", handle_remove_shape_key)
     dispatcher.register_handler("keyframe_shape_key", handle_keyframe_shape_key)
     dispatcher.register_handler("paint_color_attribute", handle_paint_color_attribute)
+    dispatcher.register_handler("create_lattice", handle_create_lattice)
+    dispatcher.register_handler("move_lattice_points", handle_move_lattice_points)
     dispatcher.register_handler("remove_color_attribute", handle_remove_color_attribute)

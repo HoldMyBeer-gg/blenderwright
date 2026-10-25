@@ -3,10 +3,10 @@
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
-from blenderwright.tools.deform import _validate_indices
 from blenderwright.validators import (
     validate_object_name,
     validate_enum,
+    validate_indices,
     validate_int,
     validate_numeric_range,
     ValidationError,
@@ -288,7 +288,7 @@ def set_sculpt_mask(
     params["value"] = float(validate_numeric_range(value, min_val=0.0, max_val=1.0,
                                                    name="value"))
     if vertex_indices is not None:
-        params["vertex_indices"] = _validate_indices(vertex_indices)
+        params["vertex_indices"] = validate_indices(vertex_indices)
     if vertex_group is not None:
         params["vertex_group"] = validate_object_name(vertex_group)
     return _send_sculpt("set_sculpt_mask", params)
@@ -323,6 +323,6 @@ def set_face_sets(
     if mode == "ASSIGN":
         if face_indices is None:
             raise ValidationError("ASSIGN needs face_indices")
-        params["face_indices"] = _validate_indices(face_indices)
+        params["face_indices"] = validate_indices(face_indices, "face_indices", "face")
         params["face_set"] = validate_int(face_set, 1, MAX_FACE_SET, name="face_set")
     return _send_sculpt("set_face_sets", params)
