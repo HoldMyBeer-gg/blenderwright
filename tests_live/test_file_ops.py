@@ -4,6 +4,7 @@ library containment, where unpack may write), which test our own path
 logic on a real filesystem and stay as unit tests."""
 
 import os
+import shutil
 
 import pytest
 
@@ -91,7 +92,11 @@ class TestLinkAppend:
 class TestPackAndPaths:
     @pytest.fixture
     def textured(self, scene):
-        T["add_texture_node"]("Material", os.path.join(ASSETS, "tex.png"))
+        """The texture sits in the project folder: on Windows CI the repo and
+        the temp folder are on different drives, and no relative path crosses
+        drives."""
+        shutil.copy(os.path.join(ASSETS, "tex.png"), scene / "tex.png")
+        T["add_texture_node"]("Material", str(scene / "tex.png"))
         return scene
 
     def test_pack_then_unpack_beside_the_blend(self, textured):
@@ -107,7 +112,7 @@ class TestPackAndPaths:
         T["save_file"]()
         relative = T["manage_external_paths"]("MAKE_RELATIVE")
         assert all(f["path"].startswith("//") for f in relative["files"])
-        found = T["manage_external_paths"]("FIND_MISSING", directory=ASSETS)
+        found = T["manage_external_paths"]("FIND_MISSING", directory=str(textured))
         assert found["missing"] == 0
 
     def test_searching_a_filesystem_root_is_refused_by_the_addon(self, scene):
