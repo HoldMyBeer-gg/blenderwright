@@ -160,3 +160,113 @@ class TestForceFieldCollisionSoftBody:
         _object(modifiers=[soft])
         handler.handle_bake_physics({"object_name": "Cube", "physics_type": "SOFT_BODY"})
         bpy.context.temp_override.assert_any_call(point_cache=soft.point_cache)
+
+
+class _Prop:
+    def __init__(self, type, readonly=False):
+        self.type, self.is_readonly = type, readonly
+
+
+class FakeRBC:
+    bl_rna = type("R", (), {"properties": {
+        "type": _Prop("ENUM"), "object1": _Prop("POINTER"), "object2": _Prop("POINTER"),
+        "use_breaking": _Prop("BOOLEAN"), "breaking_threshold": _Prop("FLOAT"),
+        "disable_collisions": _Prop("BOOLEAN"), "use_limit_ang_z": _Prop("BOOLEAN"),
+        "limit_ang_z_upper": _Prop("FLOAT"), "rna_type": _Prop("POINTER", readonly=True),
+    }})()
+
+    def __init__(self, type):
+        self.type, self.object1, self.object2 = type, None, None
+        self.use_breaking, self.breaking_threshold, self.disable_collisions = False, 10.0, True
+
+
+@pytest.fixture
+def rbc(handler, monkeypatch):
+    import bpy
+    from types import SimpleNamespace
+
+    a = SimpleNamespace(name="Door", rigid_body=object(), location=(0.0, 0.0, 0.0))
+    b = SimpleNamespace(name="Frame", rigid_body=object(), location=(2.0, 0.0, 4.0))
+    loose = SimpleNamespace(name="Loose", rigid_body=None, location=(0.0, 0.0, 0.0))
+    objects = {o.name: o for o in (a, b, loose)}
+    made = []
+
+    class Objects(dict):
+        def new(self, name, data):
+            empty = SimpleNamespace(name=name, location=None, rotation_euler=None,
+                                    empty_display_type="PLAIN_AXES", rigid_body_constraint=None)
+            made.append(empty)
+            return empty
+
+    monkeypatch.setattr(bpy.data, "objects", Objects(objects))
+    scene = SimpleNamespace(rigidbody_world=object(),
+                            collection=SimpleNamespace(objects=SimpleNamespace(link=MagicMock())))
+    monkeypatch.setattr(bpy.context, "scene", scene, raising=False)
+
+    def constraint_add(type):
+        bpy.context.view_layer.objects.active.rigid_body_constraint = FakeRBC(type)
+
+    monkeypatch.setattr(bpy.ops.rigidbody, "constraint_add", constraint_add)
+    monkeypatch.setattr(handler, "_select_only", lambda obj: setattr(
+        bpy.context.view_layer.objects, "active", obj))
+    return handler, made
+
+
+def _add(handler, **extra):
+    params = {"object1": "Door", "object2": "Frame", "type": "HINGE", "name": "Hinge",
+              "disable_collisions": True, "settings": {}} | extra
+    return handler.handle_add_rigid_body_constraint(params)
+
+
+class TestAddRigidBodyConstraintHandler:
+    def test_joins_the_two_objects_at_their_midpoint(self, rbc):
+        handler, made = rbc
+        result = _add(handler)
+        c = made[0].rigid_body_constraint
+        assert c.type == "HINGE" and c.object1.name == "Door" and c.object2.name == "Frame"
+        assert tuple(made[0].location) == (1.0, 0.0, 2.0)
+        assert result["empty"] == "Hinge"
+
+    def test_breaking_threshold_turns_breaking_on(self, rbc):
+        handler, made = rbc
+        _add(handler, breaking_threshold=25.0)
+        c = made[0].rigid_body_constraint
+        assert c.use_breaking is True and c.breaking_threshold == 25.0
+
+    def test_settings_from_rna(self, rbc):
+        handler, made = rbc
+        _add(handler, settings={"use_limit_ang_z": True, "limit_ang_z_upper": 1.0})
+        assert made[0].rigid_body_constraint.limit_ang_z_upper == 1.0
+
+    @pytest.mark.parametrize("bad", ["object1", "rna_type", "bl_rna", "nope"])
+    def test_unsafe_or_unknown_settings_refused(self, rbc, bad):
+        handler, _ = rbc
+        with pytest.raises(ValueError, match="setting"):
+            _add(handler, settings={bad: 1})
+
+    def test_both_need_rigid_bodies(self, rbc):
+        handler, _ = rbc
+        with pytest.raises(ValueError, match="add_rigid_body"):
+            _add(handler, object2="Loose")
+
+    def test_missing_object(self, rbc):
+        handler, _ = rbc
+        with pytest.raises(ValueError, match="Ghost"):
+            _add(handler, object2="Ghost")
+
+
+class TestSetRigidBodyWorldHandler:
+    def test_creates_world_when_missing(self, handler, monkeypatch):
+        import bpy
+        from types import SimpleNamespace
+
+        world = SimpleNamespace(enabled=True, time_scale=1.0, substeps_per_frame=10,
+                                solver_iterations=10, use_split_impulse=False)
+        scene = SimpleNamespace(rigidbody_world=None)
+        monkeypatch.setattr(bpy.context, "scene", scene, raising=False)
+        monkeypatch.setattr(bpy.ops.rigidbody, "world_add",
+                            lambda: setattr(scene, "rigidbody_world", world))
+        result = handler.handle_set_rigid_body_world({"substeps_per_frame": 30})
+        assert world.substeps_per_frame == 30
+        assert result == {"enabled": True, "time_scale": 1.0, "substeps_per_frame": 30,
+                          "solver_iterations": 10, "use_split_impulse": False}

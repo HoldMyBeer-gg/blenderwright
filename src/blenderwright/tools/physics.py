@@ -3,6 +3,7 @@
 from typing import Any
 
 from blenderwright.server import mcp, get_connection
+from blenderwright.tools.armature import _constraint_properties
 from blenderwright.validators import (
     validate_int,
     validate_new_name,
@@ -28,6 +29,9 @@ ALLOWED_FALLOFF_TYPES = {"SPHERE", "TUBE", "PLANE"}
 MAX_FIELD_STRENGTH = 100000.0
 MAX_PLACEMENT = 1_000_000.0
 ALLOWED_PARTICLE_RENDER_TYPES = {"NONE", "PATH", "OBJECT", "COLLECTION"}
+ALLOWED_RBC_TYPES = {"FIXED", "POINT", "HINGE", "SLIDER", "PISTON", "GENERIC",
+                     "GENERIC_SPRING", "MOTOR"}
+MAX_BREAKING_THRESHOLD = 1_000_000.0
 
 
 @mcp.tool()
@@ -484,3 +488,112 @@ def add_soft_body(
         "friction": ranged(friction, 0.0, 50.0, "friction"),
         "self_collision": bool(self_collision),
     })
+
+
+def _flag(value: Any, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValidationError(f"{name} must be true or false, got {value!r}")
+    return value
+
+
+@mcp.tool()
+def add_rigid_body_constraint(
+    object1: str,
+    object2: str,
+    type: str = "FIXED",
+    empty_name: str = "Constraint",
+    location: list[float] | None = None,
+    rotation: list[float] | None = None,
+    breaking_threshold: float | None = None,
+    disable_collisions: bool = True,
+    settings: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Join two rigid bodies with a physics constraint (glue, hinge, slider, spring, motor).
+
+    Both objects need add_rigid_body first. The constraint lives on a new
+    empty, placed at the midpoint unless location is given; HINGE turns
+    around the empty's Z axis, SLIDER and PISTON move along its X.
+
+    Args:
+        object1: First rigid body.
+        object2: Second rigid body.
+        type: FIXED (glued), POINT (ball joint), HINGE, SLIDER, PISTON,
+            GENERIC (per-axis limits), GENERIC_SPRING, MOTOR.
+        empty_name: Name of the new empty that holds the constraint.
+        location: World position of the joint, [x, y, z].
+        rotation: Joint orientation in radians, [x, y, z]; aims the hinge axis.
+        breaking_threshold: Impulse that snaps the joint; omit for unbreakable.
+            Good for destruction: glue pieces with FIXED and a threshold.
+        disable_collisions: Stop the two bodies colliding with each other.
+        settings: The constraint's own settings, e.g. {"use_limit_ang_z": true,
+            "limit_ang_z_lower": -1.57, "limit_ang_z_upper": 0} for a door,
+            spring_stiffness_x, motor_ang_target_velocity, use_motor_ang.
+
+    Returns:
+        Dict with the empty, the type and the two objects.
+    """
+    params: dict[str, Any] = {
+        "object1": validate_object_name(object1),
+        "object2": validate_object_name(object2),
+        "type": validate_enum(type, ALLOWED_RBC_TYPES, name="type"),
+        "name": validate_new_name(empty_name),
+        "disable_collisions": _flag(disable_collisions, "disable_collisions"),
+        "settings": _constraint_properties(settings or {}),
+    }
+    if object1 == object2:
+        raise ValidationError("object1 and object2 must be different objects")
+    if location is not None:
+        params["location"] = [validate_numeric_range(v, min_val=-MAX_PLACEMENT,
+                                                     max_val=MAX_PLACEMENT, name="location")
+                              for v in validate_vector(location, size=3, name="location")]
+    if rotation is not None:
+        params["rotation"] = [validate_numeric_range(v, min_val=-100.0, max_val=100.0,
+                                                     name="rotation")
+                              for v in validate_vector(rotation, size=3, name="rotation")]
+    if breaking_threshold is not None:
+        params["breaking_threshold"] = validate_numeric_range(
+            breaking_threshold, min_val=0.0, max_val=MAX_BREAKING_THRESHOLD,
+            name="breaking_threshold")
+    return _send_physics_command("add_rigid_body_constraint", params)
+
+
+@mcp.tool()
+def set_rigid_body_world(
+    enabled: bool | None = None,
+    time_scale: float | None = None,
+    substeps_per_frame: int | None = None,
+    solver_iterations: int | None = None,
+    use_split_impulse: bool | None = None,
+) -> dict[str, Any]:
+    """Tune the rigid body simulation for the scene, creating it if needed.
+
+    Raise substeps_per_frame and solver_iterations when fast or stacked
+    objects jitter, pass through each other, or joints stretch.
+
+    Args:
+        enabled: Run the simulation at all.
+        time_scale: Speed of the simulation, 0 to 100 (0.5 is slow motion).
+        substeps_per_frame: Physics steps per frame, 1 to 1000 (default 10).
+        solver_iterations: Constraint solver passes, 1 to 1000 (default 10).
+        use_split_impulse: Reduce extra bounce when objects stack.
+
+    Returns:
+        Every rigid body world setting after the change.
+    """
+    params: dict[str, Any] = {}
+    if enabled is not None:
+        params["enabled"] = _flag(enabled, "enabled")
+    if time_scale is not None:
+        params["time_scale"] = validate_numeric_range(time_scale, min_val=0.0, max_val=100.0,
+                                                      name="time_scale")
+    if substeps_per_frame is not None:
+        params["substeps_per_frame"] = validate_int(substeps_per_frame, 1, 1000,
+                                                    name="substeps_per_frame")
+    if solver_iterations is not None:
+        params["solver_iterations"] = validate_int(solver_iterations, 1, 1000,
+                                                   name="solver_iterations")
+    if use_split_impulse is not None:
+        params["use_split_impulse"] = _flag(use_split_impulse, "use_split_impulse")
+    if not params:
+        raise ValidationError("Give at least one rigid body world setting to change")
+    return _send_physics_command("set_rigid_body_world", params)
