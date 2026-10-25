@@ -103,6 +103,25 @@ def validate_file_path(path: str, allowed_extensions: set[str] | None = None, mu
     return resolved
 
 
+def validate_directory(path: str) -> str:
+    """An existing absolute directory, resolved, and never a filesystem root
+    (a recursive search there would stall Blender)."""
+    if not path or not isinstance(path, str):
+        raise ValidationError("Directory must be a non-empty string")
+    if "\x00" in path:
+        raise ValidationError("Directory contains null bytes")
+    if not os.path.isabs(path):
+        raise ValidationError(f"Directory must be an absolute path, got {path!r}")
+    resolved = Path(path).resolve()
+    if not resolved.exists():
+        raise ValidationError(f"Directory does not exist: {resolved}")
+    if not resolved.is_dir():
+        raise ValidationError(f"{resolved} is not a directory")
+    if resolved.parent == resolved:
+        raise ValidationError("Searching a filesystem root is refused; pick a project folder")
+    return str(resolved)
+
+
 def default_output_path(filename: str) -> str:
     """A writable default for an output file: the system temp directory.
 

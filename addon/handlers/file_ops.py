@@ -309,6 +309,40 @@ def handle_unpack_resources(params):
     }
 
 
+def _external_files():
+    files = []
+
+    def visit(idb, path, meta):
+        files.append({"type": idb.id_type, "name": idb.name, "path": path,
+                      "exists": os.path.exists(bpy.path.abspath(path))})
+
+    bpy.data.file_path_foreach(visit)
+    return files
+
+
+def handle_manage_external_paths(params):
+    """List external paths, rewrite them relative/absolute, or relink moved files."""
+    action = params.get("action")
+    if action in ("MAKE_RELATIVE", "MAKE_ABSOLUTE"):
+        if not bpy.data.filepath:
+            raise ValueError("Save the .blend first; paths are relative to it")
+        if action == "MAKE_RELATIVE":
+            bpy.ops.file.make_paths_relative()
+        else:
+            bpy.ops.file.make_paths_absolute()
+    elif action == "FIND_MISSING":
+        directory = params.get("directory")
+        if not (isinstance(directory, str) and os.path.isabs(directory)
+                and os.path.isdir(directory)
+                and os.path.dirname(directory.rstrip(os.sep)) != directory.rstrip(os.sep)):
+            raise ValueError(f"Not a searchable directory: {directory!r}")
+        bpy.ops.file.find_missing_files(directory=directory, find_all=False)
+    elif action != "LIST":
+        raise ValueError(f"Unknown action {action!r}")
+    files = _external_files()
+    return {"files": files, "missing": sum(not f["exists"] for f in files)}
+
+
 def register():
     """Register file operations handlers with the dispatcher."""
     dispatcher.register_handler("import_file", handle_import_file)
@@ -320,3 +354,4 @@ def register():
     dispatcher.register_handler("link_or_append", handle_link_or_append)
     dispatcher.register_handler("pack_resources", handle_pack_resources)
     dispatcher.register_handler("unpack_resources", handle_unpack_resources)
+    dispatcher.register_handler("manage_external_paths", handle_manage_external_paths)

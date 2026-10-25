@@ -275,3 +275,74 @@ class TestUnpackResourcesHandler:
         handler.register()
         calls = {c.args[0] for c in handler.dispatcher.register_handler.call_args_list}
         assert {"pack_resources", "unpack_resources"} <= calls
+
+
+@pytest.fixture
+def paths(handler, monkeypatch, tmp_path):
+    import bpy
+
+    present = tmp_path / "wood.png"
+    present.write_bytes(b"x")
+    blocks = [(SimpleNamespace(name="wood.png", id_type="IMAGE"), "//wood.png"),
+              (SimpleNamespace(name="rock.png", id_type="IMAGE"), "//gone/rock.png")]
+
+    def foreach(visit, **kwargs):
+        for idb, path in blocks:
+            visit(idb, path, SimpleNamespace(is_readonly=False))
+
+    monkeypatch.setattr(bpy.data, "file_path_foreach", foreach, raising=False)
+    monkeypatch.setattr(bpy.data, "filepath", str(tmp_path / "scene.blend"), raising=False)
+    monkeypatch.setattr(bpy.path, "abspath",
+                        lambda p: str(tmp_path / p[2:]) if p.startswith("//") else p)
+    return handler
+
+
+class TestManageExternalPathsHandler:
+    def test_list_flags_missing(self, paths):
+        result = paths.handle_manage_external_paths({"action": "LIST"})
+        assert result["files"] == [
+            {"type": "IMAGE", "name": "wood.png", "path": "//wood.png", "exists": True},
+            {"type": "IMAGE", "name": "rock.png", "path": "//gone/rock.png", "exists": False},
+        ]
+        assert result["missing"] == 1
+
+    def test_make_relative(self, paths):
+        import bpy
+
+        paths.handle_manage_external_paths({"action": "MAKE_RELATIVE"})
+        bpy.ops.file.make_paths_relative.assert_called_once_with()
+
+    def test_relative_needs_saved_file(self, paths, monkeypatch):
+        import bpy
+
+        monkeypatch.setattr(bpy.data, "filepath", "")
+        with pytest.raises(ValueError, match="Save"):
+            paths.handle_manage_external_paths({"action": "MAKE_RELATIVE"})
+
+    def test_find_missing(self, paths, tmp_path):
+        import bpy
+
+        paths.handle_manage_external_paths({"action": "FIND_MISSING",
+                                            "directory": str(tmp_path)})
+        bpy.ops.file.find_missing_files.assert_called_once_with(
+            directory=str(tmp_path), find_all=False)
+
+    def test_find_missing_rechecks_directory(self, paths, tmp_path):
+        import bpy
+
+        with pytest.raises(ValueError):
+            paths.handle_manage_external_paths({"action": "FIND_MISSING",
+                                                "directory": str(tmp_path / "nope")})
+        bpy.ops.file.find_missing_files.assert_not_called()
+
+    def test_unknown_action(self, paths):
+        with pytest.raises(ValueError):
+            paths.handle_manage_external_paths({"action": "DELETE"})
+
+    def test_find_missing_refuses_root(self, paths):
+        import bpy
+
+        with pytest.raises(ValueError):
+            paths.handle_manage_external_paths({"action": "FIND_MISSING",
+                                                "directory": os.path.abspath(os.sep)})
+        bpy.ops.file.find_missing_files.assert_not_called()
