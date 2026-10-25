@@ -69,7 +69,8 @@ TOOLSETS: dict[str, str] = {
           "randomize, arrange, texel density, multiple UV maps",
     "physics": "Rigid body and constraints (hinge, breakable), cloth, fluid, particles, "
                "soft body, force fields (wind, turbulence, vortex), colliders, bake",
-    "geometry_nodes": "Geometry node trees: create, add, connect, set inputs; ready-made "
+    "geometry_nodes": "Geometry node trees: build a whole graph in one call, read it back, "
+                      "create, add, connect, set inputs; ready-made "
                       "array, scatter on surface, instance on elements, curve to tube",
     "armature": "Armatures, bones, constraints, weights, pose, bone collections, IK "
                 "chains with pole targets",
