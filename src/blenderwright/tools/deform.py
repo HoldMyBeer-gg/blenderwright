@@ -179,7 +179,8 @@ def add_shape_key(object_name: str, key_name: str, from_mix: bool = False) -> di
     Shape keys store alternative vertex positions blended by a 0-1 value:
     facial expressions, morphs, corrective shapes. Shape it with
     move_shape_key_vertices, blend with set_shape_key, animate with
-    keyframe_shape_key.
+    keyframe_shape_key. A new key starts at value 1.0 (fully on), so edits
+    show straight away; set it to 0 to hide it.
 
     Args:
         object_name: Mesh object.
