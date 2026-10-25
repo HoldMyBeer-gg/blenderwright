@@ -208,3 +208,70 @@ class TestLinkAppend:
         with pytest.raises(ValueError):
             handler.handle_link_or_append({"filepath": str(tmp_path / filepath),
                                            "data_type": data_type, "names": ["Cone"]})
+
+
+def _packed_image(name, filepath):
+    return SimpleNamespace(name=name, filepath=filepath, packed_file=object())
+
+
+@pytest.fixture
+def packing(handler):
+    import bpy
+
+    bpy.data.images = [_packed_image("Wood", "//textures/wood.png"),
+                       SimpleNamespace(name="Loose", filepath="/a/b.png", packed_file=None)]
+    bpy.data.sounds = []
+    bpy.data.fonts = []
+    bpy.data.volumes = []
+    bpy.data.filepath = "/work/scene.blend"
+    bpy.data.use_autopack = False
+    return handler
+
+
+class TestPackResourcesHandler:
+    def test_packs_and_lists_what_is_packed(self, packing):
+        import bpy
+
+        result = packing.handle_pack_resources({})
+        bpy.ops.file.pack_all.assert_called_once_with()
+        assert result["packed"] == [{"type": "image", "name": "Wood"}]
+        assert result["autopack"] is False
+
+    def test_autopack(self, packing):
+        import bpy
+
+        result = packing.handle_pack_resources({"autopack": True})
+        assert bpy.data.use_autopack is True and result["autopack"] is True
+
+
+class TestUnpackResourcesHandler:
+    def test_writes_next_to_the_blend_only(self, packing):
+        import bpy
+
+        packing.handle_unpack_resources({"overwrite": False})
+        bpy.ops.file.unpack_all.assert_called_once_with(method="USE_LOCAL")
+
+    def test_overwrite_uses_write_local(self, packing):
+        import bpy
+
+        packing.handle_unpack_resources({"overwrite": True})
+        bpy.ops.file.unpack_all.assert_called_once_with(method="WRITE_LOCAL")
+
+    def test_reports_where_files_went(self, packing):
+        result = packing.handle_unpack_resources({"overwrite": False})
+        assert result["unpacked"] == [
+            {"type": "image", "name": "Wood", "filepath": "//textures/wood.png"},
+        ]
+
+    def test_unsaved_file_is_refused(self, packing):
+        import bpy
+
+        bpy.data.filepath = ""
+        with pytest.raises(ValueError, match="Save"):
+            packing.handle_unpack_resources({"overwrite": False})
+        bpy.ops.file.unpack_all.assert_not_called()
+
+    def test_registered(self, handler):
+        handler.register()
+        calls = {c.args[0] for c in handler.dispatcher.register_handler.call_args_list}
+        assert {"pack_resources", "unpack_resources"} <= calls
