@@ -4,6 +4,7 @@ Routes incoming commands to their handler functions.
 Only commands in the explicit allowlist are processed.
 """
 
+import json
 from typing import Any, Callable
 
 # Registry of allowed commands -> handler functions
@@ -39,6 +40,13 @@ def dispatch(command: str, params: dict[str, Any] | None = None) -> dict[str, An
     try:
         handler = _handlers[command]
         result = handler(params or {})
+        # An unencodable reply used to kill the client thread mid-send, which
+        # the MCP side saw as "Connection to Blender lost"
+        try:
+            json.dumps(result)
+        except (TypeError, ValueError) as e:
+            return {"status": "error",
+                    "result": f"{command} returned a value that cannot be sent: {e}"}
         return {"status": "ok", "result": result}
     except Exception as e:
         return {"status": "error", "result": f"{type(e).__name__}: {str(e)}"}
