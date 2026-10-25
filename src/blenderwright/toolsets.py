@@ -64,7 +64,7 @@ TOOLSETS: dict[str, str] = {
     "sweep": "Sweep a profile along a path: tubes, hoses, cables, rails",
     "print3d": "Check a mesh for 3D printability",
     "sequencer": "Video sequencer: image and sound strips, render to MP4, MKV or WebM",
-    "sculpting": "Sculpt mode, brushes, remesh, multires, symmetry, dyntopo",
+    "sculpting": "Sculpt mode, brushes, remesh, multires, symmetry, dyntopo, masks, face sets",
     "uv": "UV unwrap, smart project, projection, pack islands, average scale, relax, "
           "randomize, arrange, texel density, multiple UV maps",
     "physics": "Rigid body and constraints (hinge, breakable), cloth, fluid, particles, "
