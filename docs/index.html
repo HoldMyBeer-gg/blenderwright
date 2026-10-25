@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>blenderwright tool reference: 247 Blender MCP tools</title>
-<meta name="description" content="Complete reference for all 247 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<title>blenderwright tool reference: 248 Blender MCP tools</title>
+<meta name="description" content="Complete reference for all 248 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <link rel="canonical" href="https://blenderwright.holdmybeer.gg/">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
-<meta property="og:description" content="Complete reference for all 247 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
+<meta property="og:description" content="Complete reference for all 248 tools in blenderwright, the MCP server for Blender. Modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes and rigging, driven by Claude or any MCP client.">
 <meta property="og:url" content="https://blenderwright.holdmybeer.gg/">
 <meta property="og:type" content="website">
 <style>
@@ -110,7 +110,7 @@ footer a { color: var(--accent); }
   <p class="tag">Every tool the blenderwright MCP server exposes to Blender, generated
   directly from the source so it cannot drift out of date.</p>
   <div class="stats">
-    <span><b>247</b> tools</span>
+    <span><b>248</b> tools</span>
     <span><b>32</b> modules</span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright">GitHub</a></span>
     <span class="links"><a href="https://github.com/HoldMyBeer-gg/blenderwright/releases/latest">Download</a></span>
@@ -142,7 +142,7 @@ footer a { color: var(--accent); }
 <a href="#print3d">print3d <span class="n">1</span></a>
 <a href="#render_settings">render_settings <span class="n">10</span></a>
 <a href="#rendering">Rendering <span class="n">7</span></a>
-<a href="#scene">Scene <span class="n">6</span></a>
+<a href="#scene">Scene <span class="n">7</span></a>
 <a href="#sculpting">Sculpting <span class="n">8</span></a>
 <a href="#selection">Selection <span class="n">6</span></a>
 <a href="#sequencer">sequencer <span class="n">5</span></a>
@@ -1428,7 +1428,7 @@ when the render engine is EEVEE.</p><table class="args"><tbody><tr><th>direct_in
 <tr><th>filepath</th><td>Optional output file path. Must be an absolute path.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new output settings.</p></article><article class="tool" id="set_render_engine" data-search="set_render_engine set the render engine."><h3><a href="#set_render_engine">set_render_engine</a></h3><pre class="sig"><code>set_render_engine(engine: str)</code></pre><p>Set the render engine.</p><table class="args"><tbody><tr><th>engine</th><td>Render engine to use. One of: BLENDER_EEVEE, CYCLES, BLENDER_WORKBENCH.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the active render engine.</p></article><article class="tool" id="set_render_resolution" data-search="set_render_resolution set the render resolution."><h3><a href="#set_render_resolution">set_render_resolution</a></h3><pre class="sig"><code>set_render_resolution(width: int, height: int, percentage: int = 100)</code></pre><p>Set the render resolution.</p><table class="args"><tbody><tr><th>width</th><td>Render width in pixels. Range: 1-8192.</td></tr>
 <tr><th>height</th><td>Render height in pixels. Range: 1-8192.</td></tr>
 <tr><th>percentage</th><td>Resolution percentage scale. Range: 1-100.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new resolution settings.</p></article><article class="tool" id="set_render_samples" data-search="set_render_samples set the number of render samples."><h3><a href="#set_render_samples">set_render_samples</a></h3><pre class="sig"><code>set_render_samples(samples: int)</code></pre><p>Set the number of render samples.</p><table class="args"><tbody><tr><th>samples</th><td>Number of samples. Range: 1-10000.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the new sample count.</p></article></section>
-<section class="module" id="scene" data-module="scene"><h2>Scene <span class="n">6</span></h2><article class="tool" id="create_scene" data-search="create_scene create a new scene."><h3><a href="#create_scene">create_scene</a></h3><pre class="sig"><code>create_scene(name: str)</code></pre><p>Create a new scene.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the created scene name.</p></article><article class="tool" id="delete_scene" data-search="delete_scene delete a scene by name."><h3><a href="#delete_scene">delete_scene</a></h3><pre class="sig"><code>delete_scene(scene_name: str)</code></pre><p>Delete a scene by name.</p><table class="args"><tbody><tr><th>scene_name</th><td>Name of the scene to delete. Cannot delete the last remaining scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="get_scene_info" data-search="get_scene_info get full scene information including object tree, hierarchy, counts, frame range, fps, and render engine.
+<section class="module" id="scene" data-module="scene"><h2>Scene <span class="n">7</span></h2><article class="tool" id="create_scene" data-search="create_scene create a new scene."><h3><a href="#create_scene">create_scene</a></h3><pre class="sig"><code>create_scene(name: str)</code></pre><p>Create a new scene.</p><table class="args"><tbody><tr><th>name</th><td>Name for the new scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the created scene name.</p></article><article class="tool" id="delete_scene" data-search="delete_scene delete a scene by name."><h3><a href="#delete_scene">delete_scene</a></h3><pre class="sig"><code>delete_scene(scene_name: str)</code></pre><p>Delete a scene by name.</p><table class="args"><tbody><tr><th>scene_name</th><td>Name of the scene to delete. Cannot delete the last remaining scene.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict.</p></article><article class="tool" id="get_scene_info" data-search="get_scene_info get full scene information including object tree, hierarchy, counts, frame range, fps, and render engine.
 
 returns a dict with scene name, object list with hierarchy, object type counts,
 frame range (start, end, current), fps, and active render engine."><h3><a href="#get_scene_info">get_scene_info</a></h3><pre class="sig"><code>get_scene_info()</code></pre><p>Get full scene information including object tree, hierarchy, counts, frame range, fps, and render engine.
@@ -1439,7 +1439,22 @@ frame range (start, end, current), fps, and active render engine.</p></article><
 returns a list of dicts, each containing the scene name and object count."><h3><a href="#list_scenes">list_scenes</a></h3><pre class="sig"><code>list_scenes()</code></pre><p>List all scenes in the current Blender file.
 
 Returns a list of dicts, each containing the scene name and object count.</p></article><article class="tool" id="set_scene_property" data-search="set_scene_property set a scene property such as frame_start, frame_end, frame_current, fps, unit_system, or render_engine."><h3><a href="#set_scene_property">set_scene_property</a></h3><pre class="sig"><code>set_scene_property(property: str, value: Any)</code></pre><p>Set a scene property such as frame_start, frame_end, frame_current, fps, unit_system, or render_engine.</p><table class="args"><tbody><tr><th>property</th><td>The scene property to set. Must be one of: frame_start, frame_end, frame_current, frame_step, fps, unit_system, render_engine, use_gravity, gravity.</td></tr>
-<tr><th>value</th><td>The value to set the property to. Type depends on the property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the property name and new value.</p></article><article class="tool" id="suggest_extensions" data-search="suggest_extensions suggest helpful blender extensions for a planned task.
+<tr><th>value</th><td>The value to set the property to. Type depends on the property.</td></tr></tbody></table><p class="ret"><span>Returns</span> Confirmation dict with the property name and new value.</p></article><article class="tool" id="set_units" data-search="set_units set the scene&#x27;s units, for real-world sizes (e.g. a 3d print in millimetres).
+
+only the settings given are changed. unit names depend on the system:
+metric lengths are kilometers, meters, centimeters, millimeters, micrometers;
+imperial lengths are miles, feet, inches, thou. adaptive picks per value."><h3><a href="#set_units">set_units</a></h3><pre class="sig"><code>set_units(system: str | None = None, scale_length: float | None = None, length_unit: str | None = None, mass_unit: str | None = None, time_unit: str | None = None, temperature_unit: str | None = None, rotation: str | None = None, use_separate: bool | None = None)</code></pre><p>Set the scene&#x27;s units, for real-world sizes (e.g. a 3D print in millimetres).
+
+Only the settings given are changed. Unit names depend on the system:
+METRIC lengths are KILOMETERS, METERS, CENTIMETERS, MILLIMETERS, MICROMETERS;
+IMPERIAL lengths are MILES, FEET, INCHES, THOU. ADAPTIVE picks per value.</p><table class="args"><tbody><tr><th>system</th><td>NONE, METRIC or IMPERIAL. NONE takes no units.</td></tr>
+<tr><th>scale_length</th><td>Blender units to scene units, e.g. 0.001 so 1 unit reads 1 mm.</td></tr>
+<tr><th>length_unit</th><td>Display unit for lengths.</td></tr>
+<tr><th>mass_unit</th><td>METRIC: TONNES, KILOGRAMS, GRAMS, MILLIGRAMS; IMPERIAL: TONNES, CENTUM_WEIGHTS, STONES, POUNDS, OUNCES.</td></tr>
+<tr><th>time_unit</th><td>DAYS, HOURS, MINUTES, SECONDS, MILLISECONDS, MICROSECONDS.</td></tr>
+<tr><th>temperature_unit</th><td>KELVIN plus CELSIUS (METRIC) or FAHRENHEIT (IMPERIAL).</td></tr>
+<tr><th>rotation</th><td>DEGREES or RADIANS.</td></tr>
+<tr><th>use_separate</th><td>Show compound values like 1 m 20 cm.</td></tr></tbody></table><p class="ret"><span>Returns</span> Every unit setting after the change.</p></article><article class="tool" id="suggest_extensions" data-search="suggest_extensions suggest helpful blender extensions for a planned task.
 
 analyzes the task description and recommends free blender extensions
 that could improve the workflow. already-installed extensions are excluded."><h3><a href="#suggest_extensions">suggest_extensions</a></h3><pre class="sig"><code>suggest_extensions(task_description: str = &#x27;&#x27;)</code></pre><p>Suggest helpful Blender extensions for a planned task.

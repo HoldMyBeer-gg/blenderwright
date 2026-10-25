@@ -28,6 +28,26 @@ ALLOWED_SCENE_PROPERTIES = {
 # Allowed unit systems
 ALLOWED_UNIT_SYSTEMS = {"NONE", "METRIC", "IMPERIAL"}
 
+# Unit names per system, read from a live Blender 5.2.3 (the enums are dynamic).
+_TIMES = {"ADAPTIVE", "DAYS", "HOURS", "MINUTES", "SECONDS", "MILLISECONDS", "MICROSECONDS"}
+UNITS_BY_SYSTEM = {
+    "METRIC": {
+        "length_unit": {
+            "ADAPTIVE", "KILOMETERS", "METERS", "CENTIMETERS", "MILLIMETERS", "MICROMETERS",
+        },
+        "mass_unit": {"ADAPTIVE", "TONNES", "KILOGRAMS", "GRAMS", "MILLIGRAMS"},
+        "time_unit": _TIMES,
+        "temperature_unit": {"ADAPTIVE", "KELVIN", "CELSIUS"},
+    },
+    "IMPERIAL": {
+        "length_unit": {"ADAPTIVE", "MILES", "FEET", "INCHES", "THOU"},
+        "mass_unit": {"ADAPTIVE", "TONNES", "CENTUM_WEIGHTS", "STONES", "POUNDS", "OUNCES"},
+        "time_unit": _TIMES,
+        "temperature_unit": {"ADAPTIVE", "KELVIN", "FAHRENHEIT"},
+    },
+}
+ALLOWED_ROTATION_UNITS = {"DEGREES", "RADIANS"}
+
 # Allowed render engines
 # See tools/rendering.py: 4.2-4.4 use BLENDER_EEVEE_NEXT, 5.x uses BLENDER_EEVEE.
 ALLOWED_RENDER_ENGINES = {
@@ -109,6 +129,77 @@ def set_scene_property(property: str, value: Any) -> dict[str, Any]:
 
     conn = get_connection()
     response = conn.send_command("set_scene_property", {"property": property, "value": value})
+    if response.get("status") == "error":
+        raise RuntimeError(f"Blender error: {response.get('result')}")
+    return response.get("result")
+
+
+@mcp.tool()
+def set_units(
+    system: str | None = None,
+    scale_length: float | None = None,
+    length_unit: str | None = None,
+    mass_unit: str | None = None,
+    time_unit: str | None = None,
+    temperature_unit: str | None = None,
+    rotation: str | None = None,
+    use_separate: bool | None = None,
+) -> dict[str, Any]:
+    """Set the scene's units, for real-world sizes (e.g. a 3D print in millimetres).
+
+    Only the settings given are changed. Unit names depend on the system:
+    METRIC lengths are KILOMETERS, METERS, CENTIMETERS, MILLIMETERS, MICROMETERS;
+    IMPERIAL lengths are MILES, FEET, INCHES, THOU. ADAPTIVE picks per value.
+
+    Args:
+        system: NONE, METRIC or IMPERIAL. NONE takes no units.
+        scale_length: Blender units to scene units, e.g. 0.001 so 1 unit reads 1 mm.
+        length_unit: Display unit for lengths.
+        mass_unit: METRIC: TONNES, KILOGRAMS, GRAMS, MILLIGRAMS; IMPERIAL: TONNES,
+            CENTUM_WEIGHTS, STONES, POUNDS, OUNCES.
+        time_unit: DAYS, HOURS, MINUTES, SECONDS, MILLISECONDS, MICROSECONDS.
+        temperature_unit: KELVIN plus CELSIUS (METRIC) or FAHRENHEIT (IMPERIAL).
+        rotation: DEGREES or RADIANS.
+        use_separate: Show compound values like 1 m 20 cm.
+
+    Returns:
+        Every unit setting after the change.
+    """
+    params: dict[str, Any] = {}
+    if system is not None:
+        params["system"] = validate_enum(system, ALLOWED_UNIT_SYSTEMS, name="system")
+    if scale_length is not None:
+        params["scale_length"] = validate_numeric_range(
+            scale_length, min_val=1e-9, max_val=1e9, name="scale_length"
+        )
+    units = {
+        "length_unit": length_unit, "mass_unit": mass_unit,
+        "time_unit": time_unit, "temperature_unit": temperature_unit,
+    }
+    for key, value in units.items():
+        if value is None:
+            continue
+        if system == "NONE":
+            raise ValidationError(f"system NONE takes no units; {key} needs METRIC or IMPERIAL")
+        known = set().union(*(names[key] for names in UNITS_BY_SYSTEM.values()))
+        validate_enum(value, known, name=key)
+        if system is not None and value not in UNITS_BY_SYSTEM[system][key]:
+            other = next(s for s, names in UNITS_BY_SYSTEM.items() if value in names[key])
+            raise ValidationError(f"{key} {value} is {other}, not {system}")
+        params[key] = value
+    if rotation is not None:
+        params["system_rotation"] = validate_enum(
+            rotation, ALLOWED_ROTATION_UNITS, name="rotation"
+        )
+    if use_separate is not None:
+        if not isinstance(use_separate, bool):
+            raise ValidationError(f"use_separate must be true or false, got {use_separate!r}")
+        params["use_separate"] = use_separate
+    if not params:
+        raise ValidationError("Give at least one unit setting to change")
+
+    conn = get_connection()
+    response = conn.send_command("set_units", params)
     if response.get("status") == "error":
         raise RuntimeError(f"Blender error: {response.get('result')}")
     return response.get("result")
