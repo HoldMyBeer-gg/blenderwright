@@ -236,6 +236,7 @@ CASES = {
     'set_eevee_quality': {'shadow_rays': 2},
     'set_face_sets': {'object_name': 'Cube', 'mode': 'LOOSE_PARTS'},
     'set_film': {},
+    'set_freestyle': {'thickness': 2, 'edges': ['SILHOUETTE', 'CREASE']},
     'set_frame': {'frame': 1},
     'set_frame_range': {'start': 1, 'end': 50},
     'set_geometry_node_input': {'object_name': 'Cube', 'modifier_name': 'GeometryNodes', 'input_name': 'Size', 'value': 2.0},
