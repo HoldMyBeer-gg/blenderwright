@@ -19,6 +19,8 @@ jobs:
         run: |
           curl -sSfL -o blender.tar.xz \
             https://download.blender.org/release/Blender5.2/blender-5.2.3-linux-x64.tar.xz
+          echo "78486c018b4443efe5e75ab54c290ed8c15abafd249b862c2c9ce2530a918eec  blender.tar.xz" \
+            | sha256sum -c -
           mkdir -p blender
           tar -xf blender.tar.xz -C blender --strip-components=1
           echo "$PWD/blender" >> "$GITHUB_PATH"

@@ -8,7 +8,7 @@ Blender's Python API.
 bl_info = {
     "name": "blenderwright",
     "author": "blenderwright",
-    "version": (3, 0, 0),
+    "version": (3, 1, 0),
     "blender": (5, 2, 0),
     "location": "View3D > Sidebar > blenderwright",
     "description": "MCP Server integration for AI-assisted 3D workflows",
