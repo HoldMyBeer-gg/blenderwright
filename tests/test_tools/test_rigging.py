@@ -59,7 +59,7 @@ class TestBoneCollections:
         manage_bone_collection("Rig", "HIDE", "Mechanism")
         assert _sent(mock_conn)[1]["action"] == "HIDE"
 
-    @pytest.mark.parametrize("args", [("Rig", "RENAME", "X"), ("Rig", "CREATE", "a/b"),
+    @pytest.mark.parametrize("args", [("Rig", "RENAME", "X"), ("Rig", "CREATE", "a\nb"),
                                       ("Rig", "ASSIGN", "X", "Arm")])
     def test_rejects(self, mock_conn, args):
         with pytest.raises(ValidationError):
@@ -77,7 +77,7 @@ class TestIkChain:
 
     @pytest.mark.parametrize("kwargs", [{"chain_count": -1}, {"chain_count": 256},
                                         {"pole_angle": 7}, {"iterations": 0},
-                                        {"target_object": "a/b"}])
+                                        {"target_object": "a\nb"}])
     def test_rejects(self, mock_conn, kwargs):
         args = {"armature_name": "Rig", "bone_name": "Forearm", "target_object": "Ctrl",
                 **kwargs}

@@ -48,7 +48,7 @@ class TestCreateAnnotation:
 
     def test_invalid_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            create_annotation(name="bad;name")
+            create_annotation(name="bad\nname")
 
     def test_no_location_parameter(self, mock_conn):
         """create_annotation must NOT have a location parameter."""

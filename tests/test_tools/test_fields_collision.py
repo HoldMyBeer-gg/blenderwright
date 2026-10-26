@@ -47,7 +47,7 @@ class TestForceField:
     @pytest.mark.parametrize("kwargs", [
         {"type": "BOID"}, {"type": "WIND", "strength": 1e9}, {"type": "WIND", "noise": -1},
         {"type": "WIND", "falloff_type": "CONE"}, {"type": "WIND", "max_distance": -1},
-        {"type": "WIND", "name": "a/b"}, {"type": "WIND", "location": [0, 0]},
+        {"type": "WIND", "name": "a\nb"}, {"type": "WIND", "location": [0, 0]},
     ])
     def test_rejects(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):

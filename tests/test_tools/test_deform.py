@@ -53,7 +53,7 @@ class TestAssignVertexGroup:
             assign_vertex_group("Body", "Arm", **kwargs)
         mock_conn.send_command.assert_not_called()
 
-    @pytest.mark.parametrize("names", [("Bo/dy", "Arm"), ("Body", ""), ("Body", "Arm;rm")])
+    @pytest.mark.parametrize("names", [("Bo\ndy", "Arm"), ("Body", ""), ("Body", "Arm\trm")])
     def test_rejects_bad_names(self, mock_conn, names):
         with pytest.raises(ValidationError):
             assign_vertex_group(*names)
@@ -106,7 +106,7 @@ class TestShapeKeys:
 
     @pytest.mark.parametrize("kwargs", [
         {"value": 11}, {"slider_min": -11}, {"slider_max": 11},
-        {"slider_min": 1, "slider_max": 0}, {"vertex_group": "a/b"},
+        {"slider_min": 1, "slider_max": 0}, {"vertex_group": "a\nb"},
     ])
     def test_set_rejects_bad_values(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):

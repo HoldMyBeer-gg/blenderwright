@@ -49,12 +49,12 @@ class TestCreateMaterial:
 
     def test_invalid_chars_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            create_material("bad<>name")
+            create_material("bad\x07name")
 
     def test_name_too_long_is_cut_to_fit(self, mock_conn):
-        create_material("a" * 64)
+        create_material("a" * 256)
         sent = mock_conn.send_command.call_args[0][1]["name"]
-        assert sent == "a" * 63
+        assert sent == "a" * 255
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "exists"}
@@ -361,7 +361,7 @@ class TestDeleteMaterial:
 
     def test_invalid_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            delete_material("bad;name")
+            delete_material("bad\nname")
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "not found"}
@@ -392,7 +392,7 @@ class TestDuplicateMaterial:
 
     def test_invalid_new_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            duplicate_material("Mat", "bad<>name")
+            duplicate_material("Mat", "bad\x07name")
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}

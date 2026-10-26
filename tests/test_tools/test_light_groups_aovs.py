@@ -37,9 +37,9 @@ class TestSetLightGroup:
 
     @pytest.mark.parametrize("kwargs", [
         {"group": ""},
-        {"group": "../x"},
+        {"group": "x\x00"},
         {"objects": "Sun"},
-        {"objects": ["../x"]},
+        {"objects": ["x\x00"]},
         {"objects": ["a"] * 1001},
         {"world": "yes"},
         {"remove": 1},
@@ -69,7 +69,7 @@ class TestManageAOV:
         {"action": "RENAME", "name": "a"},
         {"action": "ADD"},
         {"action": "ADD", "name": "a", "type": "VECTOR"},
-        {"action": "REMOVE", "name": "../x"},
+        {"action": "REMOVE", "name": "x\x00"},
     ])
     def test_bad_input(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):

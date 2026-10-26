@@ -2,6 +2,7 @@
 
 import math
 import re
+import unicodedata
 import os
 import tempfile
 from pathlib import Path
@@ -16,15 +17,13 @@ MAX_SETTING_TEXT = 64
 SETTING_NAME_PATTERN = re.compile(r"^[A-Za-z0-9 _\-.()/]+$")
 
 # Limits
-MAX_OBJECT_NAME_LENGTH = 63  # Blender's internal limit
+MAX_OBJECT_NAME_LENGTH = 255  # Blender 5.x: bytes of UTF-8
 MAX_SUBDIVISION_LEVEL = 6
 MAX_RENDER_RESOLUTION = 8192
 MAX_RENDER_SAMPLES = 10000
 MAX_ARRAY_COUNT = 1000
 MAX_PARTICLE_COUNT = 1000000
 
-# Safe object name pattern - alphanumeric, underscores, hyphens, spaces, dots
-SAFE_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-. ]+$")
 
 # A whole number or a decimal written as text, with nothing else around it
 INT_TEXT_PATTERN = re.compile(r"[+-]?\d+")
@@ -37,20 +36,24 @@ class ValidationError(Exception):
 
 
 def validate_object_name(name: str) -> str:
-    """Validate and sanitize a Blender object name."""
+    """Validate a Blender data-block name.
+
+    Accepts anything Blender can store: printable text up to 255 UTF-8 bytes.
+    Names are only ever sent as values, never built into code or paths, so
+    'Material #25' and 'mixamorig:Hips' from imported files work as they are.
+    """
     if not name or not isinstance(name, str):
         raise ValidationError("Object name must be a non-empty string")
     name = name.strip()
-    if len(name) > MAX_OBJECT_NAME_LENGTH:
+    if not name:
+        raise ValidationError("Object name must be a non-empty string")
+    if len(name.encode("utf-8")) > MAX_OBJECT_NAME_LENGTH:
         raise ValidationError(
-            f"Object names are at most {MAX_OBJECT_NAME_LENGTH} characters, so no object "
-            f"has this name. Use the name returned when the object was created."
+            f"Names are at most {MAX_OBJECT_NAME_LENGTH} bytes, so nothing has this "
+            f"name. Use the name returned when it was created."
         )
-    if not SAFE_NAME_PATTERN.match(name):
-        raise ValidationError(
-            "Object name contains invalid characters. "
-            "Only alphanumeric, underscores, hyphens, spaces, and dots are allowed."
-        )
+    if any(unicodedata.category(c) == "Cc" for c in name):
+        raise ValidationError("Object name contains a control character")
     return name
 
 
@@ -65,7 +68,10 @@ def validate_new_name(name: str) -> str:
     """
     if not name or not isinstance(name, str):
         raise ValidationError("Object name must be a non-empty string")
-    name = name.strip()[:MAX_OBJECT_NAME_LENGTH].rstrip("_-. ")
+    name = name.strip()
+    encoded = name.encode("utf-8")
+    if len(encoded) > MAX_OBJECT_NAME_LENGTH:
+        name = encoded[:MAX_OBJECT_NAME_LENGTH].decode("utf-8", "ignore").rstrip("_-. ")
     return validate_object_name(name)
 
 

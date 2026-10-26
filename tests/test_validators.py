@@ -49,7 +49,7 @@ class TestValidateObjectName:
 
     def test_too_long_raises(self):
         long_name = "A" * (MAX_OBJECT_NAME_LENGTH + 1)
-        with pytest.raises(ValidationError, match="at most 63"):
+        with pytest.raises(ValidationError, match="at most 255"):
             validate_object_name(long_name)
 
     def test_max_length_ok(self):
@@ -57,12 +57,12 @@ class TestValidateObjectName:
         assert validate_object_name(name) == name
 
     def test_invalid_chars_raises(self):
-        with pytest.raises(ValidationError, match="invalid characters"):
-            validate_object_name("Cube@#!")
+        with pytest.raises(ValidationError, match="control character"):
+            validate_object_name("Cube\x1b")
 
-    def test_slash_raises(self):
-        with pytest.raises(ValidationError, match="invalid characters"):
-            validate_object_name("path/name")
+    def test_newline_raises(self):
+        with pytest.raises(ValidationError, match="control character"):
+            validate_object_name("path\nname")
 
     def test_whitespace_stripping(self):
         assert validate_object_name("  Cube  ") == "Cube"

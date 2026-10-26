@@ -62,7 +62,7 @@ class TestStroke:
         {"points": [[0, 0, 0]] * 10001},
         {"points": [[0, 0, 0], [1, 0, 0]], "radius": [0.1]},
         {"points": [[0, 0, 0], [1, 0, 0]], "radius": -1},
-        {"points": [[0, 0, 0], [1, 0, 0]], "material": "a/b"},
+        {"points": [[0, 0, 0], [1, 0, 0]], "material": "a\nb"},
     ])
     def test_rejects(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):

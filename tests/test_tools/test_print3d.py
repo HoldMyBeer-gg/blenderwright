@@ -25,7 +25,7 @@ class TestCheck3DPrintability:
     def test_object_name_is_validated(self, mock_conn):
         from blenderwright.tools.print3d import check_3d_printability
         with pytest.raises(ValidationError):
-            check_3d_printability("../../etc/passwd")
+            check_3d_printability("etc\npasswd")
 
     @pytest.mark.parametrize("check", [
         "SOLID", "INTERSECT", "DEGENERATE", "THICKNESS",

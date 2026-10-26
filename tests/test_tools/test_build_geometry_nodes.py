@@ -67,7 +67,7 @@ class TestBuildGeometryNodes:
         {"extra": []},
         {"nodes": [{"name": "a", "type": "os.system"}]},
         {"nodes": [{"name": "a", "type": "GeometryNodeMeshGrid", "evil": 1}]},
-        {"nodes": [{"name": "a/b", "type": "GeometryNodeMeshGrid"}]},
+        {"nodes": [{"name": "a\nb", "type": "GeometryNodeMeshGrid"}]},
         {"nodes": [{"name": "Group Input", "type": "GeometryNodeMeshGrid"}]},
         {"nodes": [{"name": "a", "type": "GeometryNodeMeshGrid"},
                    {"name": "a", "type": "GeometryNodeMeshGrid"}]},

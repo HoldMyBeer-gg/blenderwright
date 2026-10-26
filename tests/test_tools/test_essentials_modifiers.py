@@ -40,7 +40,7 @@ def test_no_settings(mock_conn):
 
 
 @pytest.mark.parametrize("args", [
-    ("Ground", "displace"), ("Gr/ound", "array"), ("Ground", "array", {"Count": float("inf")}),
+    ("Ground", "displace"), ("Gr\nound", "array"), ("Ground", "array", {"Count": float("inf")}),
     ("Ground", "array", "Count=3"),
 ])
 def test_rejects_bad_input(mock_conn, args):

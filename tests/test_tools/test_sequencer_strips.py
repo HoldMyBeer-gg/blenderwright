@@ -49,7 +49,7 @@ class TestAddSequencerStrip:
         {"kind": "COLOR", "channel": 0},
         {"kind": "COLOR", "length": 0},
         {"kind": "TEXT", "text": "a", "font_size": 0},
-        {"kind": "COLOR", "name": "../x"},
+        {"kind": "COLOR", "name": "x\x00"},
     ])
     def test_bad_input(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):

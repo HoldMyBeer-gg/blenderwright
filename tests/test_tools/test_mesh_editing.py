@@ -375,7 +375,7 @@ class TestKnifeProject:
 
     def test_invalid_cutter_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            knife_project("Cube", "bad;name")
+            knife_project("Cube", "bad\nname")
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}

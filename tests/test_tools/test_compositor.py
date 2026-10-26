@@ -106,7 +106,7 @@ class TestEditRemoveList:
 
     def test_bad_node_name(self, mock_conn):
         with pytest.raises(ValidationError):
-            remove_compositor_effect("../../etc")
+            remove_compositor_effect("e\ntc")
 
     def test_blender_error_raised(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "boom"}

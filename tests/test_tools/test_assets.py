@@ -35,7 +35,7 @@ class TestListAssets:
         assert _sent(mock_conn)[1] == {"library": "User Library", "asset_type": "MATERIAL"}
 
     @pytest.mark.parametrize("kwargs", [
-        {"library": ""}, {"library": "a/../b"}, {"asset_type": "SCRIPT"},
+        {"library": ""}, {"library": "a\nb"}, {"asset_type": "SCRIPT"},
     ])
     def test_bad_input(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):
@@ -59,7 +59,7 @@ class TestPlaceAsset:
         mock_conn.send_command.assert_not_called()
 
     @pytest.mark.parametrize("kwargs", [
-        {"asset_type": "TEXT"}, {"asset_name": "../x"}, {"link": "yes"},
+        {"asset_type": "TEXT"}, {"asset_name": "x\x00"}, {"link": "yes"},
     ])
     def test_bad_input(self, mock_conn, kwargs):
         args = {"library": "User Library", "file": "a.blend", "asset_type": "OBJECT",

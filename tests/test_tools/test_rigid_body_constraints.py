@@ -50,7 +50,7 @@ class TestAddRigidBodyConstraint:
     @pytest.mark.parametrize("kwargs", [
         {"type": "ROPE"},
         {"object2": "A"},
-        {"empty_name": "../x"},
+        {"empty_name": "x\x00"},
         {"location": [1, 2]},
         {"rotation": "up"},
         {"breaking_threshold": -1},
