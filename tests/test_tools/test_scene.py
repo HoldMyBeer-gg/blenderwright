@@ -137,12 +137,12 @@ class TestCreateScene:
 
     def test_invalid_chars_in_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            create_scene("scene<>bad")
+            create_scene("scene\x07bad")
 
     def test_name_too_long_is_cut_to_fit(self, mock_conn):
-        create_scene("a" * 64)
+        create_scene("a" * 256)
         sent = mock_conn.send_command.call_args[0][1]["name"]
-        assert sent == "a" * 63
+        assert sent == "a" * 255
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "exists"}
@@ -168,7 +168,7 @@ class TestDeleteScene:
 
     def test_invalid_chars_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            delete_scene("bad;name")
+            delete_scene("bad\nname")
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {

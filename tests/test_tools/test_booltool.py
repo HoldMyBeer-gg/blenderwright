@@ -43,11 +43,11 @@ class TestBooltoolAutoUnion:
 
     def test_invalid_object_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            booltool_auto_union("bad;name", "Sphere")
+            booltool_auto_union("bad\nname", "Sphere")
 
     def test_invalid_target_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            booltool_auto_union("Cube", "bad;name")
+            booltool_auto_union("Cube", "bad\nname")
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}

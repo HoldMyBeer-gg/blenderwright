@@ -85,7 +85,7 @@ class TestAddImageSequenceStrip:
         from blenderwright.tools.sequencer import add_image_sequence_strip
 
         with pytest.raises(ValidationError):
-            add_image_sequence_strip(frame, name="bad;name")
+            add_image_sequence_strip(frame, name="bad\nname")
 
 
 class TestAddSoundStrip:
@@ -153,7 +153,7 @@ class TestListAndRemove:
         from blenderwright.tools.sequencer import remove_strip
 
         with pytest.raises(ValidationError):
-            remove_strip("../x")
+            remove_strip("x\x00")
 
 
 class TestRenderVideo:

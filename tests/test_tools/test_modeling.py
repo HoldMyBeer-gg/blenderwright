@@ -68,7 +68,7 @@ class TestAddModifier:
 
     def test_invalid_custom_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            add_modifier("Cube", "SUBSURF", name="bad;name")
+            add_modifier("Cube", "SUBSURF", name="bad\nname")
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}

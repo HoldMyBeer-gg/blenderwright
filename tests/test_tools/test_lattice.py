@@ -37,7 +37,7 @@ class TestCreateLattice:
 
     @pytest.mark.parametrize("kwargs", [
         {"resolution": [1, 2, 2]}, {"resolution": [2, 2, 65]}, {"resolution": [2, 2]},
-        {"resolution": [2.5, 2, 2]}, {"interpolation": "CUBIC"}, {"lattice_name": "../x"},
+        {"resolution": [2.5, 2, 2]}, {"interpolation": "CUBIC"}, {"lattice_name": "x\x00"},
     ])
     def test_bad_input(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):

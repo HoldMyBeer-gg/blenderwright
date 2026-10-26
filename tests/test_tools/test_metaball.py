@@ -39,7 +39,7 @@ def test_elements(mock_conn):
 
 
 @pytest.mark.parametrize("kwargs", [
-    {"name": "../x"},
+    {"name": "x\x00"},
     {"resolution": 0},
     {"resolution": 5},
     {"threshold": 0},

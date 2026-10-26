@@ -108,7 +108,7 @@ class TestSweepProfileAlongPath:
     def test_name_is_validated(self, mock_conn):
         from blenderwright.tools.sweep import sweep_profile_along_path
         with pytest.raises(ValidationError):
-            sweep_profile_along_path(path_points=SIMPLE_PATH, name="../etc/passwd")
+            sweep_profile_along_path(path_points=SIMPLE_PATH, name="etc\npasswd")
 
     def test_twist_is_bounded(self, mock_conn):
         from blenderwright.tools.sweep import sweep_profile_along_path

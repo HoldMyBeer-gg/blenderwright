@@ -81,7 +81,7 @@ class TestCreateObject:
 
     def test_invalid_name_chars_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            create_object("CUBE", name="bad;name")
+            create_object("CUBE", name="bad\nname")
 
     def test_invalid_location_wrong_size_raises(self, mock_conn):
         with pytest.raises(ValidationError):
@@ -164,7 +164,7 @@ class TestRenameObject:
 
     def test_invalid_new_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            rename_object("OldName", "bad<>name")
+            rename_object("OldName", "bad\x07name")
 
 
 # ---------------------------------------------------------------------------
@@ -186,7 +186,7 @@ class TestSelectObjects:
 
     def test_invalid_name_in_list_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            select_objects(["Cube", "bad;name"])
+            select_objects(["Cube", "bad\nname"])
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +307,7 @@ class TestJoinObjects:
 
     def test_invalid_name_in_list_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            join_objects(["Cube", "bad;name"])
+            join_objects(["Cube", "bad\nname"])
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "fail"}
@@ -472,7 +472,7 @@ class TestCreatePolygonPrism:
 
     def test_invalid_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            create_polygon_prism(sides=6, name="bad;name")
+            create_polygon_prism(sides=6, name="bad\nname")
 
     def test_invalid_location_raises(self, mock_conn):
         with pytest.raises(ValidationError):
@@ -581,7 +581,7 @@ class TestCreateThreadedShaft:
     def test_invalid_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
             create_threaded_shaft(
-                diameter=3.0, length=10.0, pitch=0.5, name="bad;name"
+                diameter=3.0, length=10.0, pitch=0.5, name="bad\nname"
             )
 
     def test_invalid_location_raises(self, mock_conn):

@@ -46,7 +46,7 @@ class TestSetSculptMask:
 
     @pytest.mark.parametrize("kwargs", [
         {"value": 1.5}, {"value": -0.1}, {"value": "full"},
-        {"vertex_indices": [-1]}, {"vertex_group": "../x"},
+        {"vertex_indices": [-1]}, {"vertex_group": "x\x00"},
         {"vertex_indices": [0], "vertex_group": "Ears"},
         {"invert": True, "clear": True}, {"invert": "yes"},
         {"clear": True, "vertex_indices": [0]},

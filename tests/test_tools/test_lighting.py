@@ -66,7 +66,7 @@ class TestCreateLight:
 
     def test_invalid_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            create_light("POINT", name="bad;name")
+            create_light("POINT", name="bad\nname")
 
     def test_energy_negative_raises(self, mock_conn):
         with pytest.raises(ValidationError):
@@ -245,7 +245,7 @@ class TestCreateLightRig:
 
     def test_invalid_target_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            create_light_rig("THREE_POINT", target="bad;name")
+            create_light_rig("THREE_POINT", target="bad\nname")
 
     def test_intensity_negative_raises(self, mock_conn):
         with pytest.raises(ValidationError):
@@ -300,7 +300,7 @@ class TestDeleteLight:
 
     def test_invalid_name_raises(self, mock_conn):
         with pytest.raises(ValidationError):
-            delete_light("bad;name")
+            delete_light("bad\nname")
 
     def test_error_response_raises(self, mock_conn):
         mock_conn.send_command.return_value = {"status": "error", "result": "not found"}

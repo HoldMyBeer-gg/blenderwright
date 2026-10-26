@@ -68,7 +68,7 @@ class TestLinkOrAppend:
 
     @pytest.mark.parametrize("args", [
         ("SCRIPT", ["x"]), ("TEXT", ["x"]), ("OBJECT", []), ("OBJECT", "Cone"),
-        ("OBJECT", ["a/b"]), ("OBJECT", ["x"] * 101),
+        ("OBJECT", ["a\nb"]), ("OBJECT", ["x"] * 101),
     ])
     def test_rejects(self, mock_conn, blend, args):
         with pytest.raises(ValidationError):
@@ -92,7 +92,7 @@ class TestCollectionInstances:
 
     @pytest.mark.parametrize("kwargs", [{"location": [0, 0]}, {"scale": [0, 1, 1]},
                                         {"location": [0, float("nan"), 0]},
-                                        {"name": "a/b"}])
+                                        {"name": "a\nb"}])
     def test_instance_rejects(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):
             create_collection_instance("Props", **kwargs)

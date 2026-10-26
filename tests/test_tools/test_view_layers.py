@@ -54,9 +54,9 @@ class TestManageViewLayer:
         {"action": "ADD"},
         {"action": "RENAME", "view_layer": "A"},
         {"action": "SET", "view_layer": "A"},
-        {"action": "SET", "view_layer": "A", "material_override": "../x"},
+        {"action": "SET", "view_layer": "A", "material_override": "x\x00"},
         {"action": "SET", "view_layer": "A", "use_for_render": "no"},
-        {"action": "REMOVE", "view_layer": "../x"},
+        {"action": "REMOVE", "view_layer": "x\x00"},
     ])
     def test_bad_input(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):

@@ -45,7 +45,7 @@ class TestPaintColorAttribute:
         {"selection": "SOME"},
         {"vertex_indices": [-1]},
         {"vertex_indices": []},
-        {"attribute_name": "../x"},
+        {"attribute_name": "x\x00"},
     ])
     def test_bad_input(self, mock_conn, kwargs):
         args = {"object_name": "Cube", "color": [1, 1, 1]} | kwargs

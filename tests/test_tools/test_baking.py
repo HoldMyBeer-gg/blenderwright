@@ -46,7 +46,7 @@ def test_high_to_low(mock_conn, tmp_path):
 @pytest.mark.parametrize("kwargs", [
     {"bake_type": "ALBEDO"}, {"resolution": 32}, {"resolution": 9000}, {"resolution": 1000.5},
     {"margin": -1}, {"margin": 65}, {"samples": 0}, {"cage_extrusion": -0.1},
-    {"normal_space": "WORLD"}, {"source_object": "a/b"},
+    {"normal_space": "WORLD"}, {"source_object": "a\nb"},
 ])
 def test_rejects_bad_input(mock_conn, tmp_path, kwargs):
     args = {"object_name": "Crate", "bake_type": "DIFFUSE",

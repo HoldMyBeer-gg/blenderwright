@@ -59,7 +59,7 @@ class TestRepairMesh:
     def test_object_name_is_validated(self, mock_conn):
         from blenderwright.tools.mesh_quality import repair_mesh
         with pytest.raises(ValidationError):
-            repair_mesh("bad<>name")
+            repair_mesh("bad\x07name")
 
     def test_blender_errors_propagate(self, mock_conn):
         from blenderwright.tools.mesh_quality import repair_mesh

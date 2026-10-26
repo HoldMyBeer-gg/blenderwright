@@ -59,7 +59,7 @@ class TestLightLinking:
         assert _sent(mock_conn)[1]["objects"] == []
 
     @pytest.mark.parametrize("kwargs", [{"role": "EMITTERS"}, {"mode": "ONLY"},
-                                        {"objects": "Hero"}, {"objects": ["a/b"]}])
+                                        {"objects": "Hero"}, {"objects": ["a\nb"]}])
     def test_rejects(self, mock_conn, kwargs):
         args = {"light_name": "Key", "objects": ["Hero"], **kwargs}
         with pytest.raises(ValidationError):

@@ -37,7 +37,7 @@ class TestManageAction:
                                        "action_name": "Bounce"}
 
     @pytest.mark.parametrize("args", [("Cube", "DELETE"), ("Cube", "ASSIGN"),
-                                      ("Cube", "NEW"), ("Cube", "ASSIGN", "a/b")])
+                                      ("Cube", "NEW"), ("Cube", "ASSIGN", "a\nb")])
     def test_rejects(self, mock_conn, args):
         with pytest.raises(ValidationError):
             manage_action(*args)
@@ -55,7 +55,7 @@ class TestNla:
     @pytest.mark.parametrize("kwargs", [{"blend_type": "SCREEN"}, {"repeat": 0},
                                         {"repeat": 2000}, {"scale": 0}, {"influence": 1.5},
                                         {"extrapolation": "LOOP"}, {"blend_in": -1},
-                                        {"track_name": "a/b"}])
+                                        {"track_name": "a\nb"}])
     def test_rejects(self, mock_conn, kwargs):
         with pytest.raises(ValidationError):
             add_nla_strip("Cube", "Walk", **kwargs)

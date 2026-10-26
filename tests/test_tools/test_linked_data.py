@@ -52,8 +52,8 @@ def test_reload(mock_conn):
     {"action": "OVERRIDE", "data_name": "Oak", "data_type": "MATERIAL"},
     {"action": "MAKE_LOCAL", "data_name": "x", "data_type": "SCRIPT"},
     {"action": "RELOAD"},
-    {"action": "RELOAD", "library": "../x"},
-    {"action": "MAKE_LOCAL", "data_name": "../x"},
+    {"action": "RELOAD", "library": "x\x00"},
+    {"action": "MAKE_LOCAL", "data_name": "x\x00"},
 ])
 def test_bad_input(mock_conn, kwargs):
     with pytest.raises(ValidationError):

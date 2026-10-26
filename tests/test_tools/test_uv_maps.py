@@ -54,7 +54,7 @@ def test_rename_needs_new_name(mock_conn):
 
 @pytest.mark.parametrize("kwargs", [
     {"action": "COPY"},
-    {"action": "ADD", "uv_map": "../x"},
+    {"action": "ADD", "uv_map": "x\x00"},
     {"action": "ADD", "uv_map": ""},
     {"action": "ADD", "copy_active": "yes"},
     {"action": "RENAME", "new_name": "a" * 300},

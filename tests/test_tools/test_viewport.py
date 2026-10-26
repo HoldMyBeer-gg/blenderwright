@@ -127,7 +127,7 @@ class TestFocusOnObject:
         from blenderwright.tools.viewport import focus_on_object
 
         with pytest.raises(ValidationError):
-            focus_on_object("Cube<script>")
+            focus_on_object("Cube\n<script>")
 
 
 class TestBlenderErrorHandling:

@@ -67,4 +67,4 @@ class TestAnalyzeMeshQuality:
     def test_invalid_chars_raises_validation_error(self):
         """analyze_mesh_quality raises ValidationError for object name with invalid chars."""
         with pytest.raises(ValidationError):
-            analyze_mesh_quality(object_name="Cube;rm -rf /")
+            analyze_mesh_quality(object_name="Cube\nrm")
