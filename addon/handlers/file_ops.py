@@ -77,15 +77,27 @@ def _get_extension(filepath: str, type_hint: str = "") -> str:
     return os.path.splitext(filepath)[1].lower()
 
 
+def _scripts_off_for_session():
+    """Turn script auto-run off for this session without saving that into the
+    user's preferences: their own trusted files auto-run again next launch."""
+    prefs = bpy.context.preferences
+    if not prefs.filepaths.use_scripts_auto_execute:
+        return
+    was_dirty = prefs.is_dirty
+    prefs.filepaths.use_scripts_auto_execute = False
+    if not was_dirty:
+        prefs.is_dirty = False
+
+
 def handle_import_file(params: dict) -> dict:
     """Import a file into Blender."""
     filepath = params.get("filepath")
     type_hint = params.get("type", "")
 
     try:
-        # SECURITY: Disable auto-execute scripts to prevent script injection
-        # from imported files. This MUST happen before any import operation.
-        bpy.context.preferences.filepaths.use_scripts_auto_execute = False
+        # SECURITY: no script auto-run while importing. This MUST happen
+        # before any import operation.
+        _scripts_off_for_session()
 
         ext = _get_extension(filepath, type_hint)
         import_op = IMPORT_OPERATORS.get(ext)
@@ -207,10 +219,9 @@ def handle_open_file(params: dict) -> dict:
     filepath = params.get("filepath")
 
     try:
-        # SECURITY: Disable auto-execute scripts before opening files
-        bpy.context.preferences.filepaths.use_scripts_auto_execute = False
-
-        bpy.ops.wm.open_mainfile(filepath=filepath)
+        # SECURITY: the file loads with its scripts blocked, whatever the
+        # user's own Auto Run preference says
+        bpy.ops.wm.open_mainfile(filepath=filepath, use_scripts=False)
 
         return {
             "filepath": filepath,
@@ -248,7 +259,7 @@ def _blend_path(filepath):
     if not os.path.isfile(filepath):
         raise ValueError(f"File not found: {filepath}")
     # SECURITY: never run scripts embedded in another .blend
-    bpy.context.preferences.filepaths.use_scripts_auto_execute = False
+    _scripts_off_for_session()
     return filepath
 
 
