@@ -84,6 +84,25 @@ class TestBudget:
         assert "maximum tool-calling rounds" not in reply
         assert session.ollama_client.chat.call_count == 2
 
+    def test_results_just_added_count_toward_the_window(self):
+        """The last reply fit, but the tool results appended since would not."""
+        reply = _response(prompt_eval=12_000, eval_count=0)
+        assert not context_exhausted(reply, num_ctx=20_000)
+        assert context_exhausted(reply, num_ctx=20_000, pending_tokens=5_000)
+
+    def test_loop_stops_before_a_large_result_overflows(self, session):
+        """A 40 KB read result after a reply at 12k of 20k would push the next
+        request past the window, and Ollama would silently drop the oldest
+        messages, usually the user's request."""
+        session.ollama_client.chat.side_effect = [
+            _response(tool_calls=[_call("get_scene_info")], prompt_eval=12_000, eval_count=50),
+            _response(content="should not be reached"),
+        ]
+        with patch.object(session, "execute_tool", return_value="x" * 40_000):
+            reply = session.chat("build")
+        assert "context" in reply.lower()
+        assert session.ollama_client.chat.call_count == 1
+
     def test_stop_message_says_how_much_was_used(self, session):
         full = 20_000 - CONTEXT_RESERVE + 10
         session.ollama_client.chat.side_effect = [

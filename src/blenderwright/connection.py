@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import secrets
+import select
 import socket
 import struct
 import sys
@@ -27,6 +28,10 @@ class BlenderConnectionError(Exception):
 
 class BlenderAuthError(BlenderConnectionError):
     """The handshake or a signature failed, or there is no token to prove with."""
+
+
+class _NotSent(Exception):
+    """The request failed before it reached Blender, so it is safe to resend."""
 
 
 def token_path(port: int = 9876) -> str:
@@ -266,9 +271,12 @@ class BlenderConnection:
         self._seq += 1
         seq = self._seq
         body = {"command": message["command"], "params": message.get("params", {})}
-        self._send_raw(json.dumps({
-            **body, "seq": seq, "mac": message_mac(self._key, "request", seq, body),
-        }).encode("utf-8"))
+        try:
+            self._send_raw(json.dumps({
+                **body, "seq": seq, "mac": message_mac(self._key, "request", seq, body),
+            }).encode("utf-8"))
+        except OSError as e:
+            raise _NotSent(str(e)) from e
         reply = self._read_json()
         if _is_unauthorized(reply):
             self.disconnect()
@@ -289,6 +297,27 @@ class BlenderConnection:
                 "Something may be interfering with the connection."
             )
         return reply_body
+
+    def _is_stale(self) -> bool:
+        """True when Blender closed this socket since the last reply, as when
+        its server restarts. No reply is due between commands, so a readable
+        socket means it is closed or out of step either way."""
+        try:
+            readable, _, _ = select.select([self._socket], [], [], 0)
+        except (OSError, ValueError):
+            return True
+        return bool(readable)
+
+    def _raise_lost(self, command: str, error: Exception) -> NoReturn:
+        """Give up on a command whose reply was lost after it was sent.
+
+        Blender may have run it, so a second copy could do the work twice.
+        """
+        self.disconnect()
+        raise BlenderConnectionError(
+            f"Connection to Blender lost while waiting for '{command}': {error}. "
+            "The command was not resent and may have run in Blender."
+        ) from error
 
     def _raise_unanswered(
         self, command: str, timeout: float | None, error: Exception
@@ -331,8 +360,12 @@ class BlenderConnection:
             if params:
                 message["params"] = params
 
-            # Try up to 2 times: reconnect on stale connection
+            # A command is only ever resent when it never reached Blender:
+            # a stale socket is replaced before sending, and a failed send
+            # gets one retry on a fresh connection
             for attempt in range(2):
+                if self._socket is not None and self._is_stale():
+                    self.disconnect()
                 if self._socket is None:
                     self.connect()
 
@@ -340,15 +373,15 @@ class BlenderConnection:
                     response = self._exchange(message, timeout)
                 except BlenderAuthError:
                     raise
+                except _NotSent as e:
+                    self.disconnect()
+                    if attempt == 0:
+                        continue
+                    raise BlenderConnectionError(f"Connection to Blender lost: {e}") from e
                 except TimeoutError as e:
                     self._raise_unanswered(command, timeout, e)
                 except (OSError, json.JSONDecodeError, BlenderConnectionError) as e:
-                    self.disconnect()
-                    if attempt == 0:
-                        continue  # retry with fresh connection
-                    raise BlenderConnectionError(
-                        f"Connection to Blender lost: {e}"
-                    ) from e
+                    self._raise_lost(command, e)
                 else:
                     break
 
@@ -365,16 +398,21 @@ class BlenderConnection:
                     )
                     time.sleep(self.BUSY_RETRY_DELAY)
 
+                    if self._socket is not None and self._is_stale():
+                        self.disconnect()
+                    if self._socket is None:
+                        self.connect()
                     try:
                         response = self._exchange(message, timeout)
                     except BlenderAuthError:
                         raise
+                    except _NotSent:
+                        self.disconnect()
+                        continue
                     except TimeoutError as e:
                         self._raise_unanswered(command, timeout, e)
-                    except (OSError, json.JSONDecodeError, BlenderConnectionError):
-                        self.disconnect()
-                        self.connect()
-                        continue
+                    except (OSError, json.JSONDecodeError, BlenderConnectionError) as e:
+                        self._raise_lost(command, e)
 
                     if not isinstance(response, dict):
                         raise BlenderConnectionError("Invalid response format from Blender")

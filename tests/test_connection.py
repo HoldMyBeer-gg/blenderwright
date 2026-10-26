@@ -19,6 +19,8 @@ def _transport_only(monkeypatch):
 
     monkeypatch.setattr(BlenderConnection, "_handshake", handshake)
     monkeypatch.setattr(BlenderConnection, "_verify_reply", lambda self, reply, seq: reply)
+    # A MagicMock socket cannot be polled; staleness is tested over real sockets
+    monkeypatch.setattr(BlenderConnection, "_is_stale", lambda self: False, raising=False)
 
 
 class TestConnect:
@@ -135,13 +137,13 @@ class TestSendCommand:
             conn.send_command("bad_command")
 
     def test_send_command_communication_error(self, mock_socket):
-        # recv raises OSError persistently (send_command retries once)
+        """The request went out, so it may have run: report, never resend."""
         mock_socket.recv.side_effect = OSError("broken pipe")
         conn = BlenderConnection()
         conn.connect()
         with pytest.raises(BlenderConnectionError, match="Connection to Blender lost"):
             conn.send_command("test")
-        # Should have disconnected after error
+        assert mock_socket.sendall.call_count == 1
         assert not conn.is_connected
 
 
@@ -151,13 +153,14 @@ class TestRecvTooLarge:
         # Create a header claiming a payload of 200MB
         huge_length = 200 * 1024 * 1024
         header = struct.pack(">I", huge_length)
-        # Provide header for both attempts (send_command retries once)
         mock_socket.recv.side_effect = [header, header]
 
         conn = BlenderConnection()
         conn.connect()
-        with pytest.raises(BlenderConnectionError, match="Connection to Blender lost"):
+        with pytest.raises(BlenderConnectionError, match="was not resent"):
             conn.send_command("huge")
+        # Blender already ran it: a resend would render an 8K capture twice
+        assert mock_socket.sendall.call_count == 1
 
 
 class TestBusyRetry:
@@ -238,10 +241,11 @@ class TestResponseTimeout:
         with pytest.raises(BlenderConnectionError, match="may still be running"):
             conn.send_command("render_image")
 
-    def test_stale_connection_still_retries_once(self, mock_socket):
-        """A dropped socket means the command never ran, so one resend is safe."""
+    def test_unsent_request_is_retried_once(self, mock_socket):
+        """A send that fails never reached Blender, so one resend is safe."""
         ok = self._make_response_bytes({"status": "ok", "result": {}})
-        mock_socket.recv.side_effect = [ConnectionResetError("reset"), ok[:4], ok[4:]]
+        mock_socket.sendall.side_effect = [BrokenPipeError("pipe"), None]
+        mock_socket.recv.side_effect = [ok[:4], ok[4:]]
 
         conn = BlenderConnection()
         conn.connect()
@@ -249,6 +253,22 @@ class TestResponseTimeout:
 
         assert result["status"] == "ok"
         assert mock_socket.sendall.call_count == 2
+
+    def test_stale_socket_reconnects_before_sending(self, mock_socket, monkeypatch):
+        """Blender restarted its server since the last reply: start fresh first."""
+        ok = self._make_response_bytes({"status": "ok", "result": {}})
+        mock_socket.recv.side_effect = [ok[:4], ok[4:]]
+        monkeypatch.setattr(BlenderConnection, "_is_stale", lambda self: True)
+        connects = []
+        real_connect = BlenderConnection.connect
+        monkeypatch.setattr(BlenderConnection, "connect",
+                            lambda self: connects.append(1) or real_connect(self))
+
+        conn = BlenderConnection()
+        conn.connect()
+        assert conn.send_command("get_scene_info")["status"] == "ok"
+        assert len(connects) == 2
+        assert mock_socket.sendall.call_count == 1
 
     def test_per_call_timeout_is_applied(self, mock_socket):
         ok = self._make_response_bytes({"status": "ok", "result": {}})
@@ -270,6 +290,19 @@ class TestResponseTimeout:
         conn.send_command("get_scene_info")
 
         mock_socket.settimeout.assert_called_with(30.0)
+
+    def test_lost_reply_during_busy_retry_does_not_resend(self, mock_socket):
+        """Once Blender accepts a retry, a failed reply must not send it again."""
+        busy = self._make_response_bytes({"status": "busy", "result": "rendering"})
+        mock_socket.recv.side_effect = [busy[:4], busy[4:], ConnectionResetError("reset")]
+
+        conn = BlenderConnection()
+        conn.BUSY_RETRY_DELAY = 0.01
+        conn.connect()
+        with pytest.raises(BlenderConnectionError, match="was not resent"):
+            conn.send_command("render_image")
+
+        assert mock_socket.sendall.call_count == 2
 
     def test_timeout_during_busy_retry_does_not_resend(self, mock_socket):
         """Once a retry is accepted and runs long, it must not be sent again."""
@@ -320,3 +353,43 @@ class TestContextManager:
         with BlenderConnection() as conn:
             assert conn.is_connected
         assert not conn.is_connected
+
+
+class TestStaleSocket:
+    """Over real sockets: a connection Blender has closed is noticed before a
+    command is sent, so nothing ever has to be sent twice."""
+
+    def _pair(self):
+        import socket
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(1)
+        client = socket.create_connection(listener.getsockname())
+        server, _ = listener.accept()
+        listener.close()
+        return client, server
+
+    def _is_stale(self, sock):
+        conn = BlenderConnection()
+        conn._socket = sock
+        return BlenderConnection.__dict__["_is_stale"](conn)
+
+    def test_open_idle_socket_is_not_stale(self, monkeypatch):
+        monkeypatch.undo()
+        client, server = self._pair()
+        try:
+            assert not self._is_stale(client)
+        finally:
+            client.close()
+            server.close()
+
+    def test_socket_closed_by_blender_is_stale(self, monkeypatch):
+        import time
+        monkeypatch.undo()
+        client, server = self._pair()
+        server.close()
+        time.sleep(0.05)
+        try:
+            assert self._is_stale(client)
+        finally:
+            client.close()

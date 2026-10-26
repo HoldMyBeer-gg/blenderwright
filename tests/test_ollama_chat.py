@@ -264,6 +264,36 @@ class TestBlenderChatSession:
             parsed = json.loads(result)
             assert parsed["name"] == "Cube"
 
+    @pytest.mark.parametrize("items", [[], ["Cube", "Light", "Camera"]])
+    def test_execute_tool_returns_every_item_of_a_list(self, mock_ollama_client, items):
+        """FastMCP turns a returned list into one text block per item, and the
+        model must see all of them, or a three-object scene looks like one."""
+        from mcp.server.fastmcp import FastMCP
+
+        server = FastMCP("t")
+
+        @server.tool()
+        def list_things() -> list[dict]:
+            return [{"name": n} for n in items]
+
+        with patch("blenderwright.server.mcp", server):
+            session = BlenderChatSession()
+            result = json.loads(session.execute_tool("list_things", {}))
+        assert [o["name"] for o in result] == items
+
+    def test_execute_tool_keeps_a_list_of_strings(self, mock_ollama_client):
+        from mcp.server.fastmcp import FastMCP
+
+        server = FastMCP("t")
+
+        @server.tool()
+        def recent() -> list[str]:
+            return ["/a.blend", "/b.blend"]
+
+        with patch("blenderwright.server.mcp", server):
+            session = BlenderChatSession()
+            assert json.loads(session.execute_tool("recent", {})) == ["/a.blend", "/b.blend"]
+
     def test_execute_tool_error(self, mock_ollama_client, mock_blender_connection):
         """Test tool execution handles errors gracefully."""
         async def _failing_call_tool(name, args):
