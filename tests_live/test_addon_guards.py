@@ -50,3 +50,10 @@ def test_export_text_settings_refused(scene, option):
 def test_unknown_command_refused(scene):
     reply = _raw("__import__", {})
     assert reply["status"] == "error"
+
+
+@pytest.mark.parametrize("code", ["1 + 1", "import os", "__import__('os')", "open('/etc/hosts')"])
+def test_raw_python_is_off_in_a_fresh_blender(scene, code):
+    """Off unless someone ticks Allow raw Python in the panel; nothing runs."""
+    reply = _raw("execute_code", {"code": code})
+    assert reply["status"] == "error" and "disabled" in reply["result"]
