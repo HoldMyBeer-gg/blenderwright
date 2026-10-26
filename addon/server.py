@@ -99,8 +99,9 @@ class BlenderServer:
             raise
         self._port = self._server_socket.getsockname()[1]
 
-        self._token = auth.new_token()
-        auth.write_token(self._token, self._port)
+        token = auth.new_token()
+        auth.write_token(token, self._port)
+        self._token = token
         self._server_socket.listen(1)
         self._server_socket.settimeout(0.2)  # Notice Stop Server within a fifth of a second
         self._running = True
@@ -134,26 +135,33 @@ class BlenderServer:
             self._thread = None
 
         thread_safety.unregister_timer()
-        auth.clear_token(self._port)
+        # Only the server that wrote the token removes it: another Blender may
+        # be serving this port with its own
+        if self._token:
+            auth.clear_token(self._port)
+            self._token = ""
 
     def _accept_loop(self) -> None:
         """Accept incoming connections."""
         while self._running and self._server_socket:
             try:
                 client, addr = self._server_socket.accept()
-                client.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                client.settimeout(30.0)
-                with self._lock:
-                    self._clients.append(client)
-                handler_thread = threading.Thread(
-                    target=self._handle_client, args=(client,), daemon=True
-                )
-                handler_thread.start()
             except socket.timeout:
                 continue
             except OSError:
-                if self._running:
-                    break
+                continue  # one failed accept; stop() ends the loop
+            try:
+                client.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                client.settimeout(30.0)
+            except OSError:  # the client reset before setup
+                client.close()
+                continue
+            with self._lock:
+                self._clients.append(client)
+            handler_thread = threading.Thread(
+                target=self._handle_client, args=(client,), daemon=True
+            )
+            handler_thread.start()
 
     def _read_json(self, client: socket.socket):
         data = self._recv_message(client)

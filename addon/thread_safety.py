@@ -107,6 +107,8 @@ def _process_queue() -> float:
                 response_queue.put((True, result))
             except Exception as e:
                 response_queue.put((False, e))
+            except BaseException as e:  # SystemExit from raw Python must not end the timer
+                response_queue.put((False, RuntimeError(f"{type(e).__name__}: {e}")))
     except queue.Empty:
         pass
     return 0.01  # Run again in 10ms
