@@ -117,6 +117,12 @@ class BlenderServer:
 
         with self._lock:
             for client in self._clients:
+                # shutdown() first: on Linux, close() alone does not end a
+                # connection another thread is reading
+                try:
+                    client.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
                 try:
                     client.close()
                 except OSError:

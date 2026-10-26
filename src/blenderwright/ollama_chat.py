@@ -318,10 +318,15 @@ class BlenderChatSession:
             # call_tool returns list[TextContent], or (list[TextContent],
             # structured) for a tool with a typed return. Either way the
             # model wants the text, never a repr of the wrapper.
-            content = result[0] if isinstance(result, tuple) else result
-            if content and hasattr(content[0], "text"):
-                return content[0].text
-            return json.dumps(result, default=str)
+            content, structured = result if isinstance(result, tuple) else (result, None)
+            texts = [c.text for c in content if hasattr(c, "text")]
+            if len(texts) == 1:
+                return texts[0]
+            # A returned list arrives as one block per item: the model needs
+            # every item, so send the list itself
+            if isinstance(structured, dict) and "result" in structured:
+                return json.dumps(structured["result"], default=str)
+            return json.dumps([_as_json(t) for t in texts], default=str)
         except Exception as e:
             return json.dumps({"status": "error",
                                "result": self._explain_unknown_parameters(name, str(e))})
@@ -450,6 +455,8 @@ class BlenderChatSession:
                 return final
             else:
                 self.messages.append(_without_thinking(response.message))
+            round_start = len(self.messages)
+            schema_growth = 0
 
             for tool_call in tool_calls:
                 if hasattr(tool_call, "function"):
@@ -501,7 +508,9 @@ class BlenderChatSession:
                 # The model just loaded a toolset: the next request has to
                 # carry the new schemas or it cannot call what it asked for.
                 if tool_name == "enable_toolset" and not result.startswith('{"status": "error"'):
+                    before = self._estimate_prompt_tokens(self.tools)
                     self._refresh_tools()
+                    schema_growth += self._estimate_prompt_tokens(self.tools) - before
                     chat_kwargs["tools"] = self.tools
 
                 # A screenshot goes to the vision model, and the chat model
@@ -519,7 +528,9 @@ class BlenderChatSession:
             # The calls the model just made have run. If their results would
             # not fit in the window, stop here rather than let Ollama drop
             # messages silently.
-            if context_exhausted(response, self.num_ctx):
+            appended = sum(len(str(m.get("content", "")))
+                           for m in self.messages[round_start:]) // 4
+            if context_exhausted(response, self.num_ctx, appended + schema_growth):
                 used = _count(getattr(response, "prompt_eval_count", None))
                 note = (f"(Context window is nearly full: ~{used:,} of "
                         f"{self.num_ctx:,} tokens used. The scene is kept. Send a "
@@ -676,21 +687,23 @@ def _count(value: Any) -> int:
     return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
-def context_exhausted(response: Any, num_ctx: int) -> bool:
-    """True when the reply just received leaves no room for another round.
+def context_exhausted(response: Any, num_ctx: int, pending_tokens: int = 0) -> bool:
+    """True when the next request would leave no room for another round.
 
     Args:
         response: An Ollama chat response. prompt_eval_count is the size of
             everything sent; eval_count is the size of what came back.
         num_ctx: The window the model is running with.
+        pending_tokens: An estimate of what was added since that reply (tool
+            results, newly loaded tool schemas), which the next request carries.
 
     Returns:
-        Whether prompt plus reply already reach into CONTEXT_RESERVE.
+        Whether the next request would reach into CONTEXT_RESERVE.
     """
     used = _count(getattr(response, "prompt_eval_count", None)) + _count(
         getattr(response, "eval_count", None)
     )
-    return used > num_ctx - CONTEXT_RESERVE
+    return used + pending_tokens > num_ctx - CONTEXT_RESERVE
 
 
 _VECTOR_NAMES = {"pi": math.pi, "tau": math.tau, "e": math.e}

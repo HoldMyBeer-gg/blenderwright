@@ -299,3 +299,16 @@ class TestStopLeavesOtherTokensAlone:
         finally:
             holder.close()
         assert cleared == []
+
+
+class TestStopEndsClientConnections:
+    """On Linux, close() on a socket another thread is reading does not end the
+    connection, so a stopped server left its clients attached. shutdown() does."""
+
+    def test_stop_shuts_each_client_down(self, server_module):
+        server = server_module.BlenderServer()
+        client = MagicMock(spec=socket.socket)
+        server._clients.append(client)
+        server.stop()
+        client.shutdown.assert_called_with(socket.SHUT_RDWR)
+        client.close.assert_called()
