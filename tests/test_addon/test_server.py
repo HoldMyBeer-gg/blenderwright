@@ -47,6 +47,14 @@ def server_module():
     return _load_server_module()
 
 
+def _stop_loop(server):
+    """An accept() outcome that ends _accept_loop the way stop() does."""
+    def stop(*_args):
+        server._running = False
+        raise socket.timeout()
+    return stop
+
+
 class TestSOKeepalive:
     """Tests that accepted client sockets have SO_KEEPALIVE set."""
 
@@ -63,10 +71,9 @@ class TestSOKeepalive:
         # growing the heap until pytest's teardown gc collect crawls.
         mock_client.recv.return_value = b""
         mock_server_socket = MagicMock()
-        mock_server_socket.accept.side_effect = [
-            (mock_client, ("127.0.0.1", 12345)),
-            OSError("stop loop"),
-        ]
+        outcomes = iter([(mock_client, ("127.0.0.1", 12345))])
+        stop = _stop_loop(server)
+        mock_server_socket.accept.side_effect = lambda: next(outcomes, None) or stop()
 
         server._server_socket = mock_server_socket
         server._running = True
@@ -225,3 +232,70 @@ class TestPortIsExclusive:
         assert self._options(server_module, monkeypatch, platform) == [
             server_module.socket.SO_REUSEADDR]
 
+
+
+class TestAcceptLoopSurvivesErrors:
+    """One failed accept (a client that resets at once, ECONNABORTED, EMFILE)
+    must not stop the server taking connections while it still shows Running."""
+
+    def test_keeps_accepting_after_an_os_error(self, server_module):
+        server = server_module.BlenderServer()
+        late = MagicMock(spec=socket.socket)
+        late.recv.return_value = b""
+        outcomes = iter([OSError("connection aborted"), (late, ("127.0.0.1", 1))])
+        stop = _stop_loop(server)
+
+        def accept():
+            outcome = next(outcomes, None)
+            if outcome is None:
+                return stop()
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+
+        server._server_socket = MagicMock()
+        server._server_socket.accept.side_effect = accept
+        server._running = True
+        server._accept_loop()
+
+        late.setsockopt.assert_any_call(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+    def test_a_client_that_fails_setup_is_closed(self, server_module):
+        server = server_module.BlenderServer()
+        reset = MagicMock(spec=socket.socket)
+        reset.setsockopt.side_effect = OSError("invalid argument")
+        outcomes = iter([(reset, ("127.0.0.1", 1))])
+        stop = _stop_loop(server)
+        server._server_socket = MagicMock()
+        server._server_socket.accept.side_effect = lambda: next(outcomes, None) or stop()
+        server._running = True
+        server._accept_loop()
+
+        reset.close.assert_called()
+        assert reset not in server._clients
+
+
+class TestStopLeavesOtherTokensAlone:
+    """Two Blenders: the one that never got the port must not delete the token
+    file of the one serving it when it stops."""
+
+    def test_server_that_never_started_clears_nothing(self, server_module, monkeypatch):
+        cleared = []
+        monkeypatch.setattr(server_module.auth, "clear_token", lambda port: cleared.append(port))
+        server_module.BlenderServer(port=9876).stop()
+        assert cleared == []
+
+    def test_server_refused_the_port_clears_nothing(self, server_module, monkeypatch):
+        cleared = []
+        monkeypatch.setattr(server_module.auth, "clear_token", lambda port: cleared.append(port))
+        holder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        holder.bind(("127.0.0.1", 0))
+        holder.listen(1)
+        try:
+            server = server_module.BlenderServer(port=holder.getsockname()[1])
+            with pytest.raises(OSError):
+                server.start()
+            server.stop()
+        finally:
+            holder.close()
+        assert cleared == []

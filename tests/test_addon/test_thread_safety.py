@@ -106,3 +106,16 @@ class TestExecuteOnMainThread:
 
         assert ts._response_queues == {}
         assert ts._started == {}
+
+    def test_system_exit_comes_back_as_an_error(self, ts):
+        """Raw Python can raise SystemExit; it must not escape Blender's timer,
+        which would quit Blender or leave the client waiting forever."""
+        def leave():
+            raise SystemExit("done early")
+
+        thread, outcome = _call_in_thread(ts, leave)
+        _wait_until_queued(ts)
+        assert ts._process_queue() == 0.01
+        thread.join(2.0)
+        assert isinstance(outcome["error"], RuntimeError)
+        assert "SystemExit" in str(outcome["error"])

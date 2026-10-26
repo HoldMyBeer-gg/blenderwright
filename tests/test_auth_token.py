@@ -104,13 +104,28 @@ class TestWriteToken:
         assert len(a) >= 64
 
     def test_file_is_private_to_the_user(self, addon_auth, tmp_path, monkeypatch):
+        monkeypatch.delenv("BLENDERWRIGHT_TOKEN_FILE", raising=False)
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setattr(addon_auth.sys, "platform", "linux")
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
         path = tmp_path / "cfg" / "blenderwright" / "token"
-        monkeypatch.setenv("BLENDERWRIGHT_TOKEN_FILE", str(path))
         addon_auth.write_token("secret")
 
         assert path.read_text() == "secret"
         assert stat.S_IMODE(path.stat().st_mode) == 0o600
         assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
+
+    def test_override_leaves_its_directory_alone(self, addon_auth, tmp_path, monkeypatch):
+        """An override points into a shared folder (WSL, Docker): the token file
+        is private, but the folder keeps its mode for whoever else uses it."""
+        shared = tmp_path / "shared"
+        shared.mkdir()
+        shared.chmod(0o755)
+        monkeypatch.setenv("BLENDERWRIGHT_TOKEN_FILE", str(shared / "token"))
+        addon_auth.write_token("secret")
+
+        assert stat.S_IMODE((shared / "token").stat().st_mode) == 0o600
+        assert stat.S_IMODE(shared.stat().st_mode) == 0o755
 
     def test_replaces_a_world_readable_file(self, addon_auth, tmp_path, monkeypatch):
         path = tmp_path / "token"

@@ -15,8 +15,8 @@ bl_info = {
     "category": "Interface",
 }
 
-# Module-level reference set in register(): holds the @persistent load_post handler
-_clear_render_guard_on_load = None
+# (bpy.app.handlers list name, callback) pairs added in register()
+_app_handlers = []
 
 
 def _purge_submodules_from_cache(pkg_name: str, modules: dict | None = None) -> list[str]:
@@ -75,23 +75,28 @@ def register():
     from . import handlers
     from .render_guard import render_guard
 
-    global _clear_render_guard_on_load
-
     ui_panel.register()
     handlers.register()
 
-    # Track render state so the server can return "busy" during renders
-    bpy.app.handlers.render_pre.append(render_guard.on_render_pre)
-    bpy.app.handlers.render_complete.append(render_guard.on_render_complete)
-    bpy.app.handlers.render_cancel.append(render_guard.on_render_cancel)
-
-    # Clear render guard when a .blend file loads: recovers from crashed renders
+    # Track render state so the server can return "busy" during renders.
+    # Persistent, or Blender drops them on the first file load.
     @persistent
-    def _on_load_post(filepath):
-        render_guard.on_render_complete(None)
+    def _render_started(scene, *_):
+        render_guard.on_render_pre(scene)
 
-    _clear_render_guard_on_load = _on_load_post
-    bpy.app.handlers.load_post.append(_clear_render_guard_on_load)
+    @persistent
+    def _render_ended(scene, *_):
+        render_guard.on_render_complete(scene)
+
+    _app_handlers[:] = [
+        ("render_pre", _render_started),
+        ("render_complete", _render_ended),
+        ("render_cancel", _render_ended),
+        # A file load also clears it: recovers from crashed renders
+        ("load_post", _render_ended),
+    ]
+    for list_name, callback in _app_handlers:
+        getattr(bpy.app.handlers, list_name).append(callback)
 
 
 def unregister():
@@ -99,23 +104,12 @@ def unregister():
     from . import ui_panel
     from . import server as addon_server
     from . import handlers
-    from .render_guard import render_guard
 
-    global _clear_render_guard_on_load
-
-    # Remove render handlers
-    if render_guard.on_render_cancel in bpy.app.handlers.render_cancel:
-        bpy.app.handlers.render_cancel.remove(render_guard.on_render_cancel)
-    if render_guard.on_render_complete in bpy.app.handlers.render_complete:
-        bpy.app.handlers.render_complete.remove(render_guard.on_render_complete)
-    if render_guard.on_render_pre in bpy.app.handlers.render_pre:
-        bpy.app.handlers.render_pre.remove(render_guard.on_render_pre)
-
-    # Remove load_post handler
-    if _clear_render_guard_on_load is not None:
-        if _clear_render_guard_on_load in bpy.app.handlers.load_post:
-            bpy.app.handlers.load_post.remove(_clear_render_guard_on_load)
-        _clear_render_guard_on_load = None
+    for list_name, callback in _app_handlers:
+        handler_list = getattr(bpy.app.handlers, list_name)
+        if callback in handler_list:
+            handler_list.remove(callback)
+    _app_handlers.clear()
 
     addon_server.stop_server()
     handlers.unregister()

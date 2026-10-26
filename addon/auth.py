@@ -48,7 +48,9 @@ def write_token(token: str, port: int = DEFAULT_PORT) -> None:
     path = token_path(port)
     directory = os.path.dirname(path)
     os.makedirs(directory, mode=0o700, exist_ok=True)
-    if sys.platform != "win32":
+    # An override's folder may be shared (WSL, Docker): the 0600 file keeps
+    # the token private there, and the folder keeps its own mode
+    if sys.platform != "win32" and not os.environ.get(ENV_TOKEN_FILE):
         os.chmod(directory, 0o700)
     # A fresh 0600 file swapped in, so an old file's looser mode never applies
     tmp = f"{path}.{os.getpid()}.tmp"
