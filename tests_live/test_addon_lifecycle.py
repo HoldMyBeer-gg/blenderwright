@@ -25,7 +25,9 @@ RENDER_AFTER_LOAD = textwrap.dedent(f"""
     seen = []
     bpy.app.handlers.render_post.append(lambda *_: seen.append(render_guard.is_rendering))
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_WORKBENCH"
+    scene.render.engine = "CYCLES"  # CPU: CI runners have no GPU
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = 1
     scene.render.resolution_x = scene.render.resolution_y = 8
     bpy.ops.render.render()
     print("GUARD", seen, render_guard.is_rendering)
