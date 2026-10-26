@@ -112,7 +112,7 @@ class TestPackAndPaths:
         T["save_file"]()
         relative = T["manage_external_paths"]("MAKE_RELATIVE")
         absolute = [f for f in relative["files"] if not f["path"].startswith("//")]
-        assert absolute == [], f"still absolute: {absolute}; blend at {scene}"
+        assert absolute == [], f"still absolute: {absolute}; blend at {textured}"
         found = T["manage_external_paths"]("FIND_MISSING", directory=str(textured))
         assert found["missing"] == 0
 
