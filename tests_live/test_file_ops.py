@@ -111,8 +111,10 @@ class TestPackAndPaths:
         assert listing["missing"] == 0 and listing["files"]
         T["save_file"]()
         relative = T["manage_external_paths"]("MAKE_RELATIVE")
-        absolute = [f for f in relative["files"] if not f["path"].startswith("//")]
-        assert absolute == [], f"still absolute: {absolute}; blend at {textured}"
+        # Blender's own bundled libraries (Essentials brushes, linked by any
+        # earlier sculpt call) stay absolute when Blender sits on another drive
+        texture = next(f for f in relative["files"] if f["name"] == "tex.png")
+        assert texture["path"] == "//tex.png"
         found = T["manage_external_paths"]("FIND_MISSING", directory=str(textured))
         assert found["missing"] == 0
 
