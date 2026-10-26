@@ -43,3 +43,52 @@ def test_render_guard_still_tracks_renders_after_a_file_load(tmp_path):
         capture_output=True, text=True, timeout=120, env=env,
     ).stdout
     assert "GUARD [True] False" in out, out[-2000:]
+
+
+AUTORUN = textwrap.dedent(f"""
+    import os
+    import sys
+    import bpy
+    sys.path.insert(0, {REPO!r})
+    import addon
+    from addon.handlers import file_ops
+
+    addon.register()
+    blend = os.path.join(sys.argv[-1], "rigged.blend")
+    text = bpy.data.texts.new("rig_ui.py")
+    text.write("import bpy")
+    text.use_module = True
+    bpy.ops.wm.save_as_mainfile(filepath=blend, copy=True)
+
+    prefs = bpy.context.preferences
+    prefs.filepaths.use_scripts_auto_execute = True
+    prefs.is_dirty = False
+
+    def report(step):
+        print("AUTORUN", step, prefs.filepaths.use_scripts_auto_execute, prefs.is_dirty,
+              bpy.app.autoexec_fail)
+
+    file_ops.handle_list_blend_contents({{"filepath": blend}})
+    report("list")
+    file_ops.handle_import_file({{"filepath": os.path.join({HERE!r}, "assets", "tri.obj")}})
+    report("import")
+    prefs.filepaths.use_scripts_auto_execute = True
+    prefs.is_dirty = False
+    file_ops.handle_open_file({{"filepath": blend}})
+    report("open")
+""")
+
+
+def test_auto_run_is_off_for_the_session_but_never_saved(tmp_path):
+    """Files the model picks never run their scripts, and the user's own
+    Auto Run Python Scripts preference is not changed on disk."""
+    env = dict(os.environ, BLENDERWRIGHT_TOKEN_FILE=str(tmp_path / "token"))
+    out = subprocess.run(
+        [BLENDER, "-b", "--factory-startup", "--python-expr", AUTORUN, "--", str(tmp_path)],
+        capture_output=True, text=True, timeout=120, env=env,
+    ).stdout
+    # Off for this session, and the preferences are not marked for saving
+    assert "AUTORUN list False False False" in out, out[-2000:]
+    assert "AUTORUN import False False False" in out, out[-2000:]
+    # Opening loads with scripts blocked, and the preference keeps its value
+    assert "AUTORUN open True False True" in out, out[-2000:]
