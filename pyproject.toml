@@ -37,7 +37,9 @@ chat = [
 ]
 dev = [
     "fake-bpy-module-5-2>=20260730",
-    "pytest>=7.0",
+    # 9.2 undoes a monkeypatch on a MagicMock attribute with delattr, and a
+    # deleted MagicMock attribute raises forever after, breaking every later test
+    "pytest>=7.0,<9.2",
     "pytest-asyncio>=0.21",
     "pytest-cov>=4.0",
     "ruff>=0.15,<0.16",
@@ -52,7 +54,7 @@ dev = [
 [dependency-groups]
 dev = [
     "fake-bpy-module-5-2>=20260730",
-    "pytest>=7.0",
+    "pytest>=7.0,<9.2",
     "pytest-asyncio>=0.21",
     "pytest-cov>=4.0",
     "ruff>=0.15,<0.16",
