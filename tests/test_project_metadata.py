@@ -91,7 +91,8 @@ def test_version_is_consistent_across_all_declarations():
 
 def test_readme_tool_count_matches_reality():
     actual = _tool_count()
-    claimed = set(re.findall(r"(\d+) tools", _read("README.md")))
+    # One optional word, so "191 structured tools" cannot hide from it
+    claimed = set(re.findall(r"(\d+) (?:\w+ )?tools\b", _read("README.md")))
     assert claimed, "README no longer states a tool count"
     assert claimed == {str(actual)}, (
         f"README claims {sorted(claimed)} tools; the code defines {actual}. "
@@ -107,6 +108,19 @@ def test_readme_module_count_matches_reality():
     claimed = set(re.findall(r"(\d+) modules", _read("README.md")))
     assert claimed == {str(len(modules))}, (
         f"README claims {sorted(claimed)} modules; there are {len(modules)}."
+    )
+
+
+def test_readme_prompt_count_matches_reality():
+    prompts_dir = os.path.join(ROOT, "src", "blenderwright", "prompts")
+    actual = 0
+    for filename in os.listdir(prompts_dir):
+        if filename.endswith(".py"):
+            with open(os.path.join(prompts_dir, filename), encoding="utf-8") as f:
+                actual += len(re.findall(r"^@mcp\.prompt\b", f.read(), re.MULTILINE))
+    claimed = set(re.findall(r"(\d+) (?:\w+ )?prompts?\b", _read("README.md")))
+    assert claimed == {str(actual)}, (
+        f"README claims {sorted(claimed)} prompts; the code defines {actual}."
     )
 
 

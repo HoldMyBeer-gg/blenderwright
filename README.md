@@ -38,7 +38,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 - **Zero telemetry**: no usage tracking, no analytics, no data collection. Everything runs locally on `127.0.0.1`
 - **Zero-dependency addon**: the Blender addon uses only Python stdlib + `bpy`. Nothing to pip install inside Blender
 - **Thread-safe architecture**: background TCP server with queue-based main-thread execution, TCP keepalive for stale connection detection
-- **1190 tests**: coverage across tools, handlers, validators, prompts, and the cross-platform installer (ubuntu/macos/windows × py3.11/3.13 in CI)
+- **3500+ tests**: 2900+ unit tests across tools, handlers, validators, prompts and the cross-platform installer (ubuntu/macos/windows × py3.11/3.13 in CI), plus 600+ live tests that run every tool against a real Blender 5.2
 
 ## Quickstart
 
@@ -158,11 +158,32 @@ The server communicates over stdin/stdout using the MCP protocol. It connects to
 
 ## Updating
 
-Whichever way you installed, **Blender must be fully restarted**, not "Reload Scripts".
-The addon runs a background TCP server thread that survives a script reload, so reloading
-leaves a stale handler registered and the old socket still bound.
+Update both halves to the same release. They check each other's protocol version on connect, and a mismatch is refused with an error instead of half-working.
 
-### One command (zip installs)
+### The MCP server
+
+`uvx` keeps using the copy it cached, so ask for the latest:
+
+```bash
+uvx blenderwright@latest   # or: uv cache clean blenderwright
+pip install -U blenderwright   # if you installed with pip
+```
+
+If your client config uses `uvx blenderwright`, changing it to `uvx blenderwright@latest` checks for a new release every time the client starts it.
+
+### The Blender addon
+
+1. Download the new zip from [GitHub Releases](https://github.com/HoldMyBeer-gg/blenderwright/releases).
+2. If the server is running, open the N-panel **blenderwright** tab and click **Stop Server**.
+3. In **Edit > Preferences > Get Extensions**, find **blenderwright** and click **Uninstall**.
+4. Quit and restart Blender (this clears cached `blenderwright` modules).
+5. Install the new `.zip` via the **▾ > Install from Disk...** menu and enable it.
+
+**Blender must be fully restarted**, not "Reload Scripts". The addon runs a background TCP server thread that survives a script reload, so reloading leaves a stale handler registered and the old socket still bound.
+
+### From a clone: one command
+
+If you work from a git clone, `install_addon.py` does all of that for you, building the zip from your checkout's `addon/`:
 
 ```bash
 python install_addon.py upgrade
@@ -203,18 +224,6 @@ old Blender version is the usual cause.
 If you symlinked `addon/` into Blender's extensions directory, there is nothing to
 install. `git pull` and restart Blender. Use `doctor` to confirm which kind of install
 you have; it reports symlinks distinctly.
-
-### By hand, through the GUI
-
-<details>
-<summary><strong>Manual steps, if you would rather not run the script</strong></summary>
-
-1. If the server is running, open the N-panel **blenderwright** tab and click **Stop Server**.
-2. In Blender, open **Edit > Preferences > Get Extensions**, find **blenderwright**, and click **Uninstall**.
-3. Quit and restart Blender (this clears cached `blenderwright` modules).
-4. Install the new `.zip` via the **▾ > Install from Disk...** menu and enable it.
-
-</details>
 
 ## Expert Guidance
 
@@ -316,7 +325,7 @@ AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon
 
 - **MCP Server** (`src/blenderwright/`): Python process using the `mcp` SDK. Exposes tools, resources, and prompts over stdio. Validates all inputs before forwarding to Blender.
 - **Blender Addon** (`addon/`): Runs a TCP socket server inside Blender on a background thread. Commands are queued and executed on the main thread via `bpy.app.timers` to respect Blender's threading model.
-- **Render Guard**: Tracks render state via `bpy.app.handlers`. During renders, the server immediately returns a "busy" status. Automatically recovers from crashed renders via `load_post` handler. Can be force-reset via MCP command.
+- **Render Guard**: Tracks render state via `bpy.app.handlers`. During renders, the server immediately returns a "busy" status. Automatically recovers from crashed renders via `load_post` handler. The addon can also force-reset it with its `reset_render_guard` command.
 - **Protocol**: Length-prefixed JSON messages over TCP with SO_KEEPALIVE for stale connection detection. Each message is a 4-byte big-endian length header followed by a UTF-8 JSON payload. A connection opens with a challenge-response handshake that also checks both sides speak the same protocol version, then every message is signed (see Security).
 
 </details>
@@ -337,7 +346,7 @@ AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon
 
 - **Localhost only**: The TCP socket binds to `127.0.0.1`, never exposed to the network.
 - **Authenticated socket**: any local program can reach `127.0.0.1`, so the connection is authenticated. Start Server writes a fresh random token to a file only your user can read (`~/Library/Application Support/blenderwright/token` on macOS, `%APPDATA%\blenderwright\token` on Windows, `~/.config/blenderwright/token` on Linux) and deletes it on Stop. The token never crosses the socket: Blender and the MCP server each prove they know it by signing fresh random nonces (HMAC-SHA256), and every command and reply after that is signed with a per-connection key and numbered, so commands cannot be injected, altered or replayed. The MCP server refuses to send anything to a process on the port that cannot prove itself. A failed check closes the connection and the N-panel shows the count. On Windows the port is claimed exclusively. If the MCP server runs where it can't see the token file (WSL, Docker), set `BLENDERWRIGHT_TOKEN_FILE` to its path. Each port has its own token file (`token` for 9876, `token-<port>` otherwise), so two Blenders on two ports never overwrite each other's; point an MCP server at the second one with `BLENDERWRIGHT_PORT`.
-- **Raw Python is off by default**: `execute_blender_code` refuses to run until you tick "Allow raw Python" in the blenderwright N-panel. The switch is a `WindowManager` property, so it is per Blender session and is never written into a `.blend` file. Every run is echoed to the system console and the panel shows a count and the last snippet. The 191 structured tools do not need it.
+- **Raw Python is off by default**: `execute_blender_code` refuses to run until you tick "Allow raw Python" in the blenderwright N-panel. The switch is a `WindowManager` property, so it is per Blender session and is never written into a `.blend` file. Every run is echoed to the system console and the panel shows a count and the last snippet. The structured tools do not need it.
 - **The restricted namespace is not a sandbox**: when raw Python is on, the import hook refuses 25 imports (`os`, `subprocess`, `socket`, `shutil`, `sys`, `ctypes`, `importlib`, `pathlib`, `signal`, `multiprocessing`, `pickle`, `shelve`, `tempfile`, `http`, `urllib`, `ftplib`, `smtplib`, `xmlrpc`, `code`, `codeop`, `compileall`, `webbrowser`, `antigravity`, `turtle`, `tkinter`) and the builtins `__import__`, `exec`, `eval`, `compile`, `open`, `globals`, `locals`, `vars`, `input`, `breakpoint`, `exit`, `quit`, `help` and `memoryview` are removed. That catches a model making a mistake. It does not contain an adversary: the code runs in-process with full `bpy`, and `bpy` alone can save files anywhere and run any operator. Treat "Allow raw Python" the way you would treat running a script someone else wrote: read what the model is about to run, and turn it off when you are done.
 - **Input validation**: All inputs pass through validators before reaching Blender: name sanitization, path traversal prevention, numeric range checks, enum allowlists.
 - **File safety**: Files the model opens, imports, links or appends never auto-run their scripts. Auto-run is turned off for that Blender session only and never saved, so your own trusted files still auto-run next launch. File extensions are checked against allowlists.
@@ -352,10 +361,10 @@ AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon
 <summary><strong>Known limitations</strong></summary>
 
 - **Blender must be running**: The MCP server communicates with Blender over TCP. Blender must be open with the addon enabled and server started.
-- **Single connection**: The addon accepts one client connection at a time. Multiple AI assistants cannot control the same Blender instance simultaneously.
+- **One Blender per MCP server**: each MCP server talks to the Blender on its configured port. To drive two Blenders, give the second a different port in its N-panel and register a second MCP server with `BLENDERWRIGHT_PORT` set to it.
 - **Selection is persistent, not per-call**: Selection lives on the mesh in Blender, so it stays set between calls. Choose geometry with the `select_*` tools, then pass `selection="CURRENT"` to a mesh tool. The default is still `"ALL"`. Because the selection is shared state, two assistants working on the same mesh would step on each other.
 - **Sculpt strokes cannot be simulated**: You can configure brushes, symmetry, dyntopo, and remeshing, but actual brush strokes are not yet exposed.
-- **Node graphs require sequential calls**: Both shader node trees and geometry node trees must be built one node/connection at a time.
+- **Shader graphs require sequential calls**: Shader node trees are built one node/connection at a time. Geometry node trees can be built in one call with `build_geometry_nodes`.
 - **No undo integration**: Operations appear in Blender's undo history individually but there's no MCP-level undo/redo or transaction grouping.
 - **Viewport capture requires a visible 3D viewport**: Headless Blender may not support viewport screenshots.
 - **No real-time feedback**: The MCP protocol is request/response. There's no streaming of viewport updates or render progress.
@@ -404,8 +413,9 @@ blenderwright/
 │   ├── thread_safety.py    # Main-thread execution queue
 │   ├── render_guard.py     # Render state tracking + crash recovery
 │   ├── ui_panel.py         # N-panel UI (start/stop + port config)
-│   └── handlers/           # 23 handler modules
-└── tests/                  # 1186 unit tests
+│   └── handlers/           # 32 handler modules
+├── tests/                  # 2900+ unit tests (Blender faked)
+└── tests_live/             # 600+ live tests against a real Blender 5.2
 ```
 
 </details>
