@@ -31,6 +31,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
 - **Extension suggestions**: proactively recommends Bool Tool, LoopTools, and Node Wrangler when a task would benefit from them (skips already-installed extensions)
+- **Signed socket**: the MCP server and Blender prove a shared per-start token to each other with HMAC-SHA256, then sign and number every command and reply, so no other local program can drive your Blender or replay a command. The token is regenerated on every Start Server and never crosses the wire. See [Security](#security)
 - **Raw Python is opt-in**: `execute_blender_code` is off until you tick "Allow raw Python" in the N-panel, per session, never saved into the .blend. When on, every snippet is echoed to the console and listed in the panel. A restricted namespace blocks obvious mistakes (`os`, `subprocess`, `exec`, `open`, ...); it is a guard against accidents, not a security boundary
 - **Render-aware**: automatically detects when Blender is rendering and queues commands. Recovers from stuck render guards via `load_post` handler and reset command
 - **Built for Blender 5.2 LTS**: ships as a Blender Extension; developed and tested on Blender 5.2
@@ -285,7 +286,7 @@ Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://ble
 | File I/O | 14 | Import/export (FBX, OBJ, glTF, USD, STL...), save/open, list/link/append from other .blend files, pack/unpack resources, check and relink external paths, asset libraries (list, place), linked data (make local, override, reload) |
 | Viewport | 3 | Shading mode, overlays, focus on object |
 | Screenshot | 1 | Fast viewport capture (OpenGL) or full render, base64 output |
-| Code Exec | 1 | Sandboxed Python execution in Blender (dangerous imports blocked) |
+| Code Exec | 1 | Raw Python in Blender: off until you tick "Allow raw Python", obvious mistakes blocked, not a sandbox |
 
 </details>
 
@@ -330,19 +331,13 @@ AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon
 
 </details>
 
-## Privacy & Security
-
-<details>
-<summary><strong>Privacy</strong></summary>
+## Privacy
 
 - **Zero telemetry**: blenderwright collects no usage data, sends no analytics, and makes no network requests beyond the local TCP connection to Blender.
 - **Fully local**: all communication stays on your machine. No cloud services, no external APIs, no phone-home behavior.
 - **Open source**: the entire codebase is auditable. What you see is what runs.
 
-</details>
-
-<details>
-<summary><strong>Security</strong></summary>
+## Security
 
 - **Localhost only**: The TCP socket binds to `127.0.0.1`, never exposed to the network.
 - **Authenticated socket**: any local program can reach `127.0.0.1`, so the connection is authenticated. Start Server writes a fresh random token to a file only your user can read (`~/Library/Application Support/blenderwright/token` on macOS, `%APPDATA%\blenderwright\token` on Windows, `~/.config/blenderwright/token` on Linux) and deletes it on Stop. The token never crosses the socket: Blender and the MCP server each prove they know it by signing fresh random nonces (HMAC-SHA256), and every command and reply after that is signed with a per-connection key and numbered, so commands cannot be injected, altered or replayed. The MCP server refuses to send anything to a process on the port that cannot prove itself. A failed check closes the connection and the N-panel shows the count. On Windows the port is claimed exclusively. If the MCP server runs where it can't see the token file (WSL, Docker), set `BLENDERWRIGHT_TOKEN_FILE` to its path. Each port has its own token file (`token` for 9876, `token-<port>` otherwise), so two Blenders on two ports never overwrite each other's; point an MCP server at the second one with `BLENDERWRIGHT_PORT`.
@@ -353,7 +348,17 @@ AI Assistant <--stdio/MCP--> blenderwright server <--TCP socket--> Blender addon
 - **Command allowlist**: The addon dispatcher only processes explicitly registered commands. Unknown commands are rejected.
 - **Shader node allowlist**: Only 93 known shader node types can be created, which prevents arbitrary type injection.
 
-</details>
+## How it compares
+
+All three servers talk to Blender over a TCP socket on `localhost:9876`. They differ in who is allowed to use that socket and what it will run.
+
+| | blenderwright | [Blender Lab `lab/blender_mcp`](https://projects.blender.org/lab/blender_mcp) | [`ahujasid/mcp-for-blender`](https://github.com/ahujasid/mcp-for-blender) (formerly blender-mcp) |
+|---|---|---|---|
+| Socket authentication | HMAC-SHA256 handshake, every message signed and numbered | None | None (its README says so) |
+| Raw Python | Off until "Allow raw Python" is ticked, per session | On, no switch | On by default. `BLENDER_MCP_SAFE_MODE=1` limits the MCP server, not the add-on socket |
+| Guard on raw Python | 25 imports and 14 builtins removed (not a sandbox) | `sys.exit` and 4 operators blocked (its docs: "isn't really a sandbox") | AST allowlist in safe mode only |
+
+<small>Checked against each project's main branch on 2026-11-18. Projects change: if a row is out of date, open an issue.</small>
 
 ## Limitations
 

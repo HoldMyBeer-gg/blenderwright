@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "blenderwright"
 version = "3.1.0"
-description = "The most intuitive and efficient MCP Server for Blender"
+description = "MCP server for Blender with a signed local socket and raw Python off by default"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
