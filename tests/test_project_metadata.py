@@ -124,11 +124,7 @@ def test_readme_prompt_count_matches_reality():
     )
 
 
-def test_generated_tool_reference_is_current():
-    """docs/index.html is generated; a stale copy misleads the public site.
-
-    Regenerate with: python scripts/generate_tool_docs.py
-    """
+def _generator():
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -136,16 +132,34 @@ def test_generated_tool_reference_is_current():
     )
     gen = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(gen)
+    return gen
 
-    target = os.path.join(ROOT, "docs", "index.html")
+
+def test_generated_tool_reference_is_current():
+    """docs/tools/index.html is generated; a stale copy misleads the public site.
+
+    Regenerate with: python scripts/generate_tool_docs.py
+    """
+    gen = _generator()
+    target = os.path.join(ROOT, "docs", "tools", "index.html")
     assert os.path.exists(target), (
-        "docs/index.html is missing. Run: python scripts/generate_tool_docs.py"
+        "docs/tools/index.html is missing. Run: python scripts/generate_tool_docs.py"
     )
     with open(target, encoding="utf-8") as f:
         committed = f.read()
     assert committed == gen.render(gen.collect_tools()), (
-        "docs/index.html is out of date with the tools in src/. "
+        "docs/tools/index.html is out of date with the tools in src/. "
         "Run: python scripts/generate_tool_docs.py"
+    )
+
+
+def test_generated_landing_page_is_current():
+    """docs/index.html quotes the tool count, so it is generated too."""
+    gen = _generator()
+    with open(os.path.join(ROOT, "docs", "index.html"), encoding="utf-8") as f:
+        committed = f.read()
+    assert committed == gen.render_landing(gen.collect_tools()), (
+        "docs/index.html is out of date. Run: python scripts/generate_tool_docs.py"
     )
 
 
@@ -153,22 +167,30 @@ def test_tool_reference_documents_every_tool():
     """Every tool must appear on the public page, not just the count."""
     import re
 
-    with open(os.path.join(ROOT, "docs", "index.html"), encoding="utf-8") as f:
+    with open(os.path.join(ROOT, "docs", "tools", "index.html"), encoding="utf-8") as f:
         page = f.read()
     anchors = set(re.findall(r'<article class="tool" id="([^"]+)"', page))
     assert len(anchors) == _tool_count()
 
 
+def test_landing_page_images_exist():
+    """A broken image on the front page is the first thing a visitor sees."""
+    import re
+
+    with open(os.path.join(ROOT, "docs", "index.html"), encoding="utf-8") as f:
+        page = f.read()
+    local = [
+        src for src in re.findall(r'(?:src|poster)="([^"]+)"', page)
+        if not src.startswith("http")
+    ]
+    assert local, "landing page shows no images"
+    for src in local:
+        assert os.path.exists(os.path.join(ROOT, "docs", src)), f"docs/{src} is missing"
+
+
 def test_crawler_files_are_current():
-    """robots.txt and sitemap.xml are generated alongside the page."""
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(
-        "generate_tool_docs", os.path.join(ROOT, "scripts", "generate_tool_docs.py")
-    )
-    gen = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gen)
-
+    """robots.txt and sitemap.xml are generated alongside the pages."""
+    gen = _generator()
     for name, expected in (
         ("sitemap.xml", gen.render_sitemap()),
         ("robots.txt", gen.render_robots()),
@@ -182,14 +204,16 @@ def test_crawler_files_are_current():
             )
 
 
-def test_sitemap_matches_the_canonical_url():
+def test_sitemap_matches_the_canonical_urls():
     """A sitemap pointing somewhere else is worse than none."""
     import re
 
     with open(os.path.join(ROOT, "docs", "sitemap.xml"), encoding="utf-8") as f:
         loc = re.findall(r"<loc>([^<]+)</loc>", f.read())
-    with open(os.path.join(ROOT, "docs", "index.html"), encoding="utf-8") as f:
-        canonical = re.findall(r'rel="canonical" href="([^"]+)"', f.read())
+    canonical = []
+    for page in (("index.html",), ("tools", "index.html")):
+        with open(os.path.join(ROOT, "docs", *page), encoding="utf-8") as f:
+            canonical += re.findall(r'rel="canonical" href="([^"]+)"', f.read())
     assert loc == canonical, f"sitemap {loc} disagrees with canonical {canonical}"
 
 

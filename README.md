@@ -26,7 +26,7 @@ The most intuitive and efficient MCP Server for Blender. Control Blender entirel
 
 ## Key Features
 
-- **[276 tools](https://blenderwright.holdmybeer.gg/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
+- **[276 tools](https://blenderwright.holdmybeer.gg/tools/)** across 32 modules covering every major Blender domain: modeling, mesh editing, materials, shader nodes, lighting, camera, animation, rendering, sculpting, UV mapping, physics, geometry nodes, rigging, curves, sweeps along a path, 3D-print checking, annotations, collections, file I/O, Bool Tool, viewport control, mesh quality analysis, and extension suggestions
 - **13 expert prompts**: topology best practices, real-world scale references, lighting principles, studio setup, character basemesh workflow, PBR material guide, auto-critique feedback loop, and more
 - **Visual feedback loop**: fast viewport screenshots via OpenGL render (~ms, not seconds) with auto-critique prompts that guide the LLM to check its own work
 - **Mesh quality analysis**: structured reports covering non-manifold edges, loose vertices, zero-area faces, duplicate vertices, and wire edges
@@ -251,7 +251,7 @@ blenderwright includes 13 MCP prompts that guide the LLM toward professional-qua
 <details>
 <summary><strong>All 276 tools across 32 modules</strong></summary>
 
-Full reference with every parameter: **[blenderwright.holdmybeer.gg](https://blenderwright.holdmybeer.gg/)**
+Full reference with every parameter: **[blenderwright.holdmybeer.gg/tools](https://blenderwright.holdmybeer.gg/tools/)**
 
 | Domain | Tools | Highlights |
 |--------|-------|-----------|
