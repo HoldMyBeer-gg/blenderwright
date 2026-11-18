@@ -179,7 +179,8 @@ def render(tools: list[Tool]) -> str:
         f"Complete reference for all {count} tools in blenderwright, the MCP server "
         f"for Blender. Modeling, mesh editing, materials, shader nodes, lighting, "
         f"camera, animation, rendering, sculpting, UV mapping, physics, geometry "
-        f"nodes and rigging, driven by Claude or any MCP client."
+        f"nodes and rigging, driven by Claude or any MCP client. Signed socket "
+        f"(HMAC-SHA256, per-start token) and raw Python off by default."
     )
 
     nav = "\n".join(
@@ -225,6 +226,7 @@ def render(tools: list[Tool]) -> str:
         description=_esc(description),
         site=SITE_URL,
         repo=REPO_URL,
+        structured=count - 1,
         nav=nav,
         sections="\n".join(sections),
     )
@@ -269,6 +271,12 @@ code, pre, .sig {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; 
 header {{ border-bottom: 1px solid var(--line); padding: 44px 0 28px; }}
 h1 {{ margin: 0 0 8px; font-size: clamp(1.7rem, 4vw, 2.4rem); letter-spacing: -0.02em; }}
 .tag {{ color: var(--muted); margin: 0 0 20px; max-width: 62ch; }}
+.security {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 18px; margin: 20px 0; max-width: 72ch; font-size: .92rem; }}
+.security h2 {{ font-size: 1rem; margin: 0 0 8px; }}
+.security p {{ margin: 0 0 8px; color: var(--muted); }}
+.security p:last-child {{ margin-bottom: 0; }}
+.security b {{ color: var(--text); }}
 .stats {{ display: flex; gap: 22px; flex-wrap: wrap; color: var(--muted); font-size: .9rem; }}
 .stats b {{ color: var(--accent); font-size: 1.05rem; }}
 .links a {{ color: var(--accent); text-decoration: none; font-weight: 600; }}
@@ -347,6 +355,20 @@ footer a {{ color: var(--accent); }}
     <span class="links"><a href="{repo}">GitHub</a></span>
     <span class="links"><a href="{repo}/releases/latest">Download</a></span>
   </div>
+  <section id="security" class="security" aria-label="Security">
+    <h2>Security</h2>
+    <p><b>Signed socket.</b> The MCP server and Blender prove a shared token to each
+    other with HMAC-SHA256, then sign and number every command and reply. The token
+    is regenerated on every Start Server and never crosses the wire, so no other
+    local program can drive your Blender or replay a command.</p>
+    <p><b>Raw Python is off by default.</b> <code>execute_blender_code</code> refuses
+    to run until you tick &quot;Allow raw Python&quot; in the N-panel. The switch
+    lasts one Blender session and is never saved into a .blend. Every snippet is
+    echoed to the console. The other {structured} tools never need it.</p>
+    <p><b>Files never auto-run scripts.</b> Anything the model opens, imports or
+    links loads with script auto-run off. <a href="{repo}#security">Full security
+    model</a></p>
+  </section>
   <input id="q" type="search" placeholder="Filter tools, e.g. bevel, uv, keyframe"
          autocomplete="off" aria-label="Filter tools">
 </header>
