@@ -62,11 +62,29 @@ def test_docs_site_meta_description_mentions_security_model():
     assert "raw python" in meta
 
 
-def test_docs_site_has_security_block_in_header():
+def test_landing_page_explains_the_security_model():
     html = _read("docs", "index.html")
+    section = re.search(r'<section id="security".*?</section>', html, re.S).group(0)
+    assert "HMAC" in section
+    assert "Allow raw Python" in section
+
+
+def test_landing_page_compares_with_other_blender_mcp_servers():
+    html = _read("docs", "index.html")
+    section = re.search(r'<section id="compare".*?</section>', html, re.S).group(0)
+    assert "lab/blender_mcp" in section
+    assert "mcp-for-blender" in section
+    assert "Checked against" in section
+
+
+def test_landing_page_links_the_tool_reference():
+    assert 'href="tools/"' in _read("docs", "index.html")
+
+
+def test_tool_reference_keeps_its_security_block():
+    html = _read("docs", "tools", "index.html")
     header = re.search(r"<header>(.*?)</header>", html, re.S).group(1)
     assert 'id="security"' in header
-    assert "HMAC" in header
 
 
 def test_readme_compares_the_security_model_with_other_blender_mcp_servers():

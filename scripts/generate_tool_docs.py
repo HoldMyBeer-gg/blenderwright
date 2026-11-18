@@ -7,7 +7,7 @@ same way, so this reads the tools out of the AST instead: nothing here is
 written twice.
 
 Usage:
-    python scripts/generate_tool_docs.py            # write docs/index.html
+    python scripts/generate_tool_docs.py            # write docs/ (landing + tools/)
     python scripts/generate_tool_docs.py --check    # exit 1 if it is stale
 """
 
@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import ast
 import html
-import os
 import re
 import sys
 from pathlib import Path
@@ -25,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TOOLS_DIR = ROOT / "src" / "blenderwright" / "tools"
 OUT_DIR = ROOT / "docs"
 SITE_URL = "https://blenderwright.holdmybeer.gg/"
+TOOLS_URL = SITE_URL + "tools/"
 REPO_URL = "https://github.com/HoldMyBeer-gg/blenderwright"
 
 # Module file name -> the heading it appears under.
@@ -147,7 +147,7 @@ def _esc(text: str) -> str:
 
 
 def render_sitemap() -> str:
-    """A sitemap for the one page there is.
+    """A sitemap for the landing page and the tool reference.
 
     No lastmod: it would change on every run and the staleness guard
     compares generated output byte for byte.
@@ -157,6 +157,8 @@ def render_sitemap() -> str:
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         f"  <url><loc>{SITE_URL}</loc><changefreq>weekly</changefreq>"
         "<priority>1.0</priority></url>\n"
+        f"  <url><loc>{TOOLS_URL}</loc><changefreq>weekly</changefreq>"
+        "<priority>0.8</priority></url>\n"
         "</urlset>\n"
     )
 
@@ -225,6 +227,7 @@ def render(tools: list[Tool]) -> str:
         modules=len(modules),
         description=_esc(description),
         site=SITE_URL,
+        tools_url=TOOLS_URL,
         repo=REPO_URL,
         structured=count - 1,
         nav=nav,
@@ -239,11 +242,11 @@ TEMPLATE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>blenderwright tool reference: {count} Blender MCP tools</title>
 <meta name="description" content="{description}">
-<link rel="canonical" href="{site}">
+<link rel="canonical" href="{tools_url}">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="blenderwright tool reference">
 <meta property="og:description" content="{description}">
-<meta property="og:url" content="{site}">
+<meta property="og:url" content="{tools_url}">
 <meta property="og:type" content="website">
 <style>
 :root {{
@@ -352,6 +355,7 @@ footer a {{ color: var(--accent); }}
   <div class="stats">
     <span><b>{count}</b> tools</span>
     <span><b>{modules}</b> modules</span>
+    <span class="links"><a href="{site}">Home</a></span>
     <span class="links"><a href="{repo}">GitHub</a></span>
     <span class="links"><a href="{repo}/releases/latest">Download</a></span>
   </div>
@@ -419,6 +423,240 @@ footer a {{ color: var(--accent); }}
 </html>
 """
 
+def render_landing(tools: list[Tool]) -> str:
+    """The front page: what blenderwright is, how to install it, how it is secured."""
+    count = len(tools)
+    modules = len({tool.module for tool in tools})
+    description = (
+        f"blenderwright is an open-source MCP server for Blender with {count} tools. "
+        f"Claude, Cursor, Codex, Ollama or any MCP client models, textures, lights, "
+        f"animates and renders in Blender 5.2 over a signed local socket, with raw "
+        f"Python off by default."
+    )
+    return LANDING_TEMPLATE.format(
+        count=count,
+        modules=modules,
+        description=_esc(description),
+        site=SITE_URL,
+        repo=REPO_URL,
+    )
+
+
+LANDING_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>blenderwright: MCP server for Blender</title>
+<meta name="description" content="{description}">
+<link rel="canonical" href="{site}">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="blenderwright: MCP server for Blender">
+<meta property="og:description" content="{description}">
+<meta property="og:url" content="{site}">
+<meta property="og:type" content="website">
+<meta property="og:image" content="{site}img/shuttle-launch.jpg">
+<script type="application/ld+json">
+{{"@context": "https://schema.org", "@type": "SoftwareApplication",
+ "name": "blenderwright", "applicationCategory": "DeveloperApplication",
+ "operatingSystem": "macOS, Windows, Linux", "license": "https://opensource.org/licenses/MIT",
+ "url": "{site}", "codeRepository": "{repo}",
+ "description": "{description}",
+ "offers": {{"@type": "Offer", "price": "0", "priceCurrency": "USD"}}}}
+</script>
+<style>
+:root {{
+  --bg: #fbfaf8; --panel: #fff; --text: #1a1a1a; --muted: #5c5c5c;
+  --line: #e4e0da; --accent: #b4551f; --code-bg: #f4f1ec;
+}}
+@media (prefers-color-scheme: dark) {{
+  :root:not([data-theme="light"]) {{
+    --bg: #14151a; --panel: #1b1d24; --text: #e8e6e3; --muted: #9a978f;
+    --line: #2b2e37; --accent: #e08a52; --code-bg: #22252e;
+  }}
+}}
+:root[data-theme="dark"] {{
+  --bg: #14151a; --panel: #1b1d24; --text: #e8e6e3; --muted: #9a978f;
+  --line: #2b2e37; --accent: #e08a52; --code-bg: #22252e;
+}}
+* {{ box-sizing: border-box; }}
+body {{ margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
+.wrap {{ max-width: 960px; margin: 0 auto; padding: 0 16px; }}
+a {{ color: var(--accent); }}
+header {{ padding: 56px 0 32px; }}
+h1 {{ font-size: 2.4rem; line-height: 1.15; margin: 0 0 12px; }}
+h2 {{ font-size: 1.5rem; margin: 0 0 14px; }}
+h3 {{ font-size: 1.05rem; margin: 0 0 6px; }}
+.lede {{ font-size: 1.15rem; color: var(--muted); max-width: 62ch; margin: 0 0 24px; }}
+.cta {{ display: flex; gap: 12px; flex-wrap: wrap; }}
+.btn {{ display: inline-block; padding: 10px 18px; border-radius: 6px; text-decoration: none;
+  border: 1px solid var(--accent); font-weight: 600; }}
+.btn.primary {{ background: var(--accent); color: #fff; }}
+section {{ border-top: 1px solid var(--line); padding: 40px 0; }}
+figure {{ margin: 0 0 24px; }}
+video, img {{ display: block; width: 100%; height: auto; border-radius: 8px;
+  border: 1px solid var(--line); }}
+figcaption {{ color: var(--muted); font-size: .9rem; margin-top: 8px; }}
+.grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }}
+.card {{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 16px 18px; }}
+.card p {{ margin: 0; color: var(--muted); font-size: .95rem; }}
+code, pre {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em;
+  background: var(--code-bg); border-radius: 4px; }}
+code {{ padding: 1px 5px; }}
+pre {{ padding: 12px 14px; overflow-x: auto; }}
+ol {{ padding-left: 22px; }}
+ol li {{ margin-bottom: 10px; }}
+.table {{ overflow-x: auto; }}
+table {{ border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 620px; }}
+th, td {{ text-align: left; vertical-align: top; padding: 10px 12px;
+  border-bottom: 1px solid var(--line); }}
+thead th {{ color: var(--muted); font-weight: 600; }}
+.note {{ color: var(--muted); font-size: .85rem; }}
+footer {{ border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--muted);
+  font-size: .9rem; }}
+@media (max-width: 600px) {{ h1 {{ font-size: 1.9rem; }} header {{ padding-top: 36px; }} }}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>blenderwright: an MCP server for Blender</h1>
+  <p class="lede">Describe a scene to Claude, Cursor, Codex, Ollama or any MCP client and
+  watch it get built in Blender. {count} tools across {modules} modules cover modeling,
+  materials, lighting, animation, physics and rendering, with expert prompts that steer
+  the model toward clean topology, real-world scale and good lighting.</p>
+  <div class="cta">
+    <a class="btn primary" href="#install">Install</a>
+    <a class="btn" href="tools/">Browse all {count} tools</a>
+    <a class="btn" href="{repo}">GitHub</a>
+  </div>
+</header>
+
+<section id="demos" aria-label="Examples">
+  <h2>Built from one sentence</h2>
+  <figure>
+    <video controls preload="none" poster="img/shuttle-launch.jpg" width="1600" height="1200">
+      <source src="shuttle-launch.mp4" type="video/mp4">
+    </video>
+    <figcaption>A shuttle launch from two questions: "do you want to have a go at the space
+    shuttle launch?" and "could you animate the launch?" Orbiter, tank, boosters, tower,
+    emissive plumes and a metaball exhaust cloud, 60 Cycles frames from one
+    <code>render_animation</code> call. Launch audio: NASA, STS-131.</figcaption>
+  </figure>
+  <div class="grid">
+    <figure>
+      <img src="img/saloon.jpg" alt="A two-storey Western saloon at dusk rendered in Blender"
+           width="1600" height="898" loading="lazy">
+      <figcaption>"Create a Western style 2-story saloon." About twenty minutes, no manual
+      modelling.</figcaption>
+    </figure>
+    <figure>
+      <img src="img/shader-preview.jpg" alt="Fifteen procedural material spheres and a node graph"
+           width="1600" height="907" loading="lazy">
+      <figcaption>Fifteen procedural materials, each node graph built and wired by a single
+      <code>create_procedural_material</code> call.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="features" aria-label="Features">
+  <h2>What it does</h2>
+  <div class="grid">
+    <div class="card"><h3>{count} structured tools</h3><p>Modeling, mesh editing, shader
+    nodes, UVs, sculpting, rigging, geometry nodes, physics, compositing and rendering, each
+    with validated inputs. <a href="tools/">Full reference</a>.</p></div>
+    <div class="card"><h3>Visual feedback</h3><p>Fast viewport captures let the model look
+    at its own work and fix what it sees before you do.</p></div>
+    <div class="card"><h3>Mesh quality checks</h3><p>Reports non-manifold edges, loose and
+    duplicate vertices and zero-area faces, plus 3D-print checks.</p></div>
+    <div class="card"><h3>Any MCP client</h3><p>Claude Code, Claude Desktop, Cursor, Codex,
+    Ollama and llama.cpp. Toolsets trim the schema for small local models.</p></div>
+    <div class="card"><h3>Local and private</h3><p>No telemetry, no cloud. Everything stays
+    on <code>127.0.0.1</code>. The Blender addon uses only the Python standard
+    library.</p></div>
+    <div class="card"><h3>Tested in real Blender</h3><p>Thousands of unit tests plus a live
+    suite that runs every tool against Blender 5.2 LTS.</p></div>
+  </div>
+</section>
+
+<section id="install" aria-label="Install">
+  <h2>Install</h2>
+  <ol>
+    <li>Install <a href="https://docs.astral.sh/uv/">uv</a>. The MCP server then runs with
+    <code>uvx blenderwright</code>, nothing else to install.</li>
+    <li>Download the addon zip from <a href="{repo}/releases/latest">GitHub Releases</a>.
+    In Blender 5.2 LTS open Edit &gt; Preferences &gt; Get Extensions, choose Install from
+    Disk, and pick the zip.</li>
+    <li>In the 3D Viewport press <code>N</code>, open the blenderwright tab and click
+    Start Server.</li>
+    <li>Connect your client. For Claude Code:
+    <pre><code>claude mcp add blenderwright -- uvx blenderwright</code></pre>
+    Other clients use the command <code>uvx</code> with the argument
+    <code>blenderwright</code>. <a href="{repo}#quickstart">Setup for every
+    client</a>.</li>
+  </ol>
+</section>
+
+<section id="security" aria-label="Security">
+  <h2>Security</h2>
+  <div class="grid">
+    <div class="card"><h3>Signed socket</h3><p>Any program on your machine can reach
+    <code>127.0.0.1</code>, so the connection is authenticated. Start Server writes a fresh
+    random token to a file only your user can read. Blender and the MCP server prove they
+    know it with an HMAC-SHA256 challenge, then sign and number every command and reply.
+    The token never crosses the wire, and commands cannot be injected, altered or
+    replayed.</p></div>
+    <div class="card"><h3>Raw Python is off by default</h3><p><code>execute_blender_code</code>
+    refuses to run until you tick "Allow raw Python" in the N-panel. The switch lasts one
+    Blender session and is never saved into a .blend. Every snippet is echoed to the
+    console. A restricted namespace blocks 25 imports and 14 builtins to catch mistakes;
+    it is not a sandbox.</p></div>
+    <div class="card"><h3>Files never auto-run scripts</h3><p>Anything the model opens,
+    imports, links or appends loads with script auto-run off for that session. Paths,
+    names, numbers and enums are validated before they reach Blender, and only registered
+    commands run.</p></div>
+  </div>
+  <p><a href="{repo}#security">Full security model</a></p>
+</section>
+
+<section id="compare" aria-label="Comparison">
+  <h2>How it compares</h2>
+  <p>All three servers talk to Blender over a TCP socket on <code>localhost:9876</code>.
+  They differ in who may use that socket and what it will run.</p>
+  <div class="table">
+  <table>
+    <thead><tr><th></th><th>blenderwright</th>
+      <th><a href="https://projects.blender.org/lab/blender_mcp">Blender Lab lab/blender_mcp</a></th>
+      <th><a href="https://github.com/ahujasid/mcp-for-blender">ahujasid/mcp-for-blender</a>
+      (formerly blender-mcp)</th></tr></thead>
+    <tbody>
+      <tr><th>Socket authentication</th><td>HMAC-SHA256 handshake, every message signed and
+      numbered</td><td>None</td><td>None (its README says so)</td></tr>
+      <tr><th>Raw Python</th><td>Off until "Allow raw Python" is ticked, per session</td>
+      <td>On, no switch</td><td>On by default. <code>BLENDER_MCP_SAFE_MODE=1</code> limits
+      the MCP server, not the add-on socket</td></tr>
+      <tr><th>Guard on raw Python</th><td>25 imports and 14 builtins removed (not a
+      sandbox)</td><td><code>sys.exit</code> and 4 operators blocked (its docs: "isn't
+      really a sandbox")</td><td>AST allowlist in safe mode only</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Checked against each project's main branch on 2026-11-18. If a row is
+  out of date, <a href="{repo}/issues">open an issue</a>.</p>
+</section>
+
+<footer>
+  <p>blenderwright is open source under the MIT license.
+  <a href="{repo}">GitHub</a> &middot; <a href="tools/">Tool reference</a> &middot;
+  <a href="https://pypi.org/project/blenderwright/">PyPI</a></p>
+</footer>
+</div>
+</body>
+</html>
+"""
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -428,33 +666,31 @@ def main() -> int:
     args = parser.parse_args()
 
     tools = collect_tools()
-    page = render(tools)
-    target = OUT_DIR / "index.html"
+    outputs = {
+        OUT_DIR / "index.html": render_landing(tools),
+        OUT_DIR / "tools" / "index.html": render(tools),
+        OUT_DIR / "sitemap.xml": render_sitemap(),
+        OUT_DIR / "robots.txt": render_robots(),
+    }
 
     if args.check:
-        if not target.exists():
-            print(f"{target} is missing. Run: python {Path(__file__).name}")
-            return 1
-        stale = [target] if target.read_text(encoding="utf-8") != page else []
-        for name, want in (("sitemap.xml", render_sitemap()),
-                           ("robots.txt", render_robots())):
-            path = OUT_DIR / name
-            if not path.exists() or path.read_text(encoding="utf-8") != want:
-                stale.append(path)
+        stale = [
+            path for path, want in outputs.items()
+            if not path.exists() or path.read_text(encoding="utf-8") != want
+        ]
         if stale:
-            names = ", ".join(p.name for p in stale)
+            names = ", ".join(str(p.relative_to(OUT_DIR)) for p in stale)
             print(f"out of date: {names}. Run: python {Path(__file__).name}")
             return 1
-        print(f"{target} is current ({len(tools)} tools).")
+        print(f"docs/ is current ({len(tools)} tools).")
         return 0
 
-    OUT_DIR.mkdir(exist_ok=True)
-    target.write_text(page, encoding="utf-8")
+    for path, text in outputs.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
     (OUT_DIR / "CNAME").write_text("blenderwright.holdmybeer.gg\n", encoding="utf-8")
     (OUT_DIR / ".nojekyll").write_text("", encoding="utf-8")
-    (OUT_DIR / "sitemap.xml").write_text(render_sitemap(), encoding="utf-8")
-    (OUT_DIR / "robots.txt").write_text(render_robots(), encoding="utf-8")
-    print(f"wrote {target} ({len(tools)} tools, {os.path.getsize(target)} bytes)")
+    print(f"wrote docs/index.html and docs/tools/index.html ({len(tools)} tools)")
     return 0
 
 
