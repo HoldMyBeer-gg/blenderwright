@@ -39,6 +39,7 @@ CASES = {
     'add_constraint': {'object_name': 'Cube', 'constraint_type': 'COPY_LOCATION', 'properties': {'target': 'Sphere'}},
     'add_curve_point': {'curve_name': 'BezierCurve'},
     'add_driver': {'object_name': 'Cube', 'data_path': 'location', 'expression': 'frame / 10', 'index': 2},
+    'add_slider': {'object_name': 'Cube', 'name': 'Lift', 'drives': [{'data_path': 'location', 'index': 2}]},
     'add_essentials_modifier': {'object_name': 'Cube', 'modifier': 'array'},
     'add_fcurve_modifier': {'object_name': 'Cube', 'data_path': 'location', 'modifier': 'NOISE'},
     'add_fluid_sim': {'object_name': 'Cube'},
@@ -198,12 +199,14 @@ CASES = {
     'remove_color_ramp_element': {'material_name': 'Wood', 'node_name': 'Color Ramp', 'index': 0},
     'remove_compositor_effect': {'node_name': 'Blur'},
     'remove_driver': {'object_name': 'Cube', 'data_path': 'location'},
+    'remove_slider': {'object_name': 'Cube', 'name': 'Lift'},
     'remove_modifier': {'object_name': 'Cube', 'modifier_name': 'Bevel'},
     'remove_shader_node': {'material_name': 'Material', 'node_name': 'Principled BSDF'},
     'remove_shape_key': {'object_name': 'Cube', 'key_name': 'Key'},
     'remove_strip': {'strip_name': 'Tone'},
     'remove_vertex_group': {'object_name': 'Cube', 'group_name': 'Group'},
     'rename_object': {'old_name': 'Sphere', 'new_name': 'Smoke2'},
+    'set_slider': {'object_name': 'Cube', 'name': 'Lift', 'value': 0.5},
     'render_animation': {},
     'render_image': {},
     'render_video': {},
@@ -315,6 +318,7 @@ NOTES = [("create_annotation", {"name": "Notes"}),
                                     "points": [[0, 0, 0], [1, 1, 1]]})]
 SHAPE = [("add_shape_key", {"object_name": "Cube", "key_name": "Basis"}),
          ("add_shape_key", {"object_name": "Cube", "key_name": "Key"})]
+SLIDER = [("add_slider", {"object_name": "Cube", "name": "Lift"})]
 BONE = [("add_bone", {"armature_name": "Armature", "bone_name": "Bone"})]
 PARTICLES = [("add_particle_system", {"object_name": "Cube", "count": 10})]
 RIGID = [("add_rigid_body", {"object_name": "Cube"})]
@@ -332,6 +336,7 @@ SETUP = {
     "add_annotation_layer": NOTES[:1],
     **{t: SHAPE for t in ("keyframe_shape_key", "move_shape_key_vertices", "remove_shape_key",
                           "set_shape_key")},
+    **{t: SLIDER for t in ("set_slider", "remove_slider")},
     **{t: BONE for t in ("set_bone_property", "set_pose", "setup_ik_chain")},
     **{t: PARTICLES for t in ("delete_particle_system", "set_particle_rendering",
                               "set_particle_velocity")},
