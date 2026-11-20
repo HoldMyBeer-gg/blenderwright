@@ -116,6 +116,21 @@ class Applied:
     enabled: frozenset[str]
 
 
+def register_toolset(name: str, description: str) -> None:
+    """Add a plugin's toolset so auto and core mode can reach its tools.
+
+    Args:
+        name: The plugin's tool module name (the last part of its dotted path).
+        description: One line naming what a user would ask for.
+
+    Raises:
+        ToolsetError: the name is already a toolset.
+    """
+    if name in TOOLSETS:
+        raise ToolsetError(f"toolset {name!r} already exists")
+    TOOLSETS[name] = description
+
+
 def _module_of(tool: Any) -> str:
     return tool.fn.__module__.rsplit(".", 1)[-1]
 

@@ -63,10 +63,12 @@ from blenderwright.resources import scene_info  # noqa: E402, F401
 from blenderwright.prompts import workflows  # noqa: E402, F401
 
 
+from blenderwright.plugins import load_plugins  # noqa: E402
 from blenderwright.strict import forbid_unknown_parameters  # noqa: E402
 from blenderwright.enum_hints import attach_enum_hints  # noqa: E402
 from blenderwright.aliases import attach_legacy_aliases  # noqa: E402
 
+load_plugins()
 forbid_unknown_parameters(mcp)
 attach_enum_hints(mcp)
 attach_legacy_aliases(mcp)
