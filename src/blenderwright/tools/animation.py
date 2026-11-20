@@ -613,3 +613,122 @@ def add_fcurve_modifier(
         "modifier": validate_enum(modifier, ALLOWED_FCURVE_MODIFIERS, name="modifier"),
         "settings": clean,
     })
+
+
+# Sliders: a named control on an object (a custom property with a range)
+# that drives other properties. They show in the N panel's Sliders section.
+SLIDER_NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_ ]{0,62}$")
+MAX_SLIDER_DRIVES = 32
+MAX_SLIDER_DESCRIPTION = 200
+SLIDER_LIMIT = 1e6
+
+
+def _slider_name(name: Any) -> str:
+    if not isinstance(name, str) or not SLIDER_NAME_PATTERN.match(name):
+        raise ValidationError(f"slider name {name!r} must start with a letter and use letters, "
+                              f"digits, spaces and _, up to 63 characters")
+    return name
+
+
+def _slider_drive(drive: Any, object_name: str) -> dict[str, Any]:
+    if not isinstance(drive, dict):
+        raise ValidationError("each drive must be an object with a data_path")
+    return {
+        "object": validate_object_name(drive.get("object") or object_name),
+        "data_path": validate_data_path(drive.get("data_path", "")),
+        "index": validate_int(drive.get("index", -1), -1, 3, name="index"),
+        "expression": validate_driver_expression(drive.get("expression", "value"), {"value"}),
+    }
+
+
+@mcp.tool()
+def add_slider(
+    object_name: str,
+    name: str,
+    min: float = 0.0,
+    max: float = 1.0,
+    default: float = 0.0,
+    description: str = "",
+    drives: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Add a named slider to an object that drives other properties: "Door Open"
+    turning a hinge, "Smile" moving a shape key, one "Lift" raising three parts.
+
+    The slider shows in the blenderwright tab of the N panel, under Sliders,
+    when the object is selected. Each drive is a driver reading the slider
+    through a simple, Python-free expression in "value".
+
+    Args:
+        object_name: Object that carries the slider.
+        name: Slider name, e.g. "Door Open". Adding an existing name replaces
+            its range and default.
+        min: Lowest value.
+        max: Highest value.
+        default: Starting value, within min and max.
+        description: Tooltip shown on the slider.
+        drives: Properties it moves, each {"data_path", "index", "expression",
+            "object"}: data_path as in add_driver (e.g. "rotation_euler",
+            'data.shape_keys.key_blocks["Smile"].value'); index a component or
+            -1; expression in "value", e.g. "value * 1.57" (default "value");
+            object the owner of the property (default: the slider's object).
+
+    Returns:
+        Dict with the slider, its range and the drivers added.
+    """
+    object_name = validate_object_name(object_name)
+    lo = float(validate_numeric_range(min, -SLIDER_LIMIT, SLIDER_LIMIT, name="min"))
+    hi = float(validate_numeric_range(max, -SLIDER_LIMIT, SLIDER_LIMIT, name="max"))
+    if not lo < hi:
+        raise ValidationError(f"min ({lo}) must be below max ({hi})")
+    start = float(validate_numeric_range(default, lo, hi, name="default"))
+    if not isinstance(description, str) or len(description) > MAX_SLIDER_DESCRIPTION:
+        raise ValidationError(f"description must be text of at most {MAX_SLIDER_DESCRIPTION} characters")
+    drives = drives or []
+    if not isinstance(drives, list) or len(drives) > MAX_SLIDER_DRIVES:
+        raise ValidationError(f"drives must be a list of at most {MAX_SLIDER_DRIVES}")
+    return _send_animation_command("add_slider", {
+        "object_name": object_name,
+        "name": _slider_name(name),
+        "min": lo,
+        "max": hi,
+        "default": start,
+        "description": description,
+        "drives": [_slider_drive(d, object_name) for d in drives],
+    })
+
+
+@mcp.tool()
+def set_slider(object_name: str, name: str, value: float) -> dict[str, Any]:
+    """Move a slider made with add_slider; everything it drives follows.
+
+    Args:
+        object_name: Object that carries the slider.
+        name: Slider name.
+        value: New value, within the slider's range.
+
+    Returns:
+        Dict with the slider and its new value.
+    """
+    return _send_animation_command("set_slider", {
+        "object_name": validate_object_name(object_name),
+        "name": _slider_name(name),
+        "value": float(validate_numeric_range(value, -SLIDER_LIMIT, SLIDER_LIMIT, name="value")),
+    })
+
+
+@mcp.tool()
+def remove_slider(object_name: str, name: str) -> dict[str, Any]:
+    """Remove a slider and every driver that reads it; driven properties keep
+    their current values.
+
+    Args:
+        object_name: Object that carries the slider.
+        name: Slider name.
+
+    Returns:
+        Dict with how many drivers were removed.
+    """
+    return _send_animation_command("remove_slider", {
+        "object_name": validate_object_name(object_name),
+        "name": _slider_name(name),
+    })

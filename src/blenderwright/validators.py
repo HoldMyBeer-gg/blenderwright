@@ -462,11 +462,13 @@ def validate_driver_expression(expression: str, variables: set[str]) -> str:
     return expression
 
 
-# RNA data paths: names joined by dots, with ["key"] lookups. Parsed by
-# Blender's path resolver, never evaluated.
+# RNA data paths: names joined by dots, with ["key"] lookups; a path may start
+# with one, as a custom property ("slider") does. Parsed by Blender's path
+# resolver, never evaluated.
 _PATH_SEGMENT = r"(?!__)[A-Za-z_][A-Za-z0-9_]*"
 _PATH_KEY = r'\["[A-Za-z0-9_ .\-]{1,63}"\]'
-DATA_PATH_PATTERN = re.compile(rf"^{_PATH_SEGMENT}(?:\.{_PATH_SEGMENT}|{_PATH_KEY})*$")
+DATA_PATH_PATTERN = re.compile(
+    rf"^(?:{_PATH_SEGMENT}|{_PATH_KEY})(?:\.{_PATH_SEGMENT}|{_PATH_KEY})*$")
 MAX_DATA_PATH = 256
 
 

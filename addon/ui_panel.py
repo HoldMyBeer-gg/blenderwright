@@ -4,6 +4,7 @@ import bpy
 
 from . import server as addon_server
 from .handlers import code_exec
+from .sliders import slider_keys
 
 
 class BLENDERWRIGHT_PT_MainPanel(bpy.types.Panel):
@@ -53,6 +54,26 @@ class BLENDERWRIGHT_PT_MainPanel(bpy.types.Panel):
                 box.label(text="No runs yet this session")
         else:
             box.label(text="execute_blender_code is off", icon="LOCKED")
+
+
+class BLENDERWRIGHT_PT_Sliders(bpy.types.Panel):
+    """Sliders on the selected object (made with add_slider)"""
+    bl_label = "Sliders"
+    bl_idname = "BLENDERWRIGHT_PT_sliders"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "blenderwright"
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj is not None and bool(slider_keys(obj.items()))
+
+    def draw(self, context):
+        obj = context.active_object
+        col = self.layout.column()
+        for key in slider_keys(obj.items()):
+            col.prop(obj, f'["{key}"]', slider=True)
 
 
 class BLENDERWRIGHT_OT_StartServer(bpy.types.Operator):
@@ -114,6 +135,7 @@ def _auto_start():
 classes = (
     BLENDERWRIGHT_AddonPreferences,
     BLENDERWRIGHT_PT_MainPanel,
+    BLENDERWRIGHT_PT_Sliders,
     BLENDERWRIGHT_OT_StartServer,
     BLENDERWRIGHT_OT_StopServer,
 )

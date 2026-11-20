@@ -20,8 +20,9 @@ _DRIVER_TOKEN = re.compile(
     r"|(?P<op>==|!=|<=|>=|//|[-+*/%(),<>])"
 )
 _PATH_SEGMENT = r"(?!__)[A-Za-z_][A-Za-z0-9_]*"
+_PATH_KEY = r'\["[A-Za-z0-9_ .\-]{1,63}"\]'
 DATA_PATH_PATTERN = re.compile(
-    rf'^{_PATH_SEGMENT}(?:\.{_PATH_SEGMENT}|\["[A-Za-z0-9_ .\-]{{1,63}}"\])*$')
+    rf"^(?:{_PATH_SEGMENT}|{_PATH_KEY})(?:\.{_PATH_SEGMENT}|{_PATH_KEY})*$")
 DRIVER_TYPES = {"SCRIPTED", "AVERAGE", "SUM", "MIN", "MAX"}
 
 
@@ -593,6 +594,127 @@ def handle_add_fcurve_modifier(params):
     return {"object": obj.name, "data_path": path, "modifier": kind, "curves": len(curves)}
 
 
+SLIDER_NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_ ]{0,62}$")
+
+
+def _slider_name(name):
+    if not isinstance(name, str) or not SLIDER_NAME_PATTERN.match(name):
+        raise ValueError(f"Not a slider name: {name!r}")
+    return name
+
+
+def _slider_range(obj, name):
+    if name not in obj.keys():
+        raise ValueError(f"'{obj.name}' has no slider '{name}'")
+    ui = obj.id_properties_ui(name).as_dict()
+    return ui.get("min"), ui.get("max")
+
+
+def _evaluate_drivers():
+    """Drivers run when the depsgraph evaluates; do it now so reads see the result."""
+    bpy.context.view_layer.update()
+
+
+def _slider_drivers(obj, name):
+    """Every (owner, fcurve) whose driver reads this slider."""
+    path = f'["{name}"]'
+    owners = []
+    for coll in (bpy.data.objects, bpy.data.meshes, bpy.data.shape_keys, bpy.data.lights,
+                 bpy.data.cameras, bpy.data.materials, bpy.data.curves, bpy.data.armatures):
+        owners.extend(coll)
+    found = []
+    for owner in owners:
+        adt = getattr(owner, "animation_data", None)
+        for fcurve in (adt.drivers if adt is not None else []):
+            for var in fcurve.driver.variables:
+                target = var.targets[0]
+                if var.type == "SINGLE_PROP" and target.id == obj and target.data_path == path:
+                    found.append((owner, fcurve))
+                    break
+    return found
+
+
+def handle_add_slider(params):
+    """A custom property with a range, plus a driver for each property it moves."""
+    obj = _get_object(params["object_name"])
+    name = _slider_name(params["name"])
+    lo, hi = float(params["min"]), float(params["max"])
+    default = float(params.get("default", lo))
+    if not lo < hi or not lo <= default <= hi:
+        raise ValueError(f"Slider range {lo}..{hi} with default {default} is not a range")
+    drives = list(params.get("drives", []))
+    # Check everything before creating anything
+    for d in drives:
+        target = _get_object(d.get("object") or obj.name)
+        path = _check_path(d["data_path"])
+        _check_expression(d.get("expression", "value"), {"value"})
+        try:
+            target.path_resolve(path)
+        except ValueError:
+            raise ValueError(f"'{target.name}' has no property '{path}'") from None
+
+    existed = name in obj.keys()
+    obj[name] = default
+    obj.id_properties_ui(name).update(min=lo, max=hi, soft_min=lo, soft_max=hi,
+                                      default=default, description=params.get("description", ""))
+    # A new custom property does not refresh Blender's evaluated copy of the
+    # object; a driver that looks for it before then is marked invalid and
+    # never tried again. Refresh first.
+    obj.update_tag()
+    _evaluate_drivers()
+    added = []
+    try:
+        for d in drives:
+            target_name = d.get("object") or obj.name
+            index = int(d.get("index", -1))
+            handle_add_driver({
+                "object_name": target_name, "data_path": d["data_path"], "index": index,
+                "driver_type": "SCRIPTED", "expression": d.get("expression", "value"),
+                "variables": [{"name": "value", "type": "SINGLE_PROP", "object": obj.name,
+                               "data_path": f'["{name}"]'}],
+            })
+            added.append((bpy.data.objects[target_name], d["data_path"], index))
+    except Exception:
+        for target, path, index in added:
+            owner, owner_path = _driver_owner(target, path)
+            owner.driver_remove(owner_path, index)
+        if not existed:
+            del obj[name]
+        raise
+    _evaluate_drivers()
+    return {"object": obj.name, "slider": name, "min": lo, "max": hi, "value": default,
+            "drives": len(added)}
+
+
+def handle_set_slider(params):
+    obj = _get_object(params["object_name"])
+    name = _slider_name(params["name"])
+    lo, hi = _slider_range(obj, name)
+    value = float(params["value"])
+    if (lo is not None and value < lo) or (hi is not None and value > hi):
+        raise ValueError(f"{value} is outside the range of slider '{name}' ({lo} to {hi})")
+    obj[name] = value
+    # Tag what it drives too: a custom property change alone does not reach
+    # drivers on other data blocks
+    obj.update_tag()
+    for owner, fcurve in _slider_drivers(obj, name):
+        fcurve.driver.is_valid = True  # re-arm one that failed before
+        owner.update_tag()
+    _evaluate_drivers()
+    return {"object": obj.name, "slider": name, "value": value}
+
+
+def handle_remove_slider(params):
+    obj = _get_object(params["object_name"])
+    name = _slider_name(params["name"])
+    _slider_range(obj, name)
+    found = _slider_drivers(obj, name)
+    for owner, fcurve in found:
+        owner.driver_remove(fcurve.data_path, fcurve.array_index)
+    del obj[name]
+    return {"object": obj.name, "slider": name, "drivers_removed": len(found)}
+
+
 def register():
     """Register all animation handlers with the dispatcher."""
     dispatcher.register_handler("insert_keyframe", handle_insert_keyframe)
@@ -606,6 +728,9 @@ def register():
     dispatcher.register_handler("add_driver", handle_add_driver)
     dispatcher.register_handler("remove_driver", handle_remove_driver)
     dispatcher.register_handler("list_drivers", handle_list_drivers)
+    dispatcher.register_handler("add_slider", handle_add_slider)
+    dispatcher.register_handler("set_slider", handle_set_slider)
+    dispatcher.register_handler("remove_slider", handle_remove_slider)
     dispatcher.register_handler("keyframe_property", handle_keyframe_property)
     dispatcher.register_handler("manage_action", handle_manage_action)
     dispatcher.register_handler("add_nla_strip", handle_add_nla_strip)
