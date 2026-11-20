@@ -1,6 +1,10 @@
 # blenderwright
 
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/jabberwock?style=plastic&labelColor=%23FF0000)](https://github.com/sponsors/jabberwock)
+
 <small>Formerly blend-ai. Same project, new name, nothing else changed.</small>
+
+blenderwright is free and built by one person. If it saves you time, [sponsoring it](https://github.com/sponsors/jabberwock) keeps it going.
 
 The most intuitive and efficient MCP Server for Blender. Control Blender entirely through AI assistants like Claude: create 3D models, set up scenes, animate, render, and more, all through natural language.
 
