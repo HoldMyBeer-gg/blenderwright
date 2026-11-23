@@ -171,6 +171,10 @@ def handle_point_camera_at(params: dict) -> dict:
         raise RuntimeError(f"Failed to point camera: {e}")
 
 
+# Image output settings a switch to PNG can disturb, in the order they are put back
+OUTPUT_FORMAT_SETTINGS = ("media_type", "file_format", "color_mode", "color_depth")
+
+
 def handle_capture_viewport(params: dict) -> dict:
     """Render viewport to file or return base64."""
     try:
@@ -185,8 +189,8 @@ def handle_capture_viewport(params: dict) -> dict:
         orig_y = scene.render.resolution_y
         orig_percentage = scene.render.resolution_percentage
         orig_filepath = scene.render.filepath
-        orig_media_type = scene.render.image_settings.media_type
-        orig_file_format = scene.render.image_settings.file_format
+        settings = scene.render.image_settings
+        orig_output = {name: getattr(settings, name) for name in OUTPUT_FORMAT_SETTINGS}
 
         temp_dir = None
         try:
@@ -199,8 +203,8 @@ def handle_capture_viewport(params: dict) -> dict:
                 filepath = os.path.join(temp_dir, "viewport_capture.png")
 
             scene.render.filepath = filepath
-            scene.render.image_settings.media_type = 'IMAGE'
-            scene.render.image_settings.file_format = 'PNG'
+            settings.media_type = 'IMAGE'
+            settings.file_format = 'PNG'
 
             bpy.ops.render.render(write_still=True)
 
@@ -218,8 +222,8 @@ def handle_capture_viewport(params: dict) -> dict:
             scene.render.resolution_y = orig_y
             scene.render.resolution_percentage = orig_percentage
             scene.render.filepath = orig_filepath
-            scene.render.image_settings.media_type = orig_media_type
-            scene.render.image_settings.file_format = orig_file_format
+            for name, value in orig_output.items():
+                setattr(settings, name, value)
             # The capture has already succeeded or failed; a stuck temp file must not change that
             if temp_dir is not None:
                 shutil.rmtree(temp_dir, ignore_errors=True)
@@ -235,16 +239,19 @@ def handle_fast_viewport_capture(params: dict) -> dict:
     height = params.get("height", 1080)
 
     scene = bpy.context.scene
+    settings = scene.render.image_settings
 
     # Store original settings
     orig_x = scene.render.resolution_x
     orig_y = scene.render.resolution_y
     orig_pct = scene.render.resolution_percentage
+    orig_output = {name: getattr(settings, name) for name in OUTPUT_FORMAT_SETTINGS}
 
     scene.render.resolution_x = width
     scene.render.resolution_y = height
     scene.render.resolution_percentage = 100
 
+    temp_dir = None
     try:
         # Find a 3D viewport for context
         found = False
@@ -252,7 +259,9 @@ def handle_fast_viewport_capture(params: dict) -> dict:
             for area in window.screen.areas:
                 if area.type == 'VIEW_3D':
                     with bpy.context.temp_override(window=window, area=area):
-                        bpy.ops.render.opengl(write_still=True)
+                        # No write_still: that writes to the scene's own output path,
+                        # and refuses outright when the output format is a video
+                        bpy.ops.render.opengl()
                     found = True
                     break
             if found:
@@ -261,7 +270,6 @@ def handle_fast_viewport_capture(params: dict) -> dict:
         if not found:
             raise RuntimeError("No 3D viewport found for fast capture")
 
-        # Save render result to temp file
         img = bpy.data.images.get("Render Result")
         if img is None:
             raise RuntimeError("No render result after viewport capture")
@@ -269,30 +277,29 @@ def handle_fast_viewport_capture(params: dict) -> dict:
         temp_dir = tempfile.mkdtemp()
         filepath = os.path.join(temp_dir, "viewport_fast.png")
 
+        # save_render writes in the scene's output format whatever the extension says
+        settings.media_type = 'IMAGE'
+        settings.file_format = 'PNG'
         img.save_render(filepath)
 
         with open(filepath, "rb") as f:
             image_data = f.read()
 
-        result = {
+        return {
             "base64": base64.b64encode(image_data).decode("ascii"),
             "format": "png",
             "width": width,
             "height": height,
             "mode": "fast",
         }
-
-        try:
-            os.remove(filepath)
-            os.rmdir(temp_dir)
-        except OSError:
-            pass
-
-        return result
     finally:
         scene.render.resolution_x = orig_x
         scene.render.resolution_y = orig_y
         scene.render.resolution_percentage = orig_pct
+        for name, value in orig_output.items():
+            setattr(settings, name, value)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def handle_set_camera_from_view(params: dict) -> dict:

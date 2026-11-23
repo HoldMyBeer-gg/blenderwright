@@ -1,11 +1,13 @@
 """Live tests: the real MCP tools against a real headless Blender.
 
 Nothing is mocked. One Blender runs per session (see blender_host.py); every
-test starts from a fresh factory scene. Set BLENDER to the Blender executable;
+test starts from a fresh factory scene. Tests that draw the 3D viewport ask for
+the viewport fixture, which starts a second Blender with a window. Set BLENDER to the Blender executable;
 without it the live tests are skipped.
 """
 
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
@@ -25,15 +27,13 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip)
 
 
-@pytest.fixture(scope="session")
-def blender(tmp_path_factory):
-    root = tmp_path_factory.mktemp("blender")
+def _start(root, *flags):
+    """Start a Blender running the add-on server; return its process, log and port."""
     ready, pristine = root / "port", root / "pristine.blend"
     env = dict(os.environ, BLENDERWRIGHT_TOKEN_FILE=str(root / "token"))
-    os.environ["BLENDERWRIGHT_TOKEN_FILE"] = env["BLENDERWRIGHT_TOKEN_FILE"]
     log = open(root / "blender.log", "w")
     proc = subprocess.Popen(
-        [BLENDER, "-b", "--factory-startup", "--python",
+        [BLENDER, *flags, "--factory-startup", "--python",
          os.path.join(HERE, "blender_host.py"), "--", str(ready), str(pristine)],
         stdout=log, stderr=subprocess.STDOUT, env=env)
     deadline = time.monotonic() + STARTUP_TIMEOUT
@@ -44,19 +44,68 @@ def blender(tmp_path_factory):
             sys.stderr.write((root / "blender.log").read_text())
             pytest.fail("Blender did not start the blenderwright server")
         time.sleep(0.1)
+    return proc, log, int(ready.read_text())
 
-    from blenderwright import server
-    from blenderwright.connection import BlenderConnection
 
-    server._connection = BlenderConnection(port=int(ready.read_text()))
-    yield {"root": root, "pristine": pristine, "process": proc}
-    server._connection.disconnect()
+def _stop(proc, log):
     proc.terminate()
     try:
         proc.wait(timeout=10)
     except subprocess.TimeoutExpired:
         proc.kill()
     log.close()
+
+
+@pytest.fixture(scope="session")
+def blender(tmp_path_factory):
+    from blenderwright import server
+    from blenderwright.connection import BlenderConnection
+
+    root = tmp_path_factory.mktemp("blender")
+    os.environ["BLENDERWRIGHT_TOKEN_FILE"] = str(root / "token")
+    proc, log, port = _start(root, "-b")
+    server._connection = BlenderConnection(port=port)
+    yield {"root": root, "pristine": root / "pristine.blend", "process": proc}
+    server._connection.disconnect()
+    _stop(proc, log)
+
+
+@pytest.fixture(scope="session")
+def windowed_blender(tmp_path_factory):
+    """A second Blender with a window, for tools that draw the 3D viewport.
+
+    A new window takes keyboard focus. To keep one out of the way instead, start
+    it yourself and set BLENDERWRIGHT_WINDOWED to the folder it was given:
+
+        mkdir /tmp/bw && blender --factory-startup --python tests_live/blender_host.py \
+            -- /tmp/bw/port /tmp/bw/pristine.blend
+    """
+    kept = os.environ.get("BLENDERWRIGHT_WINDOWED")
+    root = pathlib.Path(kept) if kept else tmp_path_factory.mktemp("windowed")
+    if kept:
+        proc, port = None, int((root / "port").read_text())
+    else:
+        proc, log, port = _start(root, "--no-window-focus", "-p", "0", "0", "640", "480")
+    yield {"root": root, "pristine": root / "pristine.blend", "port": port}
+    if proc is not None:
+        _stop(proc, log)
+
+
+@pytest.fixture
+def viewport(windowed_blender, tmp_path, monkeypatch):
+    """A fresh factory scene in the windowed Blender; tools talk to it for this test."""
+    from blenderwright import server
+    from blenderwright.connection import BlenderConnection
+    from blenderwright.tools.file_ops import open_file
+
+    monkeypatch.setenv("BLENDERWRIGHT_TOKEN_FILE", str(windowed_blender["root"] / "token"))
+    connection = BlenderConnection(port=windowed_blender["port"])
+    monkeypatch.setattr(server, "_connection", connection)
+    work = tmp_path / "scene.blend"
+    shutil.copy(windowed_blender["pristine"], work)
+    open_file(str(work))
+    yield tmp_path
+    connection.disconnect()
 
 
 @pytest.fixture
