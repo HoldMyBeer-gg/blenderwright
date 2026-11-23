@@ -42,6 +42,8 @@ class _ImageFormatSettings:
     def __init__(self, media_type, file_format):
         self.media_type = media_type
         self._file_format = file_format
+        self.color_mode = "RGBA"
+        self.color_depth = "8"
 
     @property
     def file_format(self):
